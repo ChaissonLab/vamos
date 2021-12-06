@@ -182,7 +182,7 @@ int SWAlign(string &s1, string &s2, Matrix<int> &scoreMat, Matrix<int> &pathMat)
 
 int main(int argc, const char* argv[]) {
   if (argc != 3) {
-    cerr << "Usage: val motif_file vntr" << endl;
+    cerr << "Usage: vamosbeta motif_file vntr" << endl;
   }
   
   ifstream f1=ifstream(argv[1]);
