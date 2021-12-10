@@ -60,37 +60,6 @@ void read_tsv(const string &input_vntr_bed, vector<vector<string>> &items)
     return;
 }
 
-// void readSeqFromBam (string &input_bam_file) 
-// {
-//     bamFile * fp_in = bam_open(input_bam_file, "r"); //open bam file
-//     bam_hdr_t * bamHdr = bam_hdr_read(fp_in); //read header
-//     hts_idx_t * idx = bam_index_load(fp, input_bam_file + ".bai");
-//     bam1_t * aln = bam_init1(); //initialize an alignment
-//     hts_itr_t * itr = sam_itr_querys(idx, bamHdr, chr + "." + str(start) + '-' + str(end));
-
-//     while(sam_itr_next(fp_in, itr, aln) >= 0)
-//     {
-//         READ * read = new READ();
-//         read->chr = bamHdr->target_name[aln->core.tid]; 
-//         read->len = aln->core.l_qseq; //length of the read.
-//         read->seq = (char *) malloc(len);
-//         uint8_t * s = bam1_seq(aln); 
-
-//         for(uint32_t i = 0; i < len; i++)
-//         {
-//             read->seq[i] = bam_nt16_rev_table[bam1_seqi(s, i)] //gets nucleotide id and converts them into IUPAC id.
-//         }
-//         reads.push_back(read);
-//     }
-    
-//     bam_destroy1(aln);
-//     hts_itr_destroy(itr);
-//     bam_hdr_destroy(bamHdr);
-//     bam_close(fp_in);   
-
-//     return &read;
-// }
-
 pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &cigar_start, uint32_t target_crd, uint32_t &ref_aln_start, uint32_t &read_aln_start)
 {
     uint32_t k;
@@ -231,92 +200,18 @@ void readSeqFromBam (const string &input_bam_file, string &chr, uint32_t ref_VNT
     return &read;
 }
 
-/* write vntrs alleles into a vcf file*/
-void writeVCFHeader (ostream &out, vector<VNTR> &vntrs)
+void VcfWriteHeader(ostream& out, const VcfWriter & vcfWriter)
 {
-    out << "##fileformat=VCFv4.1\n";
-    out << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" << sampleName << "\n";
+    vcfWriter.writeHeader(out);
+    return;
 }
 
 
-void WriteVCF(std::,
-          const std::string &refName,
-          const std::string &sampleName,
-          const std::vector<std::string> &contigNames,
-          const std::vector<int> &contigLengths,
-          const std::vector<std::vector<Interval> > &intervals,
-          bool writeFail=false) {
-  out << "##fileformat=VCFv4.1" << '\n'
-      << "##source=" << version << '\n'
-      << "##reference=" << reference << '\n';
-  for (size_t i = 0; i < contigNames.size(); i++) {
-    out << "##contig=<ID=" << contigNames[i] << ",length=" << contigLengths[i]
-        << ">" << '\n';
-  }
-
-  out << "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of "
-    "structural variant\">"
-      << '\n'
-      << "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of "
-    "the structural variant described in this record\">"
-      << '\n'
-      << "##INFO=<ID=REGION,Number=1,Type=String,Description=\"Region of interval "
-    "for easy copy\">"
-      << '\n'
-      << "##INFO=<ID=SVLEN,Number=.,Type=Integer,Description=\"Difference in "
-    "length between REF and ALT alleles\">"
-      << '\n'
-      << "##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description=\"Imprecise "
-    "structural variation\">"
-      << '\n';
-  out << "##FORMAT=<ID=CN,Number=1,Type=String,Description=\"CopyNumber\">"
-      << '\n'
-      << "##FORMAT=<ID=PP,Number=R,Type=Float,Description=\"Relative posterior "
-    "probability (phred)\">"
-      << '\n'
-      << "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read depth at "
-    "this position for this sample\">"
-      << '\n'
-      << "##FORMAT=<ID=BN,Number=1,Type=Float,Description=\"Likelihood ratio of CN=2 vs "
-    "CN=1 or CN=3 for heterozygous snvs\">"
-      << '\n'
-      << "##FORMAT=<ID=DF,Number=1,Type=Integer,Description=\"0/1 if DEL call was checked and passed in CIGAR parse\">"
-      << '\n'
-      << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" << sampleName
-      << '\n';
-  for (size_t c = 0; c < contigNames.size(); c++) {
-    assert(c < intervals.size());
-    for (size_t i = 0; i < intervals[c].size(); i++) {
-      if (intervals[c][i].copyNumber != 2) {
-
-        const std::string cntype = (intervals[c][i].copyNumber > 2) ? "DUP" : "DEL";
-        if (intervals[c][i].filter == "FAIL" and writeFail == false) {
-          continue;
-        }
-
-        const int vcfStartPos = intervals[c][i].start + 1;
-        const int vcfEndPos = intervals[c][i].end + 1;
-        const int cnLength = intervals[c][i].end - intervals[c][i].start;
-
-        out << contigNames[c] << '\t' << vcfStartPos
-            << "\t.\tN\t<"<<cntype<<">\t30\t" << intervals[c][i].filter << '\t'
-            << "SVTYPE=" << cntype << ";"
-            << "END=" << vcfEndPos
-            << ";SVLEN=" << cnLength
-              << ";REGION="<< contigNames[c] << "_" << vcfStartPos << "-" << vcfEndPos
-            << ";IMPRECISE\t"
-            << "CN:PP:DP"
-            << intervals[c][i].altInfo << "\t"
-            << intervals[c][i].copyNumber << ":"
-            << intervals[c][i].pVal << ":" << intervals[c][i].averageCoverage
-              << intervals[c][i].altSample
-            << '\n';
-      }
-    }
-  }
+void VCFWriteBody(const vector<VNTR> &vntrs, const VcfWriter & vcfWriter, ostream& out)
+{
+    vcfWriter.writeBody(vntrs, out);
+    return;
 }
-
-
 
 #endif
 

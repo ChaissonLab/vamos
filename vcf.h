@@ -1,7 +1,8 @@
 #ifndef VCF_H_
 #define VCF_H_
 #include "htslib/htslib/sam.h"
-#include<string.h>
+#include <string>
+#include <vector>
 
 class VcfWriter
 {
@@ -62,6 +63,7 @@ void VcfWriter::writeHeader(ostream& out)
 		<< "##ALT=<ID=VNTR,Description=\"Allele comprised of VNTR repeat units\">" << "\n";
 
     out << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" << sampleName << "\n";
+    return;
 }
 
 
@@ -103,7 +105,7 @@ void VcfWriter::writeBody(const vector<VNTR> &vntrs, ostream& out)
 			<< "GT\t"
 			<< GT + "\n";
 	}
-
+	return;
 }
 
 #endif
