@@ -43,4 +43,4 @@ vntr.o: vntr.cpp io.cpp vntr.h read.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib $(LIBS) 
 
 clean:
-	rm -f $(PROG) $(PROG_EXTRA) *.o 
+	rm -f $(PROG) *.o 
