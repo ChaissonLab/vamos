@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <htslib/sam.h>
-#include "io.h"
+#include <vector>
+#include "htslib/htslib/sam.h"
+#include "read.h"
+using namespace std;
 
 /*
 class VNTR contains:
@@ -18,115 +20,66 @@ class VNTR contains:
 @concensus: the index of the concensus motifs representation for the current VNTR locus
 */
 
-class VNTR () 
+class VNTR
 {
 public: 
-	char* chr;
+	char * chr;
 	uint32_t ref_start;
 	uint32_t ref_end;
+	uint32_t len;
+	char * region;
 	vector<string> motifs;
 	vector<READ *> reads; 
-	vector<vector<int>> reps;
+	vector<vector<int>> reps; // the motif representation for each read sequence
 	vector<int> concensus_h1; // diploid genome
 	vector<int> concensus_h2;
 
 	VNTR () {};
-	VNTR (string Chr, uint32_t Start, uint32_t End) : ref_start(Start), ref_end(End) {chr = Chr.data()};
-	~VNTR () {free();};
 
-	/* get the sequences from input_bam_file that overlapping with chr:start-end */
-
-	void readSeq (string & input_bam_file) 
+	VNTR (string Chr, uint32_t Start, uint32_t End, uint32_t Len) : ref_start(Start), ref_end(End), len(Len) 
 	{
-		reads.push_back(readSeqFromBam(input_bam_file));
-		return;
-	}
+		int sz = strlen(Chr.c_str());
+		chr = (char *) malloc(sz);
+		strcpy(chr, Chr.c_str());
 
-	/* for each sequence, apply Bida's code to get the representation of motifs */
-	void motifRepresentationForOneSeq (const vector<string> &motifs, string &vntr) 
-	{
-		/* modify vector<vector<int>> reps
-		   for now, just using dummy code
-		*/
-		reps.resize(reads.size());
-		for (int i = 0; i < reads.size(); ++i)
-		{
-			reps[i].resize(10, 1);
-		}
-		return;
-		
-	}
+		string s = ":" + to_string(ref_start);
+		string e = "-" + to_string(ref_end);
+		sz += strlen(s.c_str()) + strlen(e.c_str()) - 2; // c string : original string + "\0"
+		char * region = (char *) malloc(sz);
+		strcpy(region, chr);
+		strcat(region, s.c_str());
+		strcat(region, e.c_str());
 
-	/* 
-	for all the sequences at the current VNTR locus, get the concensus representation 
-													 get the concensus 
-	*/
-	void concensusMotifRep ()
-	{
-		/* based on vector<int> rep, get a concensus representation of the current locus 
-		   for now, just using some dummy code */
-		concensus.resize(10, 1);
-		return;
-	}
+		printf("region %s", region); 
+	};
 
-	void commaSeparatedMotifRepForConsensus (bool h1, string & motif_rep)
+	~VNTR () 
 	{
-		if (h1)
-			for (const auto &it : concensus_h1) { motif_rep += "VNTR_" + stoi(it) + ",";}
-		else
-			for (const auto &it : concensus_h2) { motif_rep += "VNTR_" + stoi(it) + ",";}
-		if (!motif_rep.isempty())
-			motif_ref.pop_back();
-	}
-
-	/* return the string representation for the current VNTR locus with comma as separator */
-	void commaSeparatedMotifRepForOneSequence (int i)
-	{
-		vector<string> motif_rep;
-		for (auto &it : reps[i])
-		{
-			motif_rep.push_back(stoi(it));
-		} 
-		return;
-	}
-
-	void commaSeparatedMotifRepForAllSequence (int i)
-	{
-		vector<vector<string>> motifreps;
-		for (auto &seq : reps)
-		{
-			motifreps.push_back(commaSeparatedStringRepresentationForOneSequence(seq));
-		}
-		return;
-	}
-
-	void free()
-	{
+		free(chr);
+		free(region);
 		for (uint32_t i = 0; i < reads.size(); ++i) 
 		{
 			delete reads[i];
 		}
 		reads.clear();
 		return;
-	}
-};
+	};
 
-/* read vntrs coordinates from file `input_vntr_bed`*/
-void readVNTRFromBed (const string &input_vntr_bed, vector<VNTR> &vntrs)
-{
-	vector<vector<string>> items;
-	read_tsv(input_vntr_bed, items);
-	uint32_t start, end;
-	string chr;
-	for (const auto &it : items)
-	{
-		chr = it[0];
-		start = stoi(it[1]);
-		end = stoi(it[2]);
-		vntrs.push_back(VNTR(chr, start, end));
-	}
-	return;
-}
+	/* get the sequences from input_bam_file that overlapping with chr:start-end */
+	// void readSeq (string & input_bam_file);
+
+	/* for each sequence, get the representation of motifs */
+	void motifRepresentationForOneVNTR ();
+
+	/* 
+	for all the sequences at the current VNTR locus, get the concensus representation 
+													 get the concensus 
+	*/
+	void concensusMotifRepForOneVNTR ();
+
+	void commaSeparatedMotifRepForConsensus (bool h1, string &motif_rep);
+
+};
 
 
 #endif
