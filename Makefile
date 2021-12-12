@@ -39,7 +39,7 @@ main.o: main.cpp io.cpp vcf.h vntr.h read.h
 vcf.o: vcf.cpp vcf.h 
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib $(LIBS) 
 
-vntr.o: vntr.cpp io.cpp vntr.h read.h 
+vntr.o: vntr.cpp io.cpp vntr.h read.h naive_anno.cpp
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib $(LIBS) -I edlib/include
 
 edlib.o:
