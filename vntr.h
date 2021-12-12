@@ -9,17 +9,19 @@
 #include "read.h"
 using namespace std;
 
+/*
+class MOTIF contains:
+@seq: the sequence of the motif
+@len: the lenght of the motif
+*/
 class MOTIF
 {
 public:
-	char * seq;
-	uint8_t len;
-
-	MOTIF(string &Seq) 
-	{
-
-	};
-	~MOTIF() {};	
+	string seq;
+	uint16_t len;
+	MOTIF () {};
+	MOTIF(string &Seq) : seq(Seq) { len = Seq.length();};
+	~MOTIF() {};
 };
 
 /*
@@ -41,7 +43,7 @@ public:
 	uint32_t ref_end;
 	uint32_t len;
 	char * region;
-	vector<string> motifs;
+	vector<MOTIF> motifs;
 	vector<READ *> reads; 
 	vector<vector<int>> reps; // the motif representation for each read sequence
 	vector<int> concensus_h1; // diploid genome

@@ -1,8 +1,8 @@
 #include <stdio.h>     
 #include <stdlib.h>   
 #include <getopt.h>
-#include <string.h>
-#include "io.cpp"
+#include <string>
+#include "io.h"
 #include "vntr.h"
 #include "vcf.h"
 using namespace std;
@@ -25,11 +25,7 @@ void printUsage()
 int main (int argc, char **argv)
 {
 	int c;
-	char * input_bam;
-	char * vntr_bed;
-	char * motif_csv;
-	char * out_vcf;
-	char * sampleName;
+	IO io;
 
 	while (1)
 	{
@@ -67,32 +63,32 @@ int main (int argc, char **argv)
 
 		case 'i':
 			printf ("option -input with `%s'\n", optarg);
-			input_bam = (char *) malloc(optarg.length() + 1);
-			strcpy(input_bam, optarg);
+			io.input_bam = (char *) malloc(strlen(optarg) + 1);
+			strcpy(io.input_bam, optarg);
 			break;
 
 		case 'v':
 			printf ("option -vntr with `%s'\n", optarg);
-			vntr_bed = (char *) malloc(optarg.length() + 1);
-			strcpy(vntr_bed, optarg);
+			io.vntr_bed = (char *) malloc(strlen(optarg) + 1);
+			strcpy(io.vntr_bed, optarg);
 			break;
 
 		case 'm':
 			printf ("option -motif with `%s'\n", optarg);
-			motif_csv = (char *) malloc(optarg.length() + 1);
-			strcpy(motif_csv, optarg);
+			io.motif_csv = (char *) malloc(strlen(optarg) + 1);
+			strcpy(io.motif_csv, optarg);
 			break;
 
 		case 'o':
 			printf ("option -output with `%s'\n", optarg);
-			out_vcf = (char *) malloc(optarg.length() + 1);
-			strcpy(out_vcf, optarg);
+			io.out_vcf = (char *) malloc(strlen(optarg) + 1);
+			strcpy(io.out_vcf, optarg);
 			break;
 
 		case 's':
 			printf ("option -sampleName with `%s'\n", optarg);
-			sampleName = (char *) malloc(optarg.length() + 1);
-			strcpy(sampleName, optarg);
+			io.sampleName = (char *) malloc(strlen(optarg) + 1);
+			strcpy(io.sampleName, optarg);
 			break;
 
 		case 'h':
@@ -118,34 +114,23 @@ int main (int argc, char **argv)
 		printf("\n");
 	}
 
-	char version[] = "V1.0.0";
 	vector<VNTR> vntrs;
-	VcfWriter vcfWriter(input_bam, version, sampleName);
 
 	/* read VNTR bed file */
-	readVNTRFromBed(vntr_bed, vntrs);
+	io.readVNTRFromBed(vntrs);
 
 	/* read motif csv file */
-	readMotifsFromCsv(motif_csv, vntrs);
+	io.readMotifsFromCsv(vntrs);
 
 	/* process each VNTR */
 	for (auto &it: vntrs) 
 	{
-		readSeq(input_bam, it);
+		io.readSeq(it);
 		it.motifRepresentationForOneVNTR(); 
 		it.concensusMotifRepForOneVNTR();
 	}
 
-	ofstream out(out_vcf);
-    if (out.fail()) 
-    {
-        cerr << "Unable to open file " << out_vcf << endl;
-        exit(EXIT_FAILURE);
-    }
-	VcfWriteHeader(out, vcfWriter);
-	VCFWriteBody(vntrs, vcfWriter, out);
-	out.close();
-
+	io.outputVCF(vntrs);
 	exit(EXIT_SUCCESS);
 }
 

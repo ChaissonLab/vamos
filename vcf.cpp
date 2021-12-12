@@ -36,9 +36,9 @@ void VcfWriter::writeBody(vector<VNTR> &vntrs, ostream& out)
 	for (auto &it : vntrs)
 	{
 		string motif_list, motif_rep_h1, motif_rep_h2, GT; 
-		for (const auto &piece : it.motifs) 
+		for (auto &piece : it.motifs) 
 		{ 
-			motif_list += piece + ',';
+			motif_list += piece.seq + ',';
 		}
 	    if (!motif_list.empty()) motif_list.pop_back();
 

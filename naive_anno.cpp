@@ -6,9 +6,9 @@
 #include "edlib/include/edlib.h"
 
 // function to compute the S_i scores (the naive occurrence)
-void anno(vector<int> &optMotifs, const vector<string> &motifs, const string &vntr) {
+void anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr) {
 
-    int vntr_len = vntr.size(), motif_len = motifs.size();
+    int vntr_len = strlen(vntr), motif_len = motifs.size();
     double max;
     vector<double> score(vntr_len + 1, 0); /* score[i]: the score of the best annotation of [vntr[0], vntr[i - 1]], score[0] means no sequnece, thus 0 */
     vector<int> traceI(vntr_len + 1, 0); /* traceI[i]: index of best j */
@@ -28,12 +28,17 @@ void anno(vector<int> &optMotifs, const vector<string> &motifs, const string &vn
         {
             for (m = 0; m < motif_len; m++) 
             {
-                char * motif = new char[motifs[m].length() + 1];
-                char * vntr_seq = new char[i - j + 1];
-                strcpy(motif, motifs[m].c_str());
-                strcpy(vntr_seq, vntr.substr(j, i - j).c_str());
+                // char * motif = new char[motifs[m].length() + 1];
+                // char * vntr_seq = new char[i - j + 1];
+                // strcpy(motif, motifs[m].c_str());
+                // strcpy(vntr_seq, vntr.substr(j, i - j).c_str());
+
+                char * vntr_subseq = (char *) malloc(i - j + 1); 
+                memcpy(vntr_subseq, vntr + j, i - j);
+                vntr_subseq[i - j] = '\0';
+
                 /*the score of [vntr[0], vntr[j - 1]] + the alignment score of substring [j, i - 1]*/
-                EdlibAlignResult result = edlibAlign(motif, motifs[m].length(), vntr_seq, i - j,
+                EdlibAlignResult result = edlibAlign(motifs[m].seq.c_str(), motifs[m].len, vntr_subseq, i - j,
                                      edlibNewAlignConfig(-1, EDLIB_MODE_HW, EDLIB_TASK_DISTANCE, NULL, 0));
                 cur_score = score[j] + (double) result.editDistance;
                 if (cur_score > best_score) 
@@ -42,8 +47,7 @@ void anno(vector<int> &optMotifs, const vector<string> &motifs, const string &vn
                     traceI[i] = j;
                     traceM[i] = m;
                 }
-                delete [] motif;
-                delete [] vntr_seq;
+                free(vntr_subseq);
             }
         }
         score[i] = best_score;

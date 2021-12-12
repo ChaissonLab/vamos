@@ -30,11 +30,14 @@ endif
 
 all:$(PROG)
 
-vamos: main.o vcf.o vntr.o edlib.o
+vamos: main.o io.o vcf.o vntr.o edlib.o
 	$(CXX) $(CFLAGS) -o $@ $^ -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib $(LIBS) 
 
-main.o: main.cpp io.cpp vcf.h vntr.h read.h
-	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib $(LIBS) 
+main.o: main.cpp io.h vcf.h vntr.h read.h
+	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib $(LIBS)
+
+io.o: io.cpp io.h vcf.h vntr.h read.h
+	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib $(LIBS)
 
 vcf.o: vcf.cpp vcf.h 
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib $(LIBS) 

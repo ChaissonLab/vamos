@@ -15,10 +15,15 @@ public:
 	char * qname;
 	char * chr;
 	uint32_t len;
-	string seq;
+	char * seq;
 	READ () {};
 	READ (char * Qname, char * Chr, uint32_t Len) : qname(Qname), chr(Chr), len(Len) {};
-	~READ () {};
+	~READ () 
+	{
+		free(qname);
+		free(chr);
+		free(seq);
+	};
 };
 
 #endif

@@ -7,6 +7,7 @@
 #include <string>
 #include <tuple> 
 #include <vector>
+#include "io.h"
 #include "read.h"
 #include "vntr.h"
 #include "vcf.h"
@@ -15,14 +16,14 @@
 
 using namespace std;
 
-int readMotifsFromCsv (const char * input_motif_csv, vector<VNTR> &vntrs) 
+int IO::readMotifsFromCsv (vector<VNTR> &vntrs) 
 {
     int vntr_size = vntrs.size();
 
-    ifstream ifs(input_motif_csv);
+    ifstream ifs(motif_csv);
     if (ifs.fail()) 
     {
-        cerr << "Unable to open file " << input_motif_csv << endl;
+        cerr << "Unable to open file " << motif_csv << endl;
         exit (EXIT_FAILURE);
     }    
 
@@ -34,7 +35,7 @@ int readMotifsFromCsv (const char * input_motif_csv, vector<VNTR> &vntrs)
         string tmp;
         while(getline(ss, tmp, ',')) 
         {
-            vntrs[numOfLine].motifs.push_back(tmp);
+            vntrs[numOfLine].motifs.push_back(MOTIF(tmp));
         }
         numOfLine += 1; // 0-indexed
     }
@@ -42,13 +43,13 @@ int readMotifsFromCsv (const char * input_motif_csv, vector<VNTR> &vntrs)
     exit(EXIT_SUCCESS);
 }
 
-int read_tsv(const char * input_vntr_bed, vector<vector<string>> &items) 
+int IO::read_tsv(vector<vector<string>> &items) 
 {
     items.clear();
-    ifstream ifs(input_vntr_bed);
+    ifstream ifs(vntr_bed);
     if (ifs.fail()) 
     {
-        cerr << "Unable to open file " << input_vntr_bed << endl;
+        cerr << "Unable to open file " << vntr_bed << endl;
         exit (EXIT_FAILURE);
     }
 
@@ -67,11 +68,11 @@ int read_tsv(const char * input_vntr_bed, vector<vector<string>> &items)
     exit(EXIT_SUCCESS);
 }
 
-/* read vntrs coordinates from file `input_vntr_bed`*/
-void readVNTRFromBed (const char * input_vntr_bed, vector<VNTR> &vntrs)
+/* read vntrs coordinates from file `vntr_bed`*/
+void IO::readVNTRFromBed (vector<VNTR> &vntrs)
 {
     vector<vector<string>> items;
-    read_tsv(input_vntr_bed, items);
+    read_tsv(items);
     uint32_t start, end, len;
     for (const auto &it : items)
     {
@@ -134,14 +135,14 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &ciga
  liftover ref_VNTR_start, ref_VNTR_end
  get the subsequence 
 */
-void readSeqFromBam (vector<READ*> &reads, const char * input_bam_file, const char * chr, const uint32_t &ref_VNTR_start, 
+void IO::readSeqFromBam (vector<READ*> &reads, const char * chr, const uint32_t &ref_VNTR_start, 
                        const uint32_t &ref_VNTR_end, const uint32_t &VNTR_len, const char * region) 
 {
-    char * bai = (char *) malloc(input_bam_file.length() + 4 + 1); // input_bam_file.bai
-    strcpy(bai, input_bam_file);
+    char * bai = (char *) malloc(strlen(input_bam) + 4 + 1); // input_bam.bai
+    strcpy(bai, input_bam);
     strcat(bai, ".bai");
 
-    samFile * fp_in = hts_open(input_bam_file, "r"); //open bam file
+    samFile * fp_in = hts_open(input_bam, "r"); //open bam file
     bam_hdr_t * bamHdr = sam_hdr_read(fp_in); //read header
     hts_idx_t * idx = sam_index_load(fp_in, bai);
     bam1_t * aln = bam_init1(); //initialize an alignment
@@ -209,12 +210,12 @@ void readSeqFromBam (vector<READ*> &reads, const char * input_bam_file, const ch
             read->chr = bamHdr->target_name[aln->core.tid]; 
             read->qname = bam_get_qname(aln);
             read->len = liftover_read_e - liftover_read_s; // read length
-            // read->seq = (char *) malloc(read->len); // read sequence array
+            read->seq = (char *) malloc(read->len); // read sequence array
             s = bam_get_seq(aln); 
 
-            for(uint32_t i = liftover_read_s; i < liftover_read_e; i++)
+            for(uint32_t i = 0; i < liftover_read_e - liftover_read_s; i++)
             {
-                read->seq += seq_nt16_table[bam_seqi(s, i)]; //gets nucleotide id and converts them into IUPAC id.
+                read->seq[i] = seq_nt16_table[bam_seqi(s, i + liftover_read_s)]; //gets nucleotide id and converts them into IUPAC id.
             }
             reads.push_back(read);           
         }
@@ -226,9 +227,9 @@ void readSeqFromBam (vector<READ*> &reads, const char * input_bam_file, const ch
     sam_close(fp_in);   
 }
 
-void readSeq (char * input_bam_file, VNTR &vntr) 
+void IO::readSeq (VNTR &vntr) 
 {
-    readSeqFromBam(vntr.reads, input_bam_file, vntr.chr, vntr.ref_start, vntr.ref_end, vntr.len, vntr.region);
+    readSeqFromBam(vntr.reads, vntr.chr, vntr.ref_start, vntr.ref_end, vntr.len, vntr.region);
     return;
 }
 
@@ -238,10 +239,24 @@ void VcfWriteHeader(ostream& out, VcfWriter & vcfWriter)
     return;
 }
 
-
 void VCFWriteBody(vector<VNTR> &vntrs, VcfWriter & vcfWriter, ostream& out)
 {
     vcfWriter.writeBody(vntrs, out);
     return;
 }
 
+int IO::outputVCF (vector<VNTR> &vntrs)
+{
+    VcfWriter vcfWriter(input_bam, version, sampleName);
+
+    ofstream out(out_vcf);
+    if (out.fail()) 
+    {
+        cerr << "Unable to open file " << out_vcf << endl;
+        exit(EXIT_FAILURE);
+    }
+    VcfWriteHeader(out, vcfWriter);
+    VCFWriteBody(vntrs, vcfWriter, out);
+    out.close();  
+    exit(EXIT_SUCCESS);
+}
