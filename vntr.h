@@ -5,9 +5,22 @@
 #include <string.h>
 #include <stdlib.h>
 #include <vector>
-#include "htslib/htslib/sam.h"
+#include "htslib/sam.h"
 #include "read.h"
 using namespace std;
+
+class MOTIF
+{
+public:
+	char * seq;
+	uint8_t len;
+
+	MOTIF(string &Seq) 
+	{
+
+	};
+	~MOTIF() {};	
+};
 
 /*
 class VNTR contains:

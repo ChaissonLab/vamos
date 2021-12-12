@@ -1,5 +1,5 @@
 PROG=vamos
-LIBS=-lz -lhts
+LIBS=-lhts
 PROF=/home/cmb-16/mjc/shared/lib/
 DEBUG?=""
 OPT?=""
@@ -30,7 +30,7 @@ endif
 
 all:$(PROG)
 
-vamos: main.o vcf.o vntr.o 
+vamos: main.o vcf.o vntr.o edlib.o
 	$(CXX) $(CFLAGS) -o $@ $^ -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib $(LIBS) 
 
 main.o: main.cpp io.cpp vcf.h vntr.h read.h
@@ -39,8 +39,11 @@ main.o: main.cpp io.cpp vcf.h vntr.h read.h
 vcf.o: vcf.cpp vcf.h 
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib $(LIBS) 
 
-vntr.o: vntr.cpp io.cpp vntr.h read.h
-	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib $(LIBS) 
+vntr.o: vntr.cpp io.cpp vntr.h read.h 
+	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib $(LIBS) -I edlib/include
+
+edlib.o:
+	$(CXX) -c edlib/src/edlib.cpp -o edlib.o -I edlib/include
 
 clean:
 	rm -f $(PROG) *.o 

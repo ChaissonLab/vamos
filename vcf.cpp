@@ -1,4 +1,3 @@
-#include "htslib/htslib/sam.h"
 #include <string>
 #include <vector>
 #include <iostream>
@@ -7,6 +6,7 @@
 #include <fstream>
 #include <ostream>
 #include "vcf.h"
+#include "htslib/sam.h"
 
 void VcfWriter::writeHeader(ostream& out)
 {

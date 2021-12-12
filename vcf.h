@@ -8,7 +8,7 @@
 #include <ostream>
 #include <stdlib.h> 
 #include "vntr.h"
-#include "htslib/htslib/sam.h"
+#include "htslib/sam.h"
 
 using namespace std;
 
