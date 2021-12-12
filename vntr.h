@@ -51,14 +51,13 @@ public:
 
 	VNTR (string Chr, uint32_t Start, uint32_t End, uint32_t Len) : ref_start(Start), ref_end(End), len(Len) 
 	{
-		int sz = strlen(Chr.c_str());
-		chr = (char *) malloc(sz);
+		chr = (char *) malloc(Chr.length() + 1);
 		strcpy(chr, Chr.c_str());
 
 		string s = ":" + to_string(ref_start);
 		string e = "-" + to_string(ref_end);
-		sz += strlen(s.c_str()) + strlen(e.c_str()) - 2; // c string : original string + "\0"
-		char * region = (char *) malloc(sz);
+		int sz = Chr.length() + s.length() + e.length(); // c string : original string + "\0"
+		char * region = (char *) malloc(sz + 1);
 		strcpy(region, chr);
 		strcat(region, s.c_str());
 		strcat(region, e.c_str());

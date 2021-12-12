@@ -46,7 +46,6 @@ int main (int argc, char **argv)
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
-		int sz;
 
 		c = getopt_long (argc, argv, "i:b:m:o:s:h", long_options, &option_index);
 
@@ -68,36 +67,31 @@ int main (int argc, char **argv)
 
 		case 'i':
 			printf ("option -input with `%s'\n", optarg);
-			sz = strlen(optarg);
-			input_bam = (char *) malloc(sz);
+			input_bam = (char *) malloc(optarg.length() + 1);
 			strcpy(input_bam, optarg);
 			break;
 
 		case 'v':
 			printf ("option -vntr with `%s'\n", optarg);
-			sz = strlen(optarg);
-			vntr_bed = (char *) malloc(sz);
+			vntr_bed = (char *) malloc(optarg.length() + 1);
 			strcpy(vntr_bed, optarg);
 			break;
 
 		case 'm':
 			printf ("option -motif with `%s'\n", optarg);
-			sz = strlen(optarg);
-			motif_csv = (char *) malloc(sz);
+			motif_csv = (char *) malloc(optarg.length() + 1);
 			strcpy(motif_csv, optarg);
 			break;
 
 		case 'o':
 			printf ("option -output with `%s'\n", optarg);
-			sz = strlen(optarg);
-			out_vcf = (char *) malloc(sz);
+			out_vcf = (char *) malloc(optarg.length() + 1);
 			strcpy(out_vcf, optarg);
 			break;
 
 		case 's':
 			printf ("option -sampleName with `%s'\n", optarg);
-			sz = strlen(optarg);
-			sampleName = (char *) malloc(sz);
+			sampleName = (char *) malloc(optarg.length() + 1);
 			strcpy(sampleName, optarg);
 			break;
 
