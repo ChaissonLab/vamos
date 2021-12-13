@@ -20,6 +20,7 @@ int IO::readMotifsFromCsv (vector<VNTR *> &vntrs)
 {
     int vntr_size = vntrs.size();
 
+    cerr << "start to read csv file" << endl;
     ifstream ifs(motif_csv);
     if (ifs.fail()) 
     {
@@ -36,10 +37,11 @@ int IO::readMotifsFromCsv (vector<VNTR *> &vntrs)
         while(getline(ss, tmp, ',')) 
         {
             vntrs[numOfLine]->motifs.push_back(MOTIF(tmp));
+            cerr << vntrs[numOfLine]->motifs.back().seq << endl;
         }
         numOfLine += 1; // 0-indexed
     }
-    assert(vntrs.size() == numOfLine + 1);
+    assert(vntrs.size() == numOfLine);
     return 0;
 }
 
@@ -53,7 +55,6 @@ int IO::read_tsv(vector<vector<string>> &items)
         return 1;
     }
 
-    cerr << "open the bed file " << endl;
     string line;
     while (getline(ifs, line)) 
     {
