@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <vector>
+#include <string>
+#include <iostream>
 #include "read.h"
 using namespace std;
 
@@ -37,11 +39,11 @@ class VNTR contains:
 class VNTR
 {
 public: 
-	char * chr;
 	uint32_t ref_start;
 	uint32_t ref_end;
 	uint32_t len;
-	char * region;
+	string chr;
+	string region;
 	vector<MOTIF> motifs;
 	vector<READ *> reads; 
 	vector<vector<int>> annos; // the motif annotation for each read sequence
@@ -50,28 +52,21 @@ public:
 
 	VNTR () {};
 
-	VNTR (string Chr, uint32_t Start, uint32_t End, uint32_t Len) : ref_start(Start), ref_end(End), len(Len) 
+	VNTR (string Chr, uint32_t Start, uint32_t End, uint32_t Len) : chr(Chr), ref_start(Start), ref_end(End), len(Len) 
 	{
-		chr = new char[Chr.length() + 1];
-		strcpy(chr, Chr.c_str());
-
 		string s = ":" + to_string(ref_start);
 		string e = "-" + to_string(ref_end);
-		int sz = Chr.length() + s.length() + e.length(); // c string : original string + "\0"
-		char * region = new char[sz + 1];
-		strcpy(region, chr);
-		strcat(region, s.c_str());
-		strcat(region, e.c_str());
-		printf("region %s", region); 
+		region = Chr + s + e;
 	};
 
 	~VNTR () {};
 
 	void clear ()
 	{
-		delete chr;
-		delete region;
-		for (uint32_t i = 0; i < reads.size(); ++i) { delete reads[i];}
+		for (uint32_t i = 0; i < reads.size(); ++i) 
+		{ 
+			delete reads[i];
+		}
 		reads.clear();
 		return;
 	}

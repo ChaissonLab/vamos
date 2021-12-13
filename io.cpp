@@ -83,11 +83,10 @@ void IO::readVNTRFromBed (vector<VNTR*> &vntrs)
     uint32_t start, end, len;
     for (auto &it : items)
     {
-        start = stoi((*it)[1]);
-        end = stoi((*it)[2]);
+        start = stoi(it[1]);
+        end = stoi(it[2]);
         len = start < end ? end - start : 0;
-        cerr << "char: " << (*it)[0] << " start: " << to_string(start) << " end: " << to_string(end) << " len: " << to_string(len) << endl;
-        VNTR * vntr = new VNTR((*it)[0], start, end, len)
+        VNTR * vntr = new VNTR(it[0], start, end, len);
         vntrs.push_back(vntr);
     }
     return;
@@ -144,8 +143,8 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &ciga
  liftover ref_VNTR_start, ref_VNTR_end
  get the subsequence 
 */
-void IO::readSeqFromBam (vector<READ*> &reads, const char * chr, const uint32_t &ref_VNTR_start, 
-                       const uint32_t &ref_VNTR_end, const uint32_t &VNTR_len, const char * region) 
+void IO::readSeqFromBam (vector<READ*> &reads, string &chr, const uint32_t &ref_VNTR_start, 
+                       const uint32_t &ref_VNTR_end, const uint32_t &VNTR_len, string &region) 
 {
     char * bai = (char *) malloc(strlen(input_bam) + 4 + 1); // input_bam.bai
     strcpy(bai, input_bam);
@@ -155,7 +154,7 @@ void IO::readSeqFromBam (vector<READ*> &reads, const char * chr, const uint32_t 
     bam_hdr_t * bamHdr = sam_hdr_read(fp_in); //read header
     hts_idx_t * idx = sam_index_load(fp_in, bai);
     bam1_t * aln = bam_init1(); //initialize an alignment
-    hts_itr_t * itr = bam_itr_querys(idx, bamHdr, region);
+    hts_itr_t * itr = bam_itr_querys(idx, bamHdr, region.c_str());
 
     uint16_t flag;
     uint32_t mapq;
@@ -236,9 +235,9 @@ void IO::readSeqFromBam (vector<READ*> &reads, const char * chr, const uint32_t 
     sam_close(fp_in);   
 }
 
-void IO::readSeq (VNTR &vntr) 
+void IO::readSeq (VNTR * vntr) 
 {
-    readSeqFromBam(vntr.reads, vntr.chr, vntr.ref_start, vntr.ref_end, vntr.len, vntr.region);
+    readSeqFromBam(vntr->reads, vntr->chr, vntr->ref_start, vntr->ref_end, vntr->len, vntr->region);
     return;
 }
 
