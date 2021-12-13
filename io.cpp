@@ -16,7 +16,7 @@
 
 using namespace std;
 
-int IO::readMotifsFromCsv (vector<VNTR> &vntrs) 
+int IO::readMotifsFromCsv (vector<VNTR *> &vntrs) 
 {
     int vntr_size = vntrs.size();
 
@@ -24,7 +24,7 @@ int IO::readMotifsFromCsv (vector<VNTR> &vntrs)
     if (ifs.fail()) 
     {
         cerr << "Unable to open file " << motif_csv << endl;
-        exit (EXIT_FAILURE);
+        return 1;
     }    
 
     string line;
@@ -35,12 +35,12 @@ int IO::readMotifsFromCsv (vector<VNTR> &vntrs)
         string tmp;
         while(getline(ss, tmp, ',')) 
         {
-            vntrs[numOfLine].motifs.push_back(MOTIF(tmp));
+            vntrs[numOfLine]->motifs.push_back(MOTIF(tmp));
         }
         numOfLine += 1; // 0-indexed
     }
     assert(vntrs.size() == numOfLine + 1);
-    exit(EXIT_SUCCESS);
+    return 0;
 }
 
 int IO::read_tsv(vector<vector<string>> &items) 
@@ -50,9 +50,10 @@ int IO::read_tsv(vector<vector<string>> &items)
     if (ifs.fail()) 
     {
         cerr << "Unable to open file " << vntr_bed << endl;
-        exit (EXIT_FAILURE);
+        return 1;
     }
 
+    cerr << "open the bed file " << endl;
     string line;
     while (getline(ifs, line)) 
     {
@@ -63,23 +64,31 @@ int IO::read_tsv(vector<vector<string>> &items)
         {
             item.push_back(tmp);
         }
+
+        for (auto &i : item)
+        {
+            cerr << i << "\t";
+        }
+        cerr << endl;
         items.push_back(item);
     }
-    exit(EXIT_SUCCESS);
+    return 0;
 }
 
 /* read vntrs coordinates from file `vntr_bed`*/
-void IO::readVNTRFromBed (vector<VNTR> &vntrs)
+void IO::readVNTRFromBed (vector<VNTR*> &vntrs)
 {
     vector<vector<string>> items;
     read_tsv(items);
     uint32_t start, end, len;
-    for (const auto &it : items)
+    for (auto &it : items)
     {
-        start = stoi(it[1]);
-        end = stoi(it[2]);
+        start = stoi((*it)[1]);
+        end = stoi((*it)[2]);
         len = start < end ? end - start : 0;
-        vntrs.push_back(VNTR(it[0], start, end, len));
+        cerr << "char: " << (*it)[0] << " start: " << to_string(start) << " end: " << to_string(end) << " len: " << to_string(len) << endl;
+        VNTR * vntr = new VNTR((*it)[0], start, end, len)
+        vntrs.push_back(vntr);
     }
     return;
 }
@@ -239,13 +248,13 @@ void VcfWriteHeader(ostream& out, VcfWriter & vcfWriter)
     return;
 }
 
-void VCFWriteBody(vector<VNTR> &vntrs, VcfWriter & vcfWriter, ostream& out)
+void VCFWriteBody(vector<VNTR *> &vntrs, VcfWriter & vcfWriter, ostream& out)
 {
     vcfWriter.writeBody(vntrs, out);
     return;
 }
 
-int IO::outputVCF (vector<VNTR> &vntrs)
+int IO::outputVCF (vector<VNTR *> &vntrs)
 {
     VcfWriter vcfWriter(input_bam, version, sampleName);
 
@@ -253,10 +262,10 @@ int IO::outputVCF (vector<VNTR> &vntrs)
     if (out.fail()) 
     {
         cerr << "Unable to open file " << out_vcf << endl;
-        exit(EXIT_FAILURE);
+        return 1;
     }
     VcfWriteHeader(out, vcfWriter);
     VCFWriteBody(vntrs, vcfWriter, out);
     out.close();  
-    exit(EXIT_SUCCESS);
+    return 0;
 }
