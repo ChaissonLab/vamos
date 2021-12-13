@@ -18,7 +18,7 @@ class MOTIF
 {
 public:
 	string seq;
-	uint16_t len;
+	int len;
 	MOTIF () {};
 	MOTIF(string &Seq) : seq(Seq) { len = Seq.length();};
 	~MOTIF() {};
