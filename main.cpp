@@ -2,6 +2,7 @@
 #include <stdlib.h>   
 #include <getopt.h>
 #include <string>
+#include <unistd.h>
 #include "io.h"
 #include "vntr.h"
 #include "vcf.h"
@@ -32,35 +33,26 @@ int main (int argc, char **argv)
 		static struct option long_options[] =
 		{
 			/* These options don’t set a flag. We distinguish them by their indices. */
-			{"input",         no_argument,       0, 'i'},
-			{"vntr",          no_argument,       0, 'v'},
-			{"motif",         required_argument, 0, 'm'},
-			{"output",        required_argument, 0, 'o'},
-			{"sampleName",    required_argument, 0, 's'},
-			{"help",          no_argument,       0, 'h'},
+			{"input",         required_argument,       0, 'i'},
+			{"vntr",          required_argument,       0, 'v'},
+			{"motif",         required_argument,       0, 'm'},
+			{"output",        required_argument,       0, 'o'},
+			{"sampleName",    required_argument,       0, 's'},
+			{"help",          no_argument,             0, 'h'},
 			{0, 0, 0, 0}
 		};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
-
-		c = getopt_long (argc, argv, "i:b:m:o:s:h", long_options, &option_index);
+		c = getopt_long (argc, argv, "i:v:m:o:s:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
-		if (c == -1)
-			break;
+		if (c == -1) {
+			printUsage();
+			exit(EXIT_SUCCESS);
+		}
 
 		switch (c)
 		{
-		case 0:
-			/* If this option set a flag, do nothing else now. */
-			if (long_options[option_index].flag != 0)
-				break;
-			printf ("option %s", long_options[option_index].name);
-			if (optarg)
-				printf (" with arg %s", optarg);
-			printf ("\n");
-			break;
-
 		case 'i':
 			printf ("option -input with `%s'\n", optarg);
 			io.input_bam = (char *) malloc(strlen(optarg) + 1);
@@ -104,7 +96,9 @@ int main (int argc, char **argv)
 			exit(EXIT_FAILURE);
 
 		default:
-			abort ();
+			printUsage();
+			exit(EXIT_SUCCESS);
+			// abort ();
 		}
 	}
 	if (optind < argc) {
