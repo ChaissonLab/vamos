@@ -15,13 +15,12 @@ void printUsage()
 	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name]\n");
 	printf("Options:\n");
 	printf("       -i  FILE      input alignment file (bam format)\n");
-	printf("       -v  FILE      the Tab-delimited coordinate of each VNTR locus - chrom\tstart\tend, each row represents a VNTR locus\n");
-	printf("       -m  FILE      the Comma-delimited motif sequences list for each VNTR locus, each row represents a VNTR locus\n");
+	printf("       -v  FILE      the tab-delimited coordinate of each VNTR locus - `chrom\tstart\tend`, each row represents a VNTR locus\n");
+	printf("       -m  FILE      the comma-delimited motif sequences list for each VNTR locus, each row represents a VNTR locus\n");
 	printf("       -o  FILE      output vcf file\n");
 	printf("       -s  CHAR      the sample name\n");
 	printf("       -h            print out help message\n");
 } 
-
 
 int main (int argc, char **argv)
 {
@@ -120,8 +119,8 @@ int main (int argc, char **argv)
 	for (auto &it: vntrs) 
 	{
 		io.readSeq(it);
-		it.motifRepresentationForOneVNTR(); 
-		it.concensusMotifRepForOneVNTR();
+		it.motifAnnoForOneVNTR(); 
+		it.concensusMotifAnnoForOneVNTR();
 	}
 
 	io.outputVCF(vntrs);

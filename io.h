@@ -37,15 +37,23 @@ public:
 		free(out_vcf);
 		free(sampleName);
 	};
-
 	int readMotifsFromCsv (vector<VNTR> &vntrs);
+
 	int read_tsv(vector<vector<string>> &items);
+
 	void readVNTRFromBed (vector<VNTR> &vntrs);
+
 	void readSeqFromBam (vector<READ*> &reads, const char * chr, const uint32_t &ref_VNTR_start, 
                        const uint32_t &ref_VNTR_end, const uint32_t &VNTR_len, const char * region);
+	
+	/* get the sequences from input_bam_file that overlapping with chr:start-end */
 	void readSeq (VNTR &vntr);
+
 	int outputVCF (vector<VNTR> &vntrs);
 };
+
 void VcfWriteHeader(ostream& out, VcfWriter & vcfWriter);
+
 void VCFWriteBody(vector<VNTR> &vntrs, VcfWriter & vcfWriter, ostream& out);
+
 #endif

@@ -6,7 +6,6 @@
 #include <fstream>
 #include <ostream>
 #include "vcf.h"
-#include "htslib/sam.h"
 
 void VcfWriter::writeHeader(ostream& out)
 {
@@ -42,8 +41,8 @@ void VcfWriter::writeBody(vector<VNTR> &vntrs, ostream& out)
 		}
 	    if (!motif_list.empty()) motif_list.pop_back();
 
-	    it.commaSeparatedMotifRepForConsensus(1, motif_rep_h1);
-	    it.commaSeparatedMotifRepForConsensus(0, motif_rep_h2);
+	    it.commaSeparatedMotifAnnoForConsensus(1, motif_rep_h1);
+	    it.commaSeparatedMotifAnnoForConsensus(0, motif_rep_h2);
 
 	    if (motif_rep_h1 == motif_rep_h2)
 	    	GT = "1/1";

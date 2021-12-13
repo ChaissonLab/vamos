@@ -5,7 +5,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <vector>
-#include "htslib/sam.h"
 #include "read.h"
 using namespace std;
 
@@ -30,9 +29,9 @@ class VNTR contains:
 @start: the chromosome start coordinate
 @end: the chromosome end coordinate
 @reads: a group of sequences overlapping with the current VNTR locus
-@reps: the index of the motifs representation for each sequence, 
-	 with function `commaSeparatedStringRepresentation`, you can get a string representation
-@concensus: the index of the concensus motifs representation for the current VNTR locus
+@annos: the index of the motifs annotation for each sequence, 
+	 with function `commaSeparatedStringannotation`, you can get a string annotation
+@concensus: the index of the concensus motifs annotation for the current VNTR locus
 */
 
 class VNTR
@@ -45,7 +44,7 @@ public:
 	char * region;
 	vector<MOTIF> motifs;
 	vector<READ *> reads; 
-	vector<vector<int>> reps; // the motif representation for each read sequence
+	vector<vector<int>> annos; // the motif annotation for each read sequence
 	vector<int> concensus_h1; // diploid genome
 	vector<int> concensus_h2;
 
@@ -79,20 +78,16 @@ public:
 		return;
 	};
 
-	/* get the sequences from input_bam_file that overlapping with chr:start-end */
-	// void readSeq (string & input_bam_file);
+	/* for each sequence, get the annotation of motifs */
+	void motifAnnoForOneVNTR ();
 
-	/* for each sequence, get the representation of motifs */
-	void motifRepresentationForOneVNTR ();
+	/* for all the sequences at the current VNTR locus, get the concensus annotation */
+	void concensusMotifAnnoForOneVNTR ();
 
-	/* 
-	for all the sequences at the current VNTR locus, get the concensus representation 
-													 get the concensus 
+	/* for one concensus annotation 
+
 	*/
-	void concensusMotifRepForOneVNTR ();
-
-	void commaSeparatedMotifRepForConsensus (bool h1, string &motif_rep);
-
+	void commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_rep);
 };
 
 
