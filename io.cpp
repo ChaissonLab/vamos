@@ -20,7 +20,6 @@ int IO::readMotifsFromCsv (vector<VNTR *> &vntrs)
 {
     int vntr_size = vntrs.size();
 
-    cerr << "start to read csv file" << endl;
     ifstream ifs(motif_csv);
     if (ifs.fail()) 
     {
@@ -95,16 +94,28 @@ void IO::readVNTRFromBed (vector<VNTR*> &vntrs)
 
 pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &cigar_start, uint32_t target_crd, uint32_t &ref_aln_start, uint32_t &read_aln_start)
 {
-    uint32_t k;
+    /* trivial case: when ref_aln_start equals target_crd*/
+    if (target_crd == ref_aln_start) return make_pair(read_aln_start, 1);
+
+    uint32_t k; int op, l;
     for (k = cigar_start; k < aln->core.n_cigar; ++k) 
     {
-        int op = bam_cigar_op(cigar[k]);
-        int l = bam_cigar_oplen(cigar[k]);
+        op = bam_cigar_op(cigar[k]);
+        l = bam_cigar_oplen(cigar[k]);
 
-        if (ref_aln_start > target_crd) return make_pair(read_aln_start, 0); // skip the out-of-range alignment
+        if (ref_aln_start > target_crd) {
+            cigar_start = k;
+            return make_pair(read_aln_start, 0); // skip the out-of-range alignment
+        }
         else if (ref_aln_start <= target_crd and target_crd < ref_aln_start + l)
         {
-            if (op == BAM_CMATCH) read_aln_start += target_crd - ref_aln_start;
+            // if (op == BAM_CMATCH) 
+                // read_aln_start += target_crd - ref_aln_start;
+            cigar_start = k;
+            if (op == BAM_CMATCH) 
+                return make_pair(read_aln_start + target_crd - ref_aln_start, 1);
+            else
+                return make_pair(read_aln_start, 1);
             break;
         }
 
@@ -187,7 +198,6 @@ void IO::readSeqFromBam (vector<READ*> &reads, string &chr, const uint32_t &ref_
 
         read_aln_start = 0;
         read_aln_end = aln->core.l_qseq;
-
         ref_len = bamHdr->target_len[aln->core.tid]; 
 
         uint32_t tmp;
@@ -201,16 +211,19 @@ void IO::readSeqFromBam (vector<READ*> &reads, string &chr, const uint32_t &ref_
 
             tmp = ref_aln_start;
             ref_aln_start = ref_len - ref_aln_end;
-            ref_aln_end = ref_len - ref_aln_start - 1;
+            ref_aln_end = ref_len - tmp - 1;
         }
+
+        if (VNTR_s < ref_aln_start or VNTR_e > ref_aln_end) // the alignment doesn't fully cover the VNTR locus
+            continue;
 
         /*
         reference: VNTR_s, VNTR_e
         read alignment: ref_aln_start, ref_aln_end; read_aln_start, read_aln_end;
         */
-        k = 0;
-        auto [liftover_read_s, iflift_s] = processCigar(aln, cigar, k, VNTR_s, ref_aln_start, read_aln_start);
-        auto [liftover_read_e, iflift_e] = processCigar(aln, cigar, k, VNTR_e, ref_aln_start, read_aln_start);
+        uint32_t cigar_start = 0;
+        auto [liftover_read_s, iflift_s] = processCigar(aln, cigar, cigar_start, VNTR_s, ref_aln_start, read_aln_start);
+        auto [liftover_read_e, iflift_e] = processCigar(aln, cigar, cigar_start, VNTR_e, ref_aln_start, read_aln_start);
 
         if (iflift_s and iflift_e and liftover_read_e > liftover_read_s)
         {
@@ -219,14 +232,24 @@ void IO::readSeqFromBam (vector<READ*> &reads, string &chr, const uint32_t &ref_
             read->chr = bamHdr->target_name[aln->core.tid]; 
             read->qname = bam_get_qname(aln);
             read->len = liftover_read_e - liftover_read_s; // read length
-            read->seq = (char *) malloc(read->len); // read sequence array
+            read->seq = (char *) malloc(read->len + 1); // read sequence array
             s = bam_get_seq(aln); 
+
+            assert(liftover_read_e <= aln->core.l_qseq);
 
             for(uint32_t i = 0; i < liftover_read_e - liftover_read_s; i++)
             {
-                read->seq[i] = seq_nt16_table[bam_seqi(s, i + liftover_read_s)]; //gets nucleotide id and converts them into IUPAC id.
+                assert(i + liftover_read_s < aln->core.l_qseq);
+                assert(bam_seqi(s, i + liftover_read_s) < 16);
+                read->seq[i] = seq_nt16_str[bam_seqi(s, i + liftover_read_s)]; //gets nucleotide id and converts them into IUPAC id.
             }
-            reads.push_back(read);           
+            reads.push_back(read); 
+            // cerr << "read_name: " << bam_get_qname(aln) << endl; 
+            // cerr << "ref_VNTR_start: " << ref_VNTR_start << " ref_VNTR_end: " << ref_VNTR_end << endl;
+            // cerr << "liftover_read_s: " << liftover_read_s << " liftover_read_e: " << liftover_read_e << endl;
+            // cerr << "read length: " << aln->core.l_qseq << endl;
+            // cerr << "read_seq: " << read->seq << endl; 
+            cerr << endl;       
         }
     }
     free(bai);
