@@ -14,7 +14,7 @@ void printUsage()
 {
 	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name]\n");
 	printf("Options:\n");
-	printf("       -i  FILE      input alignment file (bam format)\n");
+	printf("       -i  FILE      input alignment file (bam format), bam file needs to be indexed \n");
 	printf("       -v  FILE      the tab-delimited coordinate of each VNTR locus - `chrom\tstart\tend`, each row represents a VNTR locus\n");
 	printf("       -m  FILE      the comma-delimited motif sequences list for each VNTR locus, each row represents a VNTR locus\n");
 	printf("       -o  FILE      output vcf file\n");
@@ -45,10 +45,8 @@ int main (int argc, char **argv)
 		c = getopt_long (argc, argv, "i:v:m:o:s:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
-		if (c == -1) {
-			printUsage();
-			exit(EXIT_SUCCESS);
-		}
+		if (c == -1) 
+			break;
 
 		switch (c)
 		{
