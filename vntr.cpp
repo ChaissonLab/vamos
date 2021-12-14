@@ -16,6 +16,7 @@ void VNTR::motifAnnoForOneVNTR ()
 			output:  vector<vector<int>> annos[i]
 		*/
 		anno(annos[i], motifs, reads[i]->seq);
+		cerr << "finish for reads: " << i << endl;
 	}
 	return;
 }
@@ -28,9 +29,6 @@ void VNTR::concensusMotifAnnoForOneVNTR ()
 	*/
 	// concensus_h1.resize(10, 1);
 	// concensus_h2.resize(10, 1);
-	
-
-	
 	return;
 }
 

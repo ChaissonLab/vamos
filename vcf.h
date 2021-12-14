@@ -50,7 +50,7 @@ public:
 	};
 
     void writeHeader(ostream &out);
-    void writeBody(vector<VNTR> &vntrs, ostream &out);
+    void writeBody(vector<VNTR *> &vntrs, ostream &out);
 };
 
 #endif
