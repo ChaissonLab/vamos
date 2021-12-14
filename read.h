@@ -20,8 +20,6 @@ public:
 	READ (char * Qname, char * Chr, uint32_t Len) : qname(Qname), chr(Chr), len(Len) {};
 	~READ () 
 	{
-		free(qname);
-		free(chr);
 		free(seq);
 	};
 };

@@ -249,7 +249,6 @@ void IO::readSeqFromBam (vector<READ*> &reads, string &chr, const uint32_t &ref_
             // cerr << "liftover_read_s: " << liftover_read_s << " liftover_read_e: " << liftover_read_e << endl;
             // cerr << "read length: " << aln->core.l_qseq << endl;
             // cerr << "read_seq: " << read->seq << endl; 
-            cerr << endl;       
         }
     }
     free(bai);

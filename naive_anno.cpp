@@ -6,7 +6,9 @@
 #include "edlib/include/edlib.h"
 
 // function to compute the S_i scores (the naive occurrence)
-int anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr) {
+int anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr) 
+{
+    cerr << "vntr length: " << strlen(vntr) << endl;
 
     /* get the maximum length of motifs */
     int max_len = 0;
@@ -30,7 +32,7 @@ int anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr) {
     {
         best_score = 10000000.0;
 
-        for (j = 0; j < i; j++) 
+        for (j = max(0, i - 3 * max_len); j < i; j++) 
         {
             // char * vntr_subseq = (char *) malloc(i - j + 1); 
             // memcpy(vntr_subseq, vntr + j, i - j);
