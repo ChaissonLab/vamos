@@ -34,9 +34,6 @@ int anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr)
 
         for (j = max(0, i - 3 * max_len); j < i; j++) 
         {
-            // char * vntr_subseq = (char *) malloc(i - j + 1); 
-            // memcpy(vntr_subseq, vntr + j, i - j);
-            // vntr_subseq[i - j] = 0;
             for (m = 0; m < motif_len; m++) 
             {
                 /*the score of [vntr[0], vntr[j - 1]] + the alignment score of substring [j, i - 1]*/
@@ -60,8 +57,6 @@ int anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr)
                     return 1;
                 }
             }
-            // free(vntr_subseq);
-
         }
         // if (i % 1000 == 0)
         //     cerr << "i: " << i << " score: " << best_score << " traceI[i]: " << traceI[i] << " traceM[i]: " << traceM[i] <<  endl;
