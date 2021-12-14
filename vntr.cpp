@@ -28,7 +28,7 @@ void VNTR::concensusMotifAnnoForOneVNTR ()
 	*/
 	// concensus_h1.resize(10, 1);
 	// concensus_h2.resize(10, 1);
-
+	
 
 	
 	return;

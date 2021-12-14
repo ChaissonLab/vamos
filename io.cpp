@@ -79,6 +79,7 @@ void IO::readVNTRFromBed (vector<VNTR> &vntrs)
         start = stoi(it[1]);
         end = stoi(it[2]);
         len = start < end ? end - start : 0;
+        cerr << "chr: " << it[0] << " start: " << to_string(start) << " end: " << to_string(end) << " len: " << to_string(len) << endl;
         vntrs.push_back(VNTR(it[0], start, end, len));
     }
     return;

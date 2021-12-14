@@ -61,8 +61,6 @@ int anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr) {
             // free(vntr_subseq);
 
         }
-        // if (i % 1000 == 0)
-        //     cerr << "i: " << i << " score: " << best_score << " traceI[i]: " << traceI[i] << " traceM[i]: " << traceM[i] <<  endl;
         score[i] = best_score;
     }
 
