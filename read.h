@@ -16,8 +16,13 @@ public:
 	char * chr;
 	uint32_t len;
 	char * seq;
-	READ () {};
-	READ (char * Qname, char * Chr, uint32_t Len) : qname(Qname), chr(Chr), len(Len) {};
+	READ () 
+	{
+		qname = NULL;
+		chr = NULL;
+		seq = NULL;
+	};
+	READ (char * Qname, char * Chr, uint32_t Len) : qname(Qname), chr(Chr), len(Len) { seq = NULL;};
 	~READ () 
 	{
 		free(seq);

@@ -27,6 +27,11 @@ public:
 	{
 		version = (char *) malloc(7);
 		strcpy(version, "V1.0.0");
+		input_bam = NULL;
+		vntr_bed = NULL;
+		motif_csv = NULL;
+		out_vcf = NULL;
+		sampleName = NULL;
 	};
 	~IO() 
 	{

@@ -22,7 +22,13 @@ public:
 	int32_t ncontigs;
 	bool set;
 
-	VcfWriter () {set = 0;};
+	VcfWriter () {
+		sampleName = NULL;
+		version = NULL;
+		target_names = NULL;
+		contigLengths = NULL;
+		set = 0;
+	};
 	VcfWriter (char * input_bam_file, char * Version, char * SampleName) : version(Version), sampleName(SampleName)
 	{
 	    samFile * fp_in = hts_open(input_bam_file, "r"); //open bam file

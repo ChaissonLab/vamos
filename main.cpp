@@ -27,27 +27,22 @@ int main (int argc, char **argv)
 	int c;
 	IO io;
 
-	while (1)
+	const struct option long_options[] =
 	{
-		static struct option long_options[] =
-		{
-			/* These options don’t set a flag. We distinguish them by their indices. */
-			{"input",         required_argument,       0, 'i'},
-			{"vntr",          required_argument,       0, 'v'},
-			{"motif",         required_argument,       0, 'm'},
-			{"output",        required_argument,       0, 'o'},
-			{"sampleName",    required_argument,       0, 's'},
-			{"help",          no_argument,             0, 'h'},
-			{0, 0, 0, 0}
-		};
-		/* getopt_long stores the option index here. */
-		int option_index = 0;
-		c = getopt_long (argc, argv, "i:v:m:o:s:h", long_options, &option_index);
+		/* These options don’t set a flag. We distinguish them by their indices. */
+		{"input",         required_argument,       0, 'i'},
+		{"vntr",          required_argument,       0, 'v'},
+		{"motif",         required_argument,       0, 'm'},
+		{"output",        required_argument,       0, 'o'},
+		{"sampleName",    required_argument,       0, 's'},
+		{"help",          no_argument,             0, 'h'},
+		{NULL, 0, 0, '\0'}
+	};
+	/* getopt_long stores the option index here. */
+	int option_index = 0;
 
-		/* Detect the end of the options. */
-		if (c == -1) 
-			break;
-
+	while ((c = getopt_long (argc, argv, "i:v:m:o:s:h", long_options, &option_index)) != -1)
+	{
 		switch (c)
 		{
 		case 'i':
@@ -94,18 +89,46 @@ int main (int argc, char **argv)
 
 		default:
 			printUsage();
-			exit(EXIT_SUCCESS);
+			exit(EXIT_FAILURE);
 			// abort ();
-		}
+		}		
 	}
-	if (optind < argc) {
-		printf("non-option ARGV-elements: ");
-		while (optind < argc)
-			printf("%s ", argv[optind++]);
-		printf("\n");
-	}
+	
+    /* Check mandatory parameters */
+    bool missingArg = false;
+    if (io.input_bam == NULL) 
+    {
+       printf("-i is mandatory!\n");
+       missingArg = true;
+    }
+    if (io.vntr_bed == NULL)
+    {
+       printf("-v is mandatory!\n");
+       missingArg = true;
+    }
+    if (io.motif_csv == NULL)
+    {
+       printf("-m is mandatory!\n");
+       missingArg = true;
+    }
+    if (io.out_vcf == NULL)
+    {
+       printf("-o is mandatory!\n");
+       missingArg = true;
+    }
+    if (io.sampleName == NULL)
+    {
+       printf("-s is mandatory!\n");
+       missingArg = true;
+    }
 
-	vector<VNTR> vntrs;
+    if (missingArg)
+    {
+		printUsage();
+    	exit(EXIT_FAILURE);
+    }
+
+	vector<VNTR *> vntrs;
 
 	/* read VNTR bed file */
 	io.readVNTRFromBed(vntrs);
@@ -117,8 +140,9 @@ int main (int argc, char **argv)
 	for (auto &it: vntrs) 
 	{
 		io.readSeq(it);
-		it.motifAnnoForOneVNTR(); 
-		it.concensusMotifAnnoForOneVNTR();
+		cerr << "start to do the annotation" << endl;
+		it->motifAnnoForOneVNTR(); 
+		it->concensusMotifAnnoForOneVNTR();
 	}
 
 	io.outputVCF(vntrs);
