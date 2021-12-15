@@ -8,6 +8,7 @@
 #include <string>
 #include <iostream>
 #include "read.h"
+
 using namespace std;
 
 /*
@@ -33,7 +34,7 @@ class VNTR contains:
 @reads: a group of sequences overlapping with the current VNTR locus
 @annos: the index of the motifs annotation for each sequence, 
 	 with function `commaSeparatedStringannotation`, you can get a string annotation
-@concensus: the index of the concensus motifs annotation for the current VNTR locus
+@consensus;: the index of the consensus; motifs annotation for the current VNTR locus
 */
 
 class VNTR
@@ -47,16 +48,22 @@ public:
 	vector<MOTIF> motifs;
 	vector<READ *> reads; 
 	vector<vector<int>> annos; // the motif annotation for each read sequence
-	vector<int> concensus_h1; // diploid genome
-	vector<int> concensus_h2;
+	vector<string> annoStrs; 
+	vector<int> consensus_h1; // diploid genome
+	vector<int> consensus_h2;
+	vector<int> consensus;
+	int nreads;
+	bool het;
 
-	VNTR () {};
+	VNTR () { het = false; nreads = 0; };
 
 	VNTR (string Chr, uint32_t Start, uint32_t End, uint32_t Len) : chr(Chr), ref_start(Start), ref_end(End), len(Len) 
 	{
 		string s = ":" + to_string(ref_start);
 		string e = "-" + to_string(ref_end);
 		region = Chr + s + e;
+		het = false; 
+		nreads = 0;
 	};
 
 	~VNTR () {};
@@ -74,12 +81,18 @@ public:
 	/* for each sequence, get the annotation of motifs */
 	void motifAnnoForOneVNTR ();
 
-	void annoTostring (vector<int> &anno, string &annostr);
+	// string * getAnnoStr (int i);
 
-	/* for all the sequences at the current VNTR locus, get the concensus annotation */
+	size_t getAnnoStrLen (int i);
+
+	void annoTostring ();
+
+	/* for all the sequences at the current VNTR locus, get the consensus; annotation */
 	void concensusMotifAnnoForOneVNTR ();
 
-	/* for one concensus annotation, output the comma-delimited annotation */
+	int hClust (vector<int> &gp1, vector<int> &gp2, double edist []);
+
+	/* for one consensus; annotation, output the comma-delimited annotation */
 	void commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_rep);
 };
 

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <algorithm>
 #include <iostream>
-#include "edlib/include/edlib.h"
+#include "edlib.h"
 
 // function to compute the S_i scores (the naive occurrence)
 int anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr) 
@@ -28,6 +28,7 @@ int anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr)
     // propagate
     int i, j, m;
     double best_score, cur_score;
+    EdlibAlignResult result;
     for (i = 1; i <= vntr_len; i++) 
     {
         best_score = 10000000.0;
@@ -37,7 +38,7 @@ int anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr)
             for (m = 0; m < motif_len; m++) 
             {
                 /*the score of [vntr[0], vntr[j - 1]] + the alignment score of substring [j, i - 1]*/
-                EdlibAlignResult result = edlibAlign(motifs[m].seq.c_str(), motifs[m].len, &vntr[j], i - j, edlibDefaultAlignConfig());
+                result = edlibAlign(motifs[m].seq.c_str(), motifs[m].len, &vntr[j], i - j, edlibDefaultAlignConfig());
                 // EdlibAlignResult result = edlibAlign(motifs[m].seq.c_str(), motifs[m].len, vntr_subseq, i - j, edlibDefaultAlignConfig());
 
                 if (result.status == EDLIB_STATUS_OK) 
@@ -53,7 +54,7 @@ int anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr)
                 }
                 else 
                 {
-                    cerr << "edlib goes wrong!" << endl;
+                    printf("edlib goes wrong!\n");
                     return 1;
                 }
             }

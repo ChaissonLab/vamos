@@ -142,6 +142,7 @@ int main (int argc, char **argv)
 		io.readSeq(it);
 		cerr << "start to do the annotation" << endl;
 		it->motifAnnoForOneVNTR(); 
+		it->annoTostring();
 		it->concensusMotifAnnoForOneVNTR();
 	}
 
