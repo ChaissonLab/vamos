@@ -26,7 +26,7 @@ int anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr)
     traceM[0] = -1;
 
     // propagate
-    int i, j, m, k;
+    int i, j, m;
     double best_score, cur_score;
     for (i = 1; i <= vntr_len; i++) 
     {

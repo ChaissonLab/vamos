@@ -1,5 +1,5 @@
 PROG=vamos
-LIBS=-lhts
+LIBS=-lrt -lpthread -lhts 
 PROF=/home/cmb-16/mjc/shared/lib/
 DEBUG?=""
 OPT?=""
@@ -11,7 +11,7 @@ tsan?=""
 ifneq ($(DEBUG), "")
 CFLAGS=-g -O0 
 else
-CFLAGS=-O0 -DNDEBUG 
+CFLAGS=-O3 -DNDEBUG 
 endif
 
 ifneq ($(asan), "")

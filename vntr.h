@@ -63,7 +63,7 @@ public:
 
 	void clear ()
 	{
-		for (uint32_t i = 0; i < reads.size(); ++i) 
+		for (size_t i = 0; i < reads.size(); ++i) 
 		{ 
 			delete reads[i];
 		}
@@ -74,12 +74,12 @@ public:
 	/* for each sequence, get the annotation of motifs */
 	void motifAnnoForOneVNTR ();
 
+	void annoTostring (vector<int> &anno, string &annostr);
+
 	/* for all the sequences at the current VNTR locus, get the concensus annotation */
 	void concensusMotifAnnoForOneVNTR ();
 
-	/* for one concensus annotation 
-
-	*/
+	/* for one concensus annotation, output the comma-delimited annotation */
 	void commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_rep);
 };
 

@@ -13,7 +13,7 @@ void VcfWriter::writeHeader(ostream& out)
     out << "##source=vamos" << version << '\n';
 	for (int32_t i = 0; i < ncontigs; ++i) 
 	{
-		out << "##contig=<ID=" << *target_names[i] << ",length=" << contigLengths[i] << ">" << "\n";
+		out << "##contig=<ID=" << target_names[i] << ",length=" << to_string(contigLengths[i]) << ">" << "\n";
 	}
 	out	<< "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant\">" << "\n"
 		<< "##INFO=<ID=RU,Number=1,Type=String,Description=\"Comma separated motif sequences list in the reference orientation\">" << "\n"
