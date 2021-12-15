@@ -31,7 +31,7 @@ endif
 all:$(PROG)
 
 vamos: main.o io.o vcf.o vntr.o
-	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L static_lib/ -lalglib -ledlib
+	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L ../static_lib/ -lalglib -ledlib
 
 main.o: main.cpp io.h vcf.h vntr.h read.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include  
@@ -42,8 +42,8 @@ io.o: io.cpp io.h vcf.h vntr.h read.h
 vcf.o: vcf.cpp vcf.h 
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include 
 
-vntr.o: vntr.cpp alglib-cpp/src/dataanalysis.cpp naive_anno.cpp io.h vntr.h read.h 
-	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -I alglib/src -I edlib/include
+vntr.o: vntr.cpp naive_anno.cpp io.h vntr.h read.h 
+	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -I ../alglib/src -I ../edlib/include
 
 # edlib.o:
 # 	$(CXX) -c edlib/src/edlib.cpp -o edlib.o -I edlib/include
