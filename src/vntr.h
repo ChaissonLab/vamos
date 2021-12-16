@@ -97,4 +97,6 @@ public:
 };
 
 
+void outputConsensus (vector<int> &consensusStr);
+
 #endif

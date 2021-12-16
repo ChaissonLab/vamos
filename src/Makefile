@@ -1,5 +1,5 @@
 PROG=vamos
-LIBS=-lpthread -lhts 
+LIBS=-lhts 
 PROF=/home/cmb-16/mjc/shared/lib/
 DEBUG?=""
 OPT?=""
@@ -11,7 +11,7 @@ tsan?=""
 ifneq ($(DEBUG), "")
 CFLAGS=-g -O0 
 else
-CFLAGS=-O3 -DNDEBUG 
+CFLAGS=-O3 -DNDEBUG -W -Wall -pedantic -fopenmp -lpthread -lrt
 endif
 
 ifneq ($(asan), "")
@@ -43,7 +43,7 @@ vcf.o: vcf.cpp vcf.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include 
 
 vntr.o: vntr.cpp naive_anno.cpp io.h vntr.h read.h 
-	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -I ../alglib/src -I ../edlib/include
+	$(CXX) $(CFLAGS) -c $< -I ../alglib/src -I ../edlib/include -I $(CONDA_PREFIX)/include 
 
 # edlib.o:
 # 	$(CXX) -c edlib/src/edlib.cpp -o edlib.o -I edlib/include

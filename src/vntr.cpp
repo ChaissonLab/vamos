@@ -13,7 +13,6 @@
 
 void VNTR::motifAnnoForOneVNTR () 
 {
-	nreads = reads.size();
 	if (nreads == 0) return;
 
 	annos.resize(nreads);
@@ -123,11 +122,17 @@ int VNTR::hClust (vector<int> &gp1, vector<int> &gp2, double edist [])
     return 0;
 }
 
-void outputConsensus (vector<int> &consensusStr)
+void outputConsensus (vector<int> &consensus)
 {
-    cerr << "consensus sequence is\n";
-    for (auto &it : consensusStr)
-		cerr << to_string(it) << "->";
+	int i = 0;
+    for (auto &it : consensus)
+    {
+    	if (i < consensus.size() - 1)
+			cerr << to_string(it) << "->";
+		else
+			cerr << to_string(it);
+		i += 1;
+    }
 	cerr << endl;
 	return;
 }
@@ -165,9 +170,15 @@ void MSA_helper (int sampleSz, seqan::StringSet<seqan::String<char>> &annoSet, v
     return;
 }
 
-void MSA (const vector<int> &gp, const vector<string> &annoStrs, vector<int> &consensus)
+void MSA (const vector<int> &gp, const vector<string> &annoStrs, const vector<vector<int>> &annos, vector<int> &consensus)
 {
 	if (gp.empty()) return;
+
+	if (gp.size() == 1)
+	{
+		consensus = annos[gp[0]];
+		return;
+	}
 
     seqan::StringSet<seqan::String<char>> annoSet;
     for (auto &r : gp)
@@ -176,8 +187,14 @@ void MSA (const vector<int> &gp, const vector<string> &annoStrs, vector<int> &co
 	return;
 }
 
-void MSA (const vector<string> &annoStrs, vector<int> &consensus)
+void MSA (const vector<string> &annoStrs, const vector<vector<int>> &annos, vector<int> &consensus)
 {
+	if (annoStrs.size() == 1)
+	{
+		consensus = annos[0];
+		return;
+	}
+
     seqan::StringSet<seqan::String<char>> annoSet;
     for (auto &str : annoStrs)
     	seqan::appendValue(annoSet, str);
@@ -252,23 +269,38 @@ void VNTR::concensusMotifAnnoForOneVNTR ()
 	if (sc_2clusts > 0.0)
 	{
 		het = true;
-		MSA (gp1, annoStrs, consensus_h1);
-		MSA (gp2, annoStrs, consensus_h2);
+		MSA (gp1, annoStrs, annos, consensus_h1);
+		MSA (gp2, annoStrs, annos, consensus_h2);
 	}
 	else 
 	{
 		het = false;
-		MSA (annoStrs, consensus);
+		MSA (annoStrs, annos, consensus);
+	}
+
+	if (het)
+	{
+		cerr << "het! " << endl;
+		cerr << "h1 anno: " << endl;
+		outputConsensus(consensus_h1);
+		cerr << "h2 anno: " << endl;
+		outputConsensus(consensus_h2);
+	}
+	else
+	{
+		cerr << "hom! " << endl;
+		cerr << "h1&h2 anno: " << endl;
+		outputConsensus(consensus);		
 	}
 	return;
 }
 
-void VNTR::commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_rep)
+void VNTR::commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_anno)
 {
 	if (h1)
-		for (auto &it : consensus_h1) { motif_rep += "VNTR_" + to_string(it) + ",";}
+		for (auto &it : consensus_h1) { motif_anno += "MOTIF_" + to_string(it) + ",";}
 	else
-		for (auto &it : consensus_h2) { motif_rep += "VNTR_" + to_string(it) + ",";}
-	if (!motif_rep.empty()) motif_rep.pop_back();
+		for (auto &it : consensus_h2) { motif_anno += "MOTIF_" + to_string(it) + ",";}
+	if (!motif_anno.empty()) motif_anno.pop_back();
 	return;
 }

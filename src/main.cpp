@@ -140,6 +140,7 @@ int main (int argc, char **argv)
 	for (auto &it: vntrs) 
 	{
 		io.readSeq(it);
+		if (it->nreads == 0) continue;
 		cerr << "start to do the annotation" << endl;
 		it->motifAnnoForOneVNTR(); 
 		it->annoTostring();

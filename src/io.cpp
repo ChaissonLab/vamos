@@ -261,6 +261,7 @@ void IO::readSeqFromBam (vector<READ*> &reads, string &chr, const uint32_t &ref_
 void IO::readSeq (VNTR * vntr) 
 {
     readSeqFromBam(vntr->reads, vntr->chr, vntr->ref_start, vntr->ref_end, vntr->len, vntr->region);
+    vntr->nreads = vntr->reads.size();
     return;
 }
 

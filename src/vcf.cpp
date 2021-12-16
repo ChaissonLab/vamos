@@ -34,17 +34,18 @@ void VcfWriter::writeBody(vector<VNTR *> &vntrs, ostream& out)
 {
 	for (auto &it : vntrs)
 	{
-		string motif_list, motif_rep_h1, motif_rep_h2, GT; 
+		if (it->nreads == 0) continue;
+		string motif_list, motif_anno_h1, motif_anno_h2, GT; 
 		for (auto &piece : it->motifs) 
 		{ 
 			motif_list += piece.seq + ',';
 		}
 	    if (!motif_list.empty()) motif_list.pop_back();
 
-	    it->commaSeparatedMotifAnnoForConsensus(1, motif_rep_h1);
-	    it->commaSeparatedMotifAnnoForConsensus(0, motif_rep_h2);
+	    it->commaSeparatedMotifAnnoForConsensus(1, motif_anno_h1);
+	    it->commaSeparatedMotifAnnoForConsensus(0, motif_anno_h2);
 
-	    if (motif_rep_h1 == motif_rep_h2)
+	    if (motif_anno_h1 == motif_anno_h2)
 	    	GT = "1/1";
 	    else
 	    	GT = "1/2";
@@ -59,10 +60,10 @@ void VcfWriter::writeBody(vector<VNTR *> &vntrs, ostream& out)
 			<< "END=" + to_string(it->ref_end) + ";" 
 			<< "RU=" + motif_list + ";"
 			<< "SVTYPE=VNTR;"
-			<< "ALTREP_H1=" + motif_rep_h1 + ";\t";
+			<< "ALTANNO_H1=" + motif_anno_h1 + ";\t";
 
 		if (GT == "1/2")
-			out << "ALTREP_H2=" + motif_rep_h2 + ";\t";
+			out << "ALTANNO_H2=" + motif_anno_h2 + ";\t";
 
 		out	<< "PASS\t"
 			<< "GT\t"
