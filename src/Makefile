@@ -11,7 +11,7 @@ tsan?=""
 ifneq ($(DEBUG), "")
 CFLAGS=-g -O0 
 else
-CFLAGS=-O3 -DNDEBUG -W -Wall -pedantic -fopenmp -lpthread -lrt
+CFLAGS=-O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
 endif
 
 ifneq ($(asan), "")
@@ -42,7 +42,7 @@ io.o: io.cpp io.h vcf.h vntr.h read.h
 vcf.o: vcf.cpp vcf.h 
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include 
 
-vntr.o: vntr.cpp naive_anno.cpp io.h vntr.h read.h 
+vntr.o: vntr.cpp naive_anno.cpp bounded_anno.cpp io.h vntr.h read.h 
 	$(CXX) $(CFLAGS) -c $< -I ../alglib/src -I ../edlib/include -I $(CONDA_PREFIX)/include 
 
 # edlib.o:

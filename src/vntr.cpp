@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <utility>
 #include "vntr.h"
-#include "naive_anno.cpp"
+#include "bounded_anno.cpp"
 #include "seqan/sequence.h"
 #include "seqan/align.h"
 #include "seqan/score.h"
