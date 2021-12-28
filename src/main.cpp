@@ -10,9 +10,10 @@ using namespace std;
 
 /* vamos -in read.bam -vntr vntrs.bed -motif motifs.csv -o out.vcf */
 
-void printUsage() 
+void printUsage(IO &io) 
 {
 	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name]\n");
+	printf("Version: %s\n", io.version);
 	printf("Options:\n");
 	printf("       -i  FILE      input alignment file (bam format), bam file needs to be indexed \n");
 	printf("       -v  FILE      the tab-delimited coordinate of each VNTR locus - `chrom\tstart\tend`, each row represents a VNTR locus\n");
@@ -76,7 +77,7 @@ int main (int argc, char **argv)
 			break;
 
 		case 'h':
-			printUsage();
+			printUsage(io);
 			exit(EXIT_SUCCESS);
 
 		case '?':
@@ -88,45 +89,44 @@ int main (int argc, char **argv)
 			exit(EXIT_FAILURE);
 
 		default:
-			printUsage();
+			printUsage(io);
 			exit(EXIT_FAILURE);
-			// abort ();
 		}		
 	}
 	
-    /* Check mandatory parameters */
-    bool missingArg = false;
-    if (io.input_bam == NULL) 
-    {
-       printf("-i is mandatory!\n");
-       missingArg = true;
-    }
-    if (io.vntr_bed == NULL)
-    {
-       printf("-v is mandatory!\n");
-       missingArg = true;
-    }
-    if (io.motif_csv == NULL)
-    {
-       printf("-m is mandatory!\n");
-       missingArg = true;
-    }
-    if (io.out_vcf == NULL)
-    {
-       printf("-o is mandatory!\n");
-       missingArg = true;
-    }
-    if (io.sampleName == NULL)
-    {
-       printf("-s is mandatory!\n");
-       missingArg = true;
-    }
+	/* Check mandatory parameters */
+	bool missingArg = false;
+	if (io.input_bam == NULL) 
+	{
+		printf("-i is mandatory!\n");
+		missingArg = true;
+	}
+	if (io.vntr_bed == NULL)
+	{
+		printf("-v is mandatory!\n");
+		missingArg = true;
+	}
+	if (io.motif_csv == NULL)
+	{
+		printf("-m is mandatory!\n");
+		missingArg = true;
+	}
+	if (io.out_vcf == NULL)
+	{
+		printf("-o is mandatory!\n");
+		missingArg = true;
+	}
+	if (io.sampleName == NULL)
+	{
+		printf("-s is mandatory!\n");
+		missingArg = true;
+	}
 
-    if (missingArg)
-    {
-		printUsage();
-    	exit(EXIT_FAILURE);
-    }
+	if (missingArg)
+	{
+		printUsage(io);
+		exit(EXIT_FAILURE);
+	}
 
 	vector<VNTR *> vntrs;
 
