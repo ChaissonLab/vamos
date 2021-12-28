@@ -36,7 +36,7 @@ int IO::readMotifsFromCsv (vector<VNTR *> &vntrs)
         while(getline(ss, tmp, ',')) 
         {
             vntrs[numOfLine]->motifs.push_back(MOTIF(tmp));
-            cerr << vntrs[numOfLine]->motifs.back().seq << endl;
+            // cerr << vntrs[numOfLine]->motifs.back().seq << endl;
         }
         numOfLine += 1; // 0-indexed
     }
@@ -61,15 +61,11 @@ int IO::read_tsv(vector<vector<string>> &items)
         vector<string> item;
         string tmp;
         while(getline(ss, tmp, '\t')) 
-        {
             item.push_back(tmp);
-        }
 
-        for (auto &i : item)
-        {
-            cerr << i << "\t";
-        }
-        cerr << endl;
+        // for (auto &i : item)
+        //     cerr << i << "\t";
+        // cerr << endl;
         items.push_back(item);
     }
     return 0;

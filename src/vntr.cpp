@@ -24,7 +24,7 @@ void VNTR::motifAnnoForOneVNTR ()
 			output:  vector<vector<int>> annos[i]
 		*/
 		anno(annos[i], motifs, reads[i]->seq);
-		cerr << "finish for reads: " << i << endl;
+		// cerr << "finish for reads: " << i << endl;
 	}
 	return;
 }
@@ -165,7 +165,7 @@ void MSA_helper (int sampleSz, seqan::StringSet<seqan::String<char>> &annoSet, v
 	int score = seqan::globalAlignment(align, scoreScheme);  // Compute a global alingment using the Align object.
     // int score = seqan::globalAlignment(align, seqan::EditDistanceScore());  // Compute a global alingment using the Align object.
     cerr << "score = " << score << endl;
-    cerr << "align\n" << align << endl;
+    // cerr << "align\n" << align << endl;
 
     /*
      create the profile string
