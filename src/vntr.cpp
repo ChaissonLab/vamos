@@ -29,21 +29,42 @@ void VNTR::motifAnnoForOneVNTR ()
 	return;
 }
 
-void annoTostring_helper (string &annoStr, vector<int> &annoNum)
+// skip "-" (45) for encoding
+static void encode (vector<int> &annoNum, string &annoStr)
 {
-	int i;
-	annoStr.clear();
-	annoStr.resize(annoNum.size(), '+');
-	for (i = 0; i < annoNum.size(); ++i)
+	string tmp_s;
+	int num;
+	for (int i = 0; i < annoNum.size(); ++i)
 	{
-		// TODO: needs to remove '-' from encoding
-		int num = annoNum[i];
-		if (num >= 0 && num <= 222) {
-			string tmp_s;
+		num = annoNum[i];
+		if (num >= 0 and num < 45)
+		{
 			tmp_s.assign(1, (char) (num + 33));
 			annoStr.replace(i, 1, tmp_s);  
 		}
+		else if (num >= 45 and num <= 221)
+		{
+			tmp_s.assign(1, (char) (num + 34));
+			annoStr.replace(i, 1, tmp_s);  		
+		}		
 	}
+	return;
+}
+
+int decode (int num)
+{
+	assert(num >= 33 and num <= 255 and num != 78);
+	if (num >= 79 and num <= 255) 
+		return num - 34;
+	// else if (num >= 33 and num < 78)
+	return num - 33;
+}
+
+void annoTostring_helper (string &annoStr, vector<int> &annoNum)
+{
+	annoStr.clear();
+	annoStr.resize(annoNum.size(), '+');
+	encode(annoNum, annoStr);
 	return;
 }
 
@@ -151,15 +172,17 @@ void MSA_helper (int sampleSz, seqan::StringSet<seqan::String<char>> &annoSet, v
      profile: row: alignment position
      		  col: reads
     */
-    int r, idx; uint32_t i;
+    int r, idx, num; uint32_t i;
     uint32_t alnSz = seqan::length(seqan::row(align, 0));
     seqan::String<seqan::ProfileChar<char>> profile; 
     seqan::resize(profile, alnSz); 
 
     for (int r = 0; r < sampleSz; ++r) 
     {
-        for (i = 0; i < alnSz; ++i) 
-            profile[i].count[seqan::getValue(seqan::row(align, r), i) - 33] += 1;
+        for (i = 0; i < alnSz; ++i) {
+        	num = decode(seqan::getValue(seqan::row(align, r), i));
+            profile[i].count[num] += 1;
+        }
     }
 
     for (i = 0; i < alnSz; ++i)
