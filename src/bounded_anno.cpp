@@ -91,7 +91,7 @@ global(const string &motif, char *vntr, double dist[], int start[]) {
 
 
 // function to compute the S_i distances (the naive occurrence)
-int anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr) 
+int bounded_anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr) 
 {
     optMotifs.clear();
     int i, k, m; // i as position index (of vntr), m as motif index, k as distance index for "compare" function

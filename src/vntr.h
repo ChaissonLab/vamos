@@ -54,6 +54,7 @@ public:
 	vector<int> consensus;
 	int nreads;
 	bool het;
+	bool naive;
 
 	VNTR () { het = false; nreads = 0; };
 
@@ -79,7 +80,7 @@ public:
 	}
 
 	/* for each sequence, get the annotation of motifs */
-	void motifAnnoForOneVNTR ();
+	void motifAnnoForOneVNTR (bool naiveAnnoAlg);
 
 	// string * getAnnoStr (int i);
 

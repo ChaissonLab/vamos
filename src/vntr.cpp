@@ -5,13 +5,14 @@
 #include <utility>
 #include "vntr.h"
 #include "bounded_anno.cpp"
+#include "naive_anno.cpp"
 #include "seqan/sequence.h"
 #include "seqan/align.h"
 #include "seqan/score.h"
 #include "edlib.h"
 #include "dataanalysis.h"
 
-void VNTR::motifAnnoForOneVNTR () 
+void VNTR::motifAnnoForOneVNTR (bool naiveAnnoAlg) 
 {
 	if (nreads == 0) return;
 
@@ -23,20 +24,24 @@ void VNTR::motifAnnoForOneVNTR ()
 			input:   string : reads[i].seq; vector<MOTIF> : motifs
 			output:  vector<vector<int>> annos[i]
 		*/
-		anno(annos[i], motifs, reads[i]->seq);
+		if (naiveAnnoAlg)
+			naive_anno(annos[i], motifs, reads[i]->seq);
+		else
+			bounded_anno(annos[i], motifs, reads[i]->seq);
 		// cerr << "finish for reads: " << i << endl;
 	}
 	return;
 }
 
 // skip "-" (45) for encoding
-static void encode (vector<int> &annoNum, string &annoStr)
+static void encode (int motifs_size, vector<int> &annoNum, string &annoStr)
 {
 	string tmp_s;
 	int num;
 	for (int i = 0; i < annoNum.size(); ++i)
 	{
 		num = annoNum[i];
+		assert(num < motifs_size);
 		if (num >= 0 and num < 45)
 		{
 			tmp_s.assign(1, (char) (num + 33));
@@ -60,11 +65,11 @@ int decode (int num)
 	return num - 33;
 }
 
-void annoTostring_helper (string &annoStr, vector<int> &annoNum)
+void annoTostring_helper (int motifs_size, string &annoStr, vector<int> &annoNum)
 {
 	annoStr.clear();
 	annoStr.resize(annoNum.size(), '+');
-	encode(annoNum, annoStr);
+	encode(motifs_size, annoNum, annoStr);
 	return;
 }
 
@@ -75,7 +80,7 @@ void VNTR::annoTostring ()
 	int l, r, i, num;
 	for (int r = 0; r < nreads; ++r)
 	{
-		annoTostring_helper(annoStrs[r], annos[r]);
+		annoTostring_helper(motifs.size(), annoStrs[r], annos[r]);
 	    cerr << "string " << r << ":  " << annoStrs[r];
 	    cerr << endl;
 	}
@@ -158,21 +163,21 @@ void outputConsensus (vector<int> &consensus)
 	return;
 }
 
-void MSA_helper (int sampleSz, seqan::StringSet<seqan::String<char>> &annoSet, vector<int> &consensus)
+void MSA_helper (int motifs_size, int sampleSz, seqan::StringSet<seqan::String<char>> &annoSet, vector<int> &consensus)
 {
     seqan::Align<seqan::String<char>> align(annoSet); // Initialize the Align object using a StringSet.
 	seqan::Score<int> scoreScheme(1, -1, -1, -1); 
 	int score = seqan::globalAlignment(align, scoreScheme);  // Compute a global alingment using the Align object.
     // int score = seqan::globalAlignment(align, seqan::EditDistanceScore());  // Compute a global alingment using the Align object.
     cerr << "score = " << score << endl;
-    // cerr << "align\n" << align << endl;
+    cerr << "align\n" << align << endl;
 
     /*
      create the profile string
      profile: row: alignment position
      		  col: reads
     */
-    int r, idx, num; uint32_t i;
+    int r, idx, num, decode_num; uint32_t i;
     uint32_t alnSz = seqan::length(seqan::row(align, 0));
     seqan::String<seqan::ProfileChar<char>> profile; 
     seqan::resize(profile, alnSz); 
@@ -180,8 +185,10 @@ void MSA_helper (int sampleSz, seqan::StringSet<seqan::String<char>> &annoSet, v
     for (int r = 0; r < sampleSz; ++r) 
     {
         for (i = 0; i < alnSz; ++i) {
-        	num = decode(seqan::getValue(seqan::row(align, r), i));
-            profile[i].count[num] += 1;
+        	num = seqan::getValue(seqan::row(align, r), i);
+        	decode_num = decode(num);
+        	assert(decode_num < motifs_size);
+            profile[i].count[decode_num] += 1;
         }
     }
 
@@ -193,7 +200,7 @@ void MSA_helper (int sampleSz, seqan::StringSet<seqan::String<char>> &annoSet, v
     return;
 }
 
-void MSA (const vector<int> &gp, const vector<string> &annoStrs, const vector<vector<int>> &annos, vector<int> &consensus)
+void MSA (int motifs_size, const vector<int> &gp, const vector<string> &annoStrs, const vector<vector<int>> &annos, vector<int> &consensus)
 {
 	if (gp.empty()) return;
 
@@ -206,11 +213,11 @@ void MSA (const vector<int> &gp, const vector<string> &annoStrs, const vector<ve
     seqan::StringSet<seqan::String<char>> annoSet;
     for (auto &r : gp)
     	seqan::appendValue(annoSet, annoStrs[r]);
-    MSA_helper (gp.size(), annoSet, consensus);
+    MSA_helper (motifs_size, gp.size(), annoSet, consensus);
 	return;
 }
 
-void MSA (const vector<string> &annoStrs, const vector<vector<int>> &annos, vector<int> &consensus)
+void MSA (int motifs_size, const vector<string> &annoStrs, const vector<vector<int>> &annos, vector<int> &consensus)
 {
 	if (annoStrs.size() == 1)
 	{
@@ -221,7 +228,7 @@ void MSA (const vector<string> &annoStrs, const vector<vector<int>> &annos, vect
     seqan::StringSet<seqan::String<char>> annoSet;
     for (auto &str : annoStrs)
     	seqan::appendValue(annoSet, str);
-    MSA_helper (annoStrs.size(), annoSet, consensus);
+    MSA_helper (motifs_size, annoStrs.size(), annoSet, consensus);
 	return;
 }
 
@@ -292,13 +299,13 @@ void VNTR::concensusMotifAnnoForOneVNTR ()
 	if (sc_2clusts > 0.0)
 	{
 		het = true;
-		MSA (gp1, annoStrs, annos, consensus_h1);
-		MSA (gp2, annoStrs, annos, consensus_h2);
+		MSA (motifs.size(), gp1, annoStrs, annos, consensus_h1);
+		MSA (motifs.size(), gp2, annoStrs, annos, consensus_h2);
 	}
 	else 
 	{
 		het = false;
-		MSA (annoStrs, annos, consensus);
+		MSA (motifs.size(), annoStrs, annos, consensus);
 	}
 
 	if (het)

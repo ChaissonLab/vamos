@@ -1,7 +1,7 @@
 # Vamos: VNTR annotation tool using motifs selection
 ## Getting Started
 ```sh
-# Install vamos (g++ and htslib seqan edlib alglib required)
+# Install vamos (g++, htslib, seqan, edlib and alglib required)
 # htslib and seqan are installed by bioconda 
 # libalglib.a and libedlib.a are distributed along with vamos)
 git clone https://github.com/ChaissonLab/vamos.git
@@ -18,9 +18,22 @@ vamos -h
 vamos -i in.bam -v vntrs.bed -m motifs.csv -o out.vcf -s sampleName
 ```
 
-## Output files
+## Output VCF files
+Vamos generates a separate VCF record for each VNTR with information about VNTR's location and genotype. The records for alternate VNTR alleles are demarcated by <VNTR> symbolically.
 
+The header of the VCF file contains a detailed description of each record.
 
+### Example
+
+The following VCF entry describes the state of a VNTR locus in a sample with
+name sfs
+
+```
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sfs
+1	18000	.	N	<VNTR>	.	PASS	END=19000;RU=AAATTTTTTGGGCCC,ATTTTGGGCCCCC,AAAAAACCCCCCT;SVTYPE=VNTR;ALTANNO_H1=MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_1,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_1,MOTIF_0,MOTIF_2,MOTIF_2,MOTIF_1,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_1,MOTIF_1,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_1,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_1,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_1,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_1,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_1;ALTANNO_H2=MOTIF_2,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_0,MOTIF_0,MOTIF_0,MOTIF_1,MOTIF_0,MOTIF_1,MOTIF_2,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_2,MOTIF_0,MOTIF_0,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_2,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_2,MOTIF_1,MOTIF_1,MOTIF_0,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_2,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_0,MOTIF_1,MOTIF_1,MOTIF_0,MOTIF_0,MOTIF_1,MOTIF_2,MOTIF_2,MOTIF_1,MOTIF_1,MOTIF_2,MOTIF_1,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_1,MOTIF_2,MOTIF_2,MOTIF_2,MOTIF_1,MOTIF_1,MOTIF_1,MOTIF_12,MOTIF_12,MOTIF_12,MOTIF_12,MOTIF_12,MOTIF_12,MOTIF_12,MOTIF_12,MOTIF_12;	PASS	GT	1/2
+```
+
+This line tells us that 
 ## Special Notes
 
 

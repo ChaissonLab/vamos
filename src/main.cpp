@@ -12,7 +12,7 @@ using namespace std;
 
 void printUsage(IO &io) 
 {
-	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name]\n");
+	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-f]\n");
 	printf("Version: %s\n", io.version);
 	printf("Options:\n");
 	printf("       -i  FILE      input alignment file (bam format), bam file needs to be indexed \n");
@@ -20,6 +20,7 @@ void printUsage(IO &io)
 	printf("       -m  FILE      the comma-delimited motif sequences list for each VNTR locus, each row represents a VNTR locus\n");
 	printf("       -o  FILE      output vcf file\n");
 	printf("       -s  CHAR      the sample name\n");
+	printf("       -f            specify faster version of code to do the annotation, default is naive implementation\n");
 	printf("       -h            print out help message\n");
 } 
 
@@ -36,13 +37,14 @@ int main (int argc, char **argv)
 		{"motif",         required_argument,       0, 'm'},
 		{"output",        required_argument,       0, 'o'},
 		{"sampleName",    required_argument,       0, 's'},
+		{"fasterAnnoAlg",       no_argument,             0, 'f'},
 		{"help",          no_argument,             0, 'h'},
 		{NULL, 0, 0, '\0'}
 	};
 	/* getopt_long stores the option index here. */
 	int option_index = 0;
 
-	while ((c = getopt_long (argc, argv, "i:v:m:o:s:h", long_options, &option_index)) != -1)
+	while ((c = getopt_long (argc, argv, "i:v:m:o:s:hf", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -74,6 +76,11 @@ int main (int argc, char **argv)
 			printf ("option -sampleName with `%s'\n", optarg);
 			io.sampleName = (char *) malloc(strlen(optarg) + 1);
 			strcpy(io.sampleName, optarg);
+			break;
+
+		case 'f':
+			printf ("option -fasterAnnoAlg");
+			io.naiveAnnoAlg = false;
 			break;
 
 		case 'h':
@@ -144,7 +151,7 @@ int main (int argc, char **argv)
 		// io.readSeq(it);
 		if (it->nreads == 0) continue;
 		cerr << "start to do the annotation" << endl;
-		it->motifAnnoForOneVNTR(); 
+		it->motifAnnoForOneVNTR(io.naiveAnnoAlg); 
 		it->annoTostring();
 		it->concensusMotifAnnoForOneVNTR();
 	}

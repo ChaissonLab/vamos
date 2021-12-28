@@ -6,7 +6,7 @@
 #include "edlib.h"
 
 // function to compute the S_i scores (the naive occurrence)
-int anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr) 
+int naive_anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr) 
 {
     cerr << "vntr length: " << strlen(vntr) << endl;
 
