@@ -18,8 +18,8 @@ void VcfWriter::writeHeader(ostream& out)
 	out	<< "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant\">" << "\n"
 		<< "##INFO=<ID=RU,Number=1,Type=String,Description=\"Comma separated motif sequences list in the reference orientation\">" << "\n"
 		<< "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">" << "\n"
-		<< "##INFO=<ID=ALTREP_H1,Number=1,Type=String,Description=\"\"Motif representation for the h1 alternate allele>" << "\n"
-		<< "##INFO=<ID=ALTREP_H2,Number=1,Type=String,Description=\"\"Motif representation for the h2 alternate allele>" << "\n"
+		<< "##INFO=<ID=ALTANNO_H1,Number=1,Type=String,Description=\"\"Motif representation for the h1 alternate allele>" << "\n"
+		<< "##INFO=<ID=ALTANNO_H2,Number=1,Type=String,Description=\"\"Motif representation for the h2 alternate allele>" << "\n"
 
 		<< "##FILTER=<ID=PASS,Description=\"All filters passed\">" << "\n"
 		<< "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << "\n"
@@ -60,7 +60,7 @@ void VcfWriter::writeBody(vector<VNTR *> &vntrs, ostream& out)
 			<< "END=" + to_string(it->ref_end) + ";" 
 			<< "RU=" + motif_list + ";"
 			<< "SVTYPE=VNTR;"
-			<< "ALTANNO_H1=" + motif_anno_h1 + ";\t";
+			<< "ALTANNO_H1=" + motif_anno_h1 + ";";
 
 		if (GT == "1/2")
 			out << "ALTANNO_H2=" + motif_anno_h2 + ";\t";

@@ -76,7 +76,7 @@ void VNTR::annoTostring ()
 	for (int r = 0; r < nreads; ++r)
 	{
 		annoTostring_helper(annoStrs[r], annos[r]);
-	    cerr << "string: " << r << "  " << annoStrs[r];
+	    cerr << "string " << r << ":  " << annoStrs[r];
 	    cerr << endl;
 	}
 	return;
