@@ -48,11 +48,14 @@ public:
 
 	void readVNTRFromBed (vector<VNTR *> &vntrs);
 
-	void readSeqFromBam (vector<READ*> &reads, string &chr, const uint32_t &ref_VNTR_start, 
-                       const uint32_t &ref_VNTR_end, const uint32_t &VNTR_len, string &region);
+	/* get the sequences from input_bam_file that overlapping with chr:start-end */
+	void readSeqFromBam (vector<VNTR *> &vntrs);
+
+	// void readSeqFromBam (vector<READ*> &reads, string &chr, const uint32_t &ref_VNTR_start, 
+ //                       const uint32_t &ref_VNTR_end, const uint32_t &VNTR_len, string &region);
 	
 	/* get the sequences from input_bam_file that overlapping with chr:start-end */
-	void readSeq (VNTR * vntr);
+	// void readSeq (VNTR * vntr);
 
 	int outputVCF (vector<VNTR *> &vntrs);
 };

@@ -137,9 +137,11 @@ int main (int argc, char **argv)
 	io.readMotifsFromCsv(vntrs);
 
 	/* process each VNTR */
+	io.readSeqFromBam(vntrs); // TODO: read one sequence, check all vntrs;
+
 	for (auto &it: vntrs) 
 	{
-		io.readSeq(it);
+		// io.readSeq(it);
 		if (it->nreads == 0) continue;
 		cerr << "start to do the annotation" << endl;
 		it->motifAnnoForOneVNTR(); 
