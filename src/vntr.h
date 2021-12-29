@@ -47,11 +47,11 @@ public:
 	string region;
 	vector<MOTIF> motifs;
 	vector<READ *> reads; 
-	vector<vector<int>> annos; // the motif annotation for each read sequence
+	vector<vector<uint8_t>> annos; // the motif annotation for each read sequence
 	vector<string> annoStrs; 
-	vector<int> consensus_h1; // diploid genome
-	vector<int> consensus_h2;
-	vector<int> consensus;
+	vector<uint8_t> consensus_h1; // diploid genome
+	vector<uint8_t> consensus_h2;
+	vector<uint8_t> consensus;
 	int nreads;
 	bool het;
 	bool naive;
@@ -98,6 +98,6 @@ public:
 };
 
 
-void outputConsensus (vector<int> &consensusStr);
+void outputConsensus (vector<uint8_t> &consensus);
 
 #endif

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <algorithm>
@@ -6,12 +7,13 @@
 #include "vntr.h"
 #include "bounded_anno.cpp"
 #include "naive_anno.cpp"
-#include "seqan/sequence.h"
-#include "seqan/align.h"
-#include "seqan/score.h"
 #include "edlib.h"
 #include "dataanalysis.h"
+#include "abpoa.h"
 
+// #include "seqan/sequence.h"
+// #include "seqan/align.h"
+// #include "seqan/score.h"
 void VNTR::motifAnnoForOneVNTR (bool naiveAnnoAlg) 
 {
 	if (nreads == 0) return;
@@ -34,38 +36,43 @@ void VNTR::motifAnnoForOneVNTR (bool naiveAnnoAlg)
 }
 
 // skip "-" (45) for encoding
-static void encode (int motifs_size, vector<int> &annoNum, string &annoStr)
+static void encode (int motifs_size, vector<uint8_t> &annoNum, string &annoStr)
 {
 	string tmp_s;
-	int num;
+	uint8_t num;
 	for (int i = 0; i < annoNum.size(); ++i)
 	{
 		num = annoNum[i];
 		assert(num < motifs_size);
-		if (num >= 0 and num < 45)
+		if (num >= 0 and num <= 255)
 		{
-			tmp_s.assign(1, (char) (num + 33));
+			tmp_s.assign(1, (char) (num));
 			annoStr.replace(i, 1, tmp_s);  
 		}
-		else if (num >= 45 and num <= 221)
-		{
-			tmp_s.assign(1, (char) (num + 34));
-			annoStr.replace(i, 1, tmp_s);  		
-		}		
+
+		// if (num >= 0 and num < 45)
+		// {
+		// 	tmp_s.assign(1, (char) (num + 33));
+		// 	annoStr.replace(i, 1, tmp_s);  
+		// }
+		// else if (num >= 45 and num <= 221)
+		// {
+		// 	tmp_s.assign(1, (char) (num + 34));
+		// 	annoStr.replace(i, 1, tmp_s);  		
+		// }		
 	}
 	return;
 }
 
-int decode (int num)
-{
-	assert(num >= 33 and num <= 255 and num != 78);
-	if (num >= 79 and num <= 255) 
-		return num - 34;
-	// else if (num >= 33 and num < 78)
-	return num - 33;
-}
+// int decode (uint8_t num)
+// {
+// 	assert(num >= 33 and num <= 255 and num != 78);
+// 	if (num >= 79 and num <= 255) 
+// 		return num - 34;
+// 	return num - 33;
+// }
 
-void annoTostring_helper (int motifs_size, string &annoStr, vector<int> &annoNum)
+void annoTostring_helper (int motifs_size, string &annoStr, vector<uint8_t> &annoNum)
 {
 	annoStr.clear();
 	annoStr.resize(annoNum.size(), '+');
@@ -148,7 +155,7 @@ int VNTR::hClust (vector<int> &gp1, vector<int> &gp2, double edist [])
     return 0;
 }
 
-void outputConsensus (vector<int> &consensus)
+void outputConsensus (vector<uint8_t> &consensus)
 {
 	int i = 0;
     for (auto &it : consensus)
@@ -163,6 +170,7 @@ void outputConsensus (vector<int> &consensus)
 	return;
 }
 
+/*
 void MSA_helper (int motifs_size, int sampleSz, seqan::StringSet<seqan::String<char>> &annoSet, vector<int> &consensus)
 {
     seqan::Align<seqan::String<char>> align(annoSet); // Initialize the Align object using a StringSet.
@@ -172,11 +180,11 @@ void MSA_helper (int motifs_size, int sampleSz, seqan::StringSet<seqan::String<c
     cerr << "score = " << score << endl;
     cerr << "align\n" << align << endl;
 
-    /*
-     create the profile string
-     profile: row: alignment position
-     		  col: reads
-    */
+    
+     // create the profile string
+     // profile: row: alignment position
+     // 		  col: reads
+    
     int r, idx, num, decode_num; uint32_t i;
     uint32_t alnSz = seqan::length(seqan::row(align, 0));
     seqan::String<seqan::ProfileChar<char>> profile; 
@@ -232,6 +240,125 @@ void MSA (int motifs_size, const vector<string> &annoStrs, const vector<vector<i
 	return;
 }
 
+
+/* use abPOA to do MSA */
+void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *seq_lens, uint8_t **bseqs)
+{
+	int i, j;
+    // initialize variables
+    abpoa_t *ab = abpoa_init();
+    abpoa_para_t *abpt = abpoa_init_para();
+
+    // alignment parameters
+    abpt->align_mode = 0; // 0:global 1:local, 2:extension
+    abpt->match = 2;      // match score
+    abpt->mismatch = 4;   // mismatch penalty
+    abpt->gap_mode = ABPOA_CONVEX_GAP; // gap penalty mode
+    abpt->gap_open1 = 4;  // gap open penalty #1
+    abpt->gap_ext1 = 2;   // gap extension penalty #1
+    abpt->gap_open2 = 24; // gap open penalty #2
+    abpt->gap_ext2 = 1;   // gap extension penalty #2
+                    	  // gap_penalty = min{gap_open1 + gap_len * gap_ext1, gap_open2 + gap_len * gap_ext2}
+    // abpt->bw = 10;        // extra band used in adaptive banded DP
+    // abpt->bf = 0.01; 
+
+    abpt->out_msa = 0; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
+    abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
+    abpt->w = 6, abpt->k = 9; abpt->min_w = 10; // minimizer-based seeding and partition
+    abpt->progressive_poa = 1;
+
+    // variables to store result
+    uint8_t **cons_seq; int **cons_cov, *cons_l, cons_n = 0;
+    uint8_t **msa_seq; int msa_l=0;
+
+    abpoa_post_set_para(abpt);
+    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
+
+    assert(cons_n > 0); // cons_n == 0 means no consensus sequence exists
+    for (j = 0; j < cons_l[0]; ++j)
+    {
+    	assert(cons_seq[0][j] < motifs_size);
+    	consensus.push_back(cons_seq[0][j]);
+    }
+
+    if (cons_n) {
+        for (i = 0; i < cons_n; ++i) 
+        {
+            free(cons_seq[i]); 
+            free(cons_cov[i]);
+        } 
+        free(cons_seq); 
+        free(cons_cov); 
+        free(cons_l);
+    }
+
+    if (msa_l) 
+    {
+        for (i = 0; i < n_seqs; ++i) 
+        	free(msa_seq[i]); free(msa_seq);
+    }
+
+    for (i = 0; i < n_seqs; ++i) 
+    	free(bseqs[i]); free(bseqs); free(seq_lens);
+
+    abpoa_free(ab); 
+    abpoa_free_para(abpt); 
+
+    return;
+}
+
+void MSA (int motifs_size, const vector<int> &gp, const vector<vector<uint8_t>> &annos, vector<uint8_t> &consensus)
+{
+	if (gp.empty()) return;
+
+    int n_seqs = gp.size();
+	if (n_seqs == 1)
+	{
+		consensus = annos[gp[0]];
+		return;
+	}
+
+    // collect sequence length
+    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
+    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
+    int i, j;
+    for (i = 0; i < n_seqs; ++i) {
+        seq_lens[i] = annos[gp[i]].size();
+        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
+        for (j = 0; j < seq_lens[i]; ++j)
+            bseqs[i][j] = annos[gp[i]][j];
+    }
+
+	MSA_helper (motifs_size, n_seqs, consensus, seq_lens, bseqs);
+
+    return;
+}
+
+void MSA (const vector<vector<uint8_t>> &annos, vector<uint8_t> &consensus)
+{
+    int n_seqs = annos.size();
+	if (n_seqs == 1)
+	{
+		consensus = annos[0];
+		return;
+	}
+
+    // collect sequence length
+    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
+    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
+    int i, j;
+    for (i = 0; i < n_seqs; ++i) {
+        seq_lens[i] = annos[i].size();
+        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
+        for (j = 0; j < seq_lens[i]; ++j)
+            bseqs[i][j] = annos[i][j];
+    }
+
+	MSA_helper (n_seqs, n_seqs, consensus, seq_lens, bseqs);
+
+    return;
+}
+
 double avgSilhouetteCoeff (int nreads, double edist [], vector<int> &gp1, vector<int> &gp2)
 {
 	double sumSilC = 0;
@@ -283,9 +410,9 @@ double avgSilhouetteCoeff (int nreads, double edist [], vector<int> &gp1, vector
 	return (sc1 + sc2) / (gp1.size() + gp2.size());
 }
 
-/* based on vector<vector<int>> annos, get a consensus representation of the current locus 
-   input:   vector<vector<int>> annos
-   output:  vector<int> consensus_h1, vector<int> consensus_h2
+/* based on vector<vector<uint8_t>> annos, get a consensus representation of the current locus 
+   input:   vector<vector<uint8_t>> annos
+   output:  vector<uint8_t> consensus_h1, vector<uint8_t> consensus_h2
 */
 void VNTR::concensusMotifAnnoForOneVNTR ()
 {
@@ -299,13 +426,13 @@ void VNTR::concensusMotifAnnoForOneVNTR ()
 	if (sc_2clusts > 0.0)
 	{
 		het = true;
-		MSA (motifs.size(), gp1, annoStrs, annos, consensus_h1);
-		MSA (motifs.size(), gp2, annoStrs, annos, consensus_h2);
+		MSA (motifs.size(), gp1, annos, consensus_h1);
+		MSA (motifs.size(), gp2, annos, consensus_h2);
 	}
 	else 
 	{
 		het = false;
-		MSA (motifs.size(), annoStrs, annos, consensus);
+		MSA (annos, consensus);
 	}
 
 	if (het)

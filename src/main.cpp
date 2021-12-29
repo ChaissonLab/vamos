@@ -149,7 +149,10 @@ int main (int argc, char **argv)
 	for (auto &it: vntrs) 
 	{
 		// io.readSeq(it);
-		if (it->nreads == 0) continue;
+		if (it->nreads == 0) {
+			cerr << "skip one vntr" << endl;
+			continue;
+		}
 		cerr << "start to do the annotation" << endl;
 		it->motifAnnoForOneVNTR(io.naiveAnnoAlg); 
 		it->annoTostring();

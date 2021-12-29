@@ -6,7 +6,7 @@
 #include "edlib.h"
 
 // function to compute the S_i scores (the naive occurrence)
-int naive_anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr) 
+int naive_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char * vntr) 
 {
     cerr << "vntr length: " << strlen(vntr) << endl;
 
@@ -19,8 +19,8 @@ int naive_anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr)
 
     int vntr_len = strlen(vntr), motif_len = motifs.size();
     vector<double> score(vntr_len + 1, 0); /* score[i]: the score of the best annotation of [vntr[0], vntr[i - 1]], score[0] means no sequnece, thus 0 */
-    vector<int> traceI(vntr_len + 1, 0); /* traceI[i]: index of best j */
-    vector<int> traceM(vntr_len + 1, 0); /* traceM[i]: index of best motif */
+    vector<uint8_t> traceI(vntr_len + 1, 0); /* traceI[i]: index of best j */
+    vector<uint8_t> traceM(vntr_len + 1, 0); /* traceM[i]: index of best motif */
 
     traceI[0] = -1;
     traceM[0] = -1;

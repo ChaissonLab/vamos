@@ -43,9 +43,10 @@ static int compare(double update[], int l) {
 // function to compute the variant N-W alignment (linear space, only computes opt distance and traces starting position)
 // (leading gaps cost 0)
 static void
-global(const string &motif, char *vntr, double dist[], int start[]) { 
+global(const string &motif, char *vntr, double dist[], uint8_t start[]) { 
 
-    int i, j, k, oldStart, tempStart; // i as row (string A) index, j as column (string B) index, k as distance index for "compare" function
+    int i, j, k;
+    uint8_t oldStart, tempStart; // i as row (string A) index, j as column (string B) index, k as distance index for "compare" function
     const int m = motif.size(), n = strlen(vntr);
     double oldDist, update[3];
 
@@ -91,20 +92,19 @@ global(const string &motif, char *vntr, double dist[], int start[]) {
 
 
 // function to compute the S_i distances (the naive occurrence)
-int bounded_anno(vector<int> &optMotifs, vector<MOTIF> &motifs, char * vntr) 
+int bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char * vntr) 
 {
     optMotifs.clear();
     int i, k, m; // i as position index (of vntr), m as motif index, k as distance index for "compare" function
     int n = strlen(vntr), M = motifs.size();
     double dist[n+1], update[M];
-    int traceI[n+1], traceM[n+1];
+    uint8_t traceI[n+1], traceM[n+1];
 
     // generate dp matrix for each motif
     double dists[M][n+1];
-    int starts[M][n+1];
-    for (int m=0; m<M; m++) {
+    uint8_t starts[M][n+1];
+    for (int m=0; m<M; m++) 
         global(motifs[m].seq, vntr, dists[m], starts[m]);
-    }
 
     // calculate S_i distances
     // initialization for i=0

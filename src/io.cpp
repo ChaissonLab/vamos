@@ -88,26 +88,27 @@ void IO::readVNTRFromBed (vector<VNTR*> &vntrs)
     return;
 }
 
-pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &cigar_start, uint32_t target_crd, uint32_t &ref_aln_start, uint32_t &read_aln_start)
+pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t CIGAR_start, uint32_t target_crd, uint32_t &ref_aln_start, uint32_t &read_aln_start)
 {
+    assert(read_aln_start <= aln->core.l_qseq);
     /* trivial case: when ref_aln_start equals target_crd*/
     if (target_crd == ref_aln_start) return make_pair(read_aln_start, 1);
 
+    uint32_t cigar_start = CIGAR_start;
     uint32_t k; int op, l;
     for (k = cigar_start; k < aln->core.n_cigar; ++k) 
     {
         op = bam_cigar_op(cigar[k]);
         l = bam_cigar_oplen(cigar[k]);
 
-        if (ref_aln_start > target_crd) {
-            cigar_start = k;
+        if (read_aln_start > aln->core.l_qseq)
+            return make_pair(read_aln_start, 0);
+        if (ref_aln_start > target_crd) 
             return make_pair(read_aln_start, 0); // skip the out-of-range alignment
-        }
-        else if (ref_aln_start <= target_crd and target_crd < ref_aln_start + l)
+        else if (ref_aln_start == target_crd)
+            return make_pair(read_aln_start, 1);
+        else if (target_crd < ref_aln_start + l)
         {
-            // if (op == BAM_CMATCH) 
-                // read_aln_start += target_crd - ref_aln_start;
-            cigar_start = k;
             if (op == BAM_CMATCH) 
                 return make_pair(read_aln_start + target_crd - ref_aln_start, 1);
             else
@@ -115,34 +116,49 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &ciga
             break;
         }
 
+        CIGAR_start = k;
         switch (op) 
         {
-        case BAM_CDEL:
-            read_aln_start += l;  
-            break;    
+            case BAM_CDEL:
+                ref_aln_start += l;
+                break;    
 
-         case BAM_CINS:
-            ref_aln_start += l;
-            break;            
+            case BAM_CINS:
+                read_aln_start += l;  
+                break;            
 
-         case BAM_CMATCH:
-            read_aln_start += l;
-            ref_aln_start += l;
-            break;
+            case BAM_CREF_SKIP:
+                ref_aln_start += l;
+                break; 
 
-         case BAM_CDIFF:
-            read_aln_start += l;
-            ref_aln_start += l;
-            break;
+            case BAM_CMATCH:
+                read_aln_start += l;
+                ref_aln_start += l;
+                break;
 
-         case BAM_CHARD_CLIP:
-            break;
+            case BAM_CEQUAL:
+                read_aln_start += l;
+                ref_aln_start += l;
+                break;
 
-         case BAM_CSOFT_CLIP:
-            read_aln_start += l;
-            break;
+            case BAM_CDIFF:
+                read_aln_start += l;
+                ref_aln_start += l;
+                break;
+
+            case BAM_CHARD_CLIP:
+                break;
+
+            case BAM_CPAD:
+                break;
+
+            case BAM_CSOFT_CLIP:
+                read_aln_start += l;
+                break;
         }
+        // cerr << "read_aln_start: " << read_aln_start << " op: " << op << endl;
     }
+    assert(read_aln_start <= aln->core.l_qseq);
     return make_pair(read_aln_start, 1);
 }
 
@@ -161,15 +177,15 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
     bam_hdr_t * bamHdr = sam_hdr_read(fp_in); //read header
     hts_idx_t * idx = sam_index_load(fp_in, bai);
     bam1_t * aln = bam_init1(); //initialize an alignment
+    hts_itr_t * itr;
 
-    uint16_t flag;
-    uint32_t mapq;
     uint32_t isize; // observed template size
     uint32_t * cigar;
     uint8_t * s; // pointer to the read sequence
+    bool rev;
 
     uint32_t ref_aln_start, ref_aln_end;
-    uint32_t read_aln_start, read_aln_end;
+    uint32_t read_aln_start, read_len;
     uint32_t ref_len;
     uint32_t VNTR_s, VNTR_e;
     uint32_t k;
@@ -177,30 +193,47 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
 
     for (auto &vntr : vntrs)
     {
-        hts_itr_t * itr = bam_itr_querys(idx, bamHdr, vntr->region.c_str());
+        cerr << "starting processing vntr" << endl;
+        itr = bam_itr_querys(idx, bamHdr, vntr->region.c_str());
         while(bam_itr_next(fp_in, itr, aln) >= 0)
         {
-            flag = aln->core.flag;
-            if (flag & BAM_FSECONDARY or flag & BAM_FUNMAP) continue; // skip secondary alignment / unmapped reads
+            rev = bam_is_rev(aln);
+            if (aln->core.flag & BAM_FSECONDARY or aln->core.flag & BAM_FUNMAP) 
+            {
+                cerr << "       skip secondary and unmmaped" << endl;
+                continue; // skip secondary alignment / unmapped reads
+            }
 
-            mapq = aln->core.qual;
-            if (mapq < 20) continue; // skip alignment with mapping qual < 20
+            if (aln->core.qual < 20) 
+            {
+                cerr << "       skip low mapq" << endl;
+                continue; // skip alignment with mapping qual < 20
+            }
 
             isize = aln->core.isize;
-            if (isize < vntr->len) continue; // skip alignment with length < vntr->len
+            if (isize == 0) // 9th col: Tlen is unavailable in bam
+                isize = bam_endpos(aln);
+
+            if (isize > 0 and isize < vntr->len) {
+                cerr << "       skip short size" << endl;
+                continue; // skip alignment with length < vntr->len
+            }
+
+            // cerr << "starting lifting read " << bam_get_qname(aln) << endl;
 
             cigar = bam_get_cigar(aln);
             ref_aln_start = aln->core.pos;
             ref_aln_end = ref_aln_start + isize;
+            ref_len = bamHdr->target_len[aln->core.tid]; 
 
             read_aln_start = 0;
-            read_aln_end = aln->core.l_qseq;
-            ref_len = bamHdr->target_len[aln->core.tid]; 
+            read_len = aln->core.l_qseq;
 
             uint32_t tmp;
             VNTR_s = vntr->ref_start;
             VNTR_e = vntr->ref_end;
-            if (bam_is_rev(aln)) 
+
+            if (rev) 
             {   
                 tmp = VNTR_s;
                 VNTR_s = ref_len - VNTR_e;
@@ -222,21 +255,24 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
             auto [liftover_read_s, iflift_s] = processCigar(aln, cigar, cigar_start, VNTR_s, ref_aln_start, read_aln_start);
             auto [liftover_read_e, iflift_e] = processCigar(aln, cigar, cigar_start, VNTR_e, ref_aln_start, read_aln_start);
 
-            if (iflift_s and iflift_e and liftover_read_e > liftover_read_s)
+            // [liftover_read_s, liftover_read_e]
+            if (iflift_s and iflift_e and liftover_read_e > liftover_read_s and liftover_read_e <= read_len)
             {
+                liftover_read_s = liftover_read_s == 0 ? 0 : liftover_read_s - 1;
+                liftover_read_e = liftover_read_e == 0 ? 0 : liftover_read_e - 1;
+
+                assert(liftover_read_e < read_len);
 
                 READ * read = new READ();
                 read->chr = bamHdr->target_name[aln->core.tid]; 
                 read->qname = bam_get_qname(aln);
-                read->len = liftover_read_e - liftover_read_s; // read length
+                read->len = liftover_read_e - liftover_read_s + 1; // read length
                 read->seq = (char *) malloc(read->len + 1); // read sequence array
                 s = bam_get_seq(aln); 
 
-                assert(liftover_read_e <= aln->core.l_qseq);
-
-                for(uint32_t i = 0; i < liftover_read_e - liftover_read_s; i++)
+                for(uint32_t i = 0; i < read->len; i++)
                 {
-                    assert(i + liftover_read_s < aln->core.l_qseq);
+                    assert(i + liftover_read_s < read_len);
                     assert(bam_seqi(s, i + liftover_read_s) < 16);
                     read->seq[i] = seq_nt16_str[bam_seqi(s, i + liftover_read_s)]; //gets nucleotide id and converts them into IUPAC id.
                 }
@@ -248,12 +284,13 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
                 // cerr << "read_seq: " << read->seq << endl; 
             }
         }
-        hts_itr_destroy(itr);
         vntr->nreads = vntr->reads.size();
+        cerr << "vntr read size: " << vntr->nreads << endl;
     }
     free(bai);
     bam_destroy1(aln);
     bam_hdr_destroy(bamHdr);
+    hts_itr_destroy(itr);
     sam_close(fp_in); 
     return;  
 }
