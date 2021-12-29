@@ -1,21 +1,21 @@
 # Vamos: VNTR annotation tool using motifs selection
 ## Getting Started
 ```sh
-# Install vamos (g++, htslib, seqan, edlib and alglib required)
-# htslib and seqan are installed by bioconda 
+# Install vamos (g++, htslib, abpoa, edlib and alglib required)
+# htslib and abpoa are installed by bioconda 
 # libalglib.a and libedlib.a are distributed along with vamos)
 git clone https://github.com/ChaissonLab/vamos.git
 conda create --name vamos
 conda activate vamos
 conda install -c bioconda htslib  
-conda install -c bioconda seqan 
+conda install -c bioconda abpoa 
 cd vamos/src && make
 
 # help page
 vamos -h
 
 # run
-vamos -i in.bam -v vntrs.bed -m motifs.csv -o out.vcf -s sampleName
+vamos -i in.bam -v vntrs.bed -m motifs.csv -o out.vcf -s sampleName -f
 ```
 
 ## Output VCF files

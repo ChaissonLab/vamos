@@ -173,7 +173,7 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
     abpt->align_mode = 0; // 0:global 1:local, 2:extension
     abpt->match = 1;      // match score
     abpt->mismatch = 1;   // mismatch penalty
-    abpt->gap_mode = ABPOA_CONVEX_GAP; // gap penalty mode
+    abpt->gap_mode = ABPOA_AFFINE_GAP; // gap penalty mode
     abpt->gap_open1 = 1;  // gap open penalty #1
     abpt->gap_ext1 = 1;   // gap extension penalty #1
     abpt->gap_open2 = 1; // gap open penalty #2
@@ -182,7 +182,9 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
     // abpt->bw = 10;        // extra band used in adaptive banded DP
     // abpt->bf = 0.01; 
 
-    abpt->out_msa = 0; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
+    abpt->is_diploid = 0;
+	// abpt->min_freq = 0.8; 
+    abpt->out_msa = 1; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
     // abpt->w = 6, abpt->k = 2; abpt->min_w = 10; // minimizer-based seeding and partition
     abpt->progressive_poa = 1;
