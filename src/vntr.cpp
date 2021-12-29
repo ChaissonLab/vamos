@@ -44,9 +44,11 @@ static void encode (int motifs_size, vector<uint8_t> &annoNum, string &annoStr)
 	{
 		num = annoNum[i];
 		assert(num < motifs_size);
+
 		// tmp_s.assign(1, (char) num);
 		// annoStr.replace(i, 1, tmp_s);  
 
+		// for outputing string to stdout
 		if (num >= 0 and num < 45)
 		{
 			tmp_s.assign(1, (char) (num + 33));

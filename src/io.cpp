@@ -121,9 +121,9 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGA
         if (type & 1) read_aln_start += len;        
         if (type & 2) ref_aln_start += len;
 
-        // for debug 
-        uint32_t callen = bam_cigar2qlen(k + 1, cigar);
-        assert(read_aln_start == callen);
+        // // for debug 
+        // uint32_t callen = bam_cigar2qlen(k + 1, cigar);
+        // assert(read_aln_start == callen);
     }
 
     assert(read_aln_start <= aln->core.l_qseq);
