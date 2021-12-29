@@ -161,7 +161,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
 
     for (auto &vntr : vntrs)
     {
-        cerr << "starting processing vntr" << endl;
+        // cerr << "starting processing vntr" << endl;
         itr = bam_itr_querys(idx, bamHdr, vntr->region.c_str());
         while(bam_itr_next(fp_in, itr, aln) >= 0)
         {
@@ -253,7 +253,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
             }
         }
         vntr->nreads = vntr->reads.size();
-        cerr << "vntr read size: " << vntr->nreads << endl;
+        // cerr << "vntr read size: " << vntr->nreads << endl;
     }
     free(bai);
     bam_destroy1(aln);
