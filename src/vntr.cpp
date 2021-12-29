@@ -44,33 +44,22 @@ static void encode (int motifs_size, vector<uint8_t> &annoNum, string &annoStr)
 	{
 		num = annoNum[i];
 		assert(num < motifs_size);
-		if (num >= 0 and num <= 255)
+		// tmp_s.assign(1, (char) num);
+		// annoStr.replace(i, 1, tmp_s);  
+
+		if (num >= 0 and num < 45)
 		{
-			tmp_s.assign(1, (char) (num));
+			tmp_s.assign(1, (char) (num + 33));
 			annoStr.replace(i, 1, tmp_s);  
 		}
-
-		// if (num >= 0 and num < 45)
-		// {
-		// 	tmp_s.assign(1, (char) (num + 33));
-		// 	annoStr.replace(i, 1, tmp_s);  
-		// }
-		// else if (num >= 45 and num <= 221)
-		// {
-		// 	tmp_s.assign(1, (char) (num + 34));
-		// 	annoStr.replace(i, 1, tmp_s);  		
-		// }		
+		else if (num >= 45 and num <= 221)
+		{
+			tmp_s.assign(1, (char) (num + 34));
+			annoStr.replace(i, 1, tmp_s);  		
+		}		
 	}
 	return;
 }
-
-// int decode (uint8_t num)
-// {
-// 	assert(num >= 33 and num <= 255 and num != 78);
-// 	if (num >= 79 and num <= 255) 
-// 		return num - 34;
-// 	return num - 33;
-// }
 
 void annoTostring_helper (int motifs_size, string &annoStr, vector<uint8_t> &annoNum)
 {
@@ -170,77 +159,6 @@ void outputConsensus (vector<uint8_t> &consensus)
 	return;
 }
 
-/*
-void MSA_helper (int motifs_size, int sampleSz, seqan::StringSet<seqan::String<char>> &annoSet, vector<int> &consensus)
-{
-    seqan::Align<seqan::String<char>> align(annoSet); // Initialize the Align object using a StringSet.
-	seqan::Score<int> scoreScheme(1, -1, -1, -1); 
-	int score = seqan::globalAlignment(align, scoreScheme);  // Compute a global alingment using the Align object.
-    // int score = seqan::globalAlignment(align, seqan::EditDistanceScore());  // Compute a global alingment using the Align object.
-    cerr << "score = " << score << endl;
-    cerr << "align\n" << align << endl;
-
-    
-     // create the profile string
-     // profile: row: alignment position
-     // 		  col: reads
-    
-    int r, idx, num, decode_num; uint32_t i;
-    uint32_t alnSz = seqan::length(seqan::row(align, 0));
-    seqan::String<seqan::ProfileChar<char>> profile; 
-    seqan::resize(profile, alnSz); 
-
-    for (int r = 0; r < sampleSz; ++r) 
-    {
-        for (i = 0; i < alnSz; ++i) {
-        	num = seqan::getValue(seqan::row(align, r), i);
-        	decode_num = decode(num);
-        	assert(decode_num < motifs_size);
-            profile[i].count[decode_num] += 1;
-        }
-    }
-
-    for (i = 0; i < alnSz; ++i)
-    {
-        idx = seqan::getMaxIndex(profile[i]);
-        consensus.push_back(idx);
-    }
-    return;
-}
-
-void MSA (int motifs_size, const vector<int> &gp, const vector<string> &annoStrs, const vector<vector<int>> &annos, vector<int> &consensus)
-{
-	if (gp.empty()) return;
-
-	if (gp.size() == 1)
-	{
-		consensus = annos[gp[0]];
-		return;
-	}
-
-    seqan::StringSet<seqan::String<char>> annoSet;
-    for (auto &r : gp)
-    	seqan::appendValue(annoSet, annoStrs[r]);
-    MSA_helper (motifs_size, gp.size(), annoSet, consensus);
-	return;
-}
-
-void MSA (int motifs_size, const vector<string> &annoStrs, const vector<vector<int>> &annos, vector<int> &consensus)
-{
-	if (annoStrs.size() == 1)
-	{
-		consensus = annos[0];
-		return;
-	}
-
-    seqan::StringSet<seqan::String<char>> annoSet;
-    for (auto &str : annoStrs)
-    	seqan::appendValue(annoSet, str);
-    MSA_helper (motifs_size, annoStrs.size(), annoSet, consensus);
-	return;
-}
-
-
 /* use abPOA to do MSA */
 void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *seq_lens, uint8_t **bseqs)
 {
@@ -251,12 +169,12 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
 
     // alignment parameters
     abpt->align_mode = 0; // 0:global 1:local, 2:extension
-    abpt->match = 2;      // match score
-    abpt->mismatch = 4;   // mismatch penalty
+    abpt->match = 1;      // match score
+    abpt->mismatch = 1;   // mismatch penalty
     abpt->gap_mode = ABPOA_CONVEX_GAP; // gap penalty mode
-    abpt->gap_open1 = 4;  // gap open penalty #1
-    abpt->gap_ext1 = 2;   // gap extension penalty #1
-    abpt->gap_open2 = 24; // gap open penalty #2
+    abpt->gap_open1 = 1;  // gap open penalty #1
+    abpt->gap_ext1 = 1;   // gap extension penalty #1
+    abpt->gap_open2 = 1; // gap open penalty #2
     abpt->gap_ext2 = 1;   // gap extension penalty #2
                     	  // gap_penalty = min{gap_open1 + gap_len * gap_ext1, gap_open2 + gap_len * gap_ext2}
     // abpt->bw = 10;        // extra band used in adaptive banded DP
@@ -264,22 +182,45 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
 
     abpt->out_msa = 0; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
-    abpt->w = 6, abpt->k = 9; abpt->min_w = 10; // minimizer-based seeding and partition
+    // abpt->w = 6, abpt->k = 2; abpt->min_w = 10; // minimizer-based seeding and partition
     abpt->progressive_poa = 1;
 
     // variables to store result
     uint8_t **cons_seq; int **cons_cov, *cons_l, cons_n = 0;
-    uint8_t **msa_seq; int msa_l=0;
+    uint8_t **msa_seq; int msa_l = 0;
 
     abpoa_post_set_para(abpt);
+
+    // 1. output to stdout
+    // fprintf(stdout, "=== output to stdout ===\n");
+
+    // perform abpoa-msa
+    // abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, stdout, NULL, NULL, NULL, NULL, NULL, NULL);
+
+    // ab->abs->n_seq = 0; // To re-use ab, n_seq needs to be set as 0
     abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
 
-    assert(cons_n > 0); // cons_n == 0 means no consensus sequence exists
+    // assert(cons_n > 0); // cons_n == 0 means no consensus sequence exists
     for (j = 0; j < cons_l[0]; ++j)
     {
     	assert(cons_seq[0][j] < motifs_size);
     	consensus.push_back(cons_seq[0][j]);
     }
+
+    // fprintf(stdout, "=== output to variables ===\n");
+    // for (i = 0; i < cons_n; ++i) {
+    //     fprintf(stdout, ">Consensus_sequence\n");
+    //     for (j = 0; j < cons_l[i]; ++j)
+    //         fprintf(stdout, "%i", cons_seq[i][j]);
+    //     fprintf(stdout, "\n");
+    // }
+    // fprintf(stdout, ">Multiple_sequence_alignment\n");
+    // for (i = 0; i < n_seqs; ++i) {
+    //     for (j = 0; j < msa_l; ++j) {
+    //         fprintf(stdout, "%c", "ACGTN-"[msa_seq[i][j]]);
+    //     }
+    //     fprintf(stdout, "\n");
+    // }
 
     if (cons_n) {
         for (i = 0; i < cons_n; ++i) 
@@ -326,7 +267,19 @@ void MSA (int motifs_size, const vector<int> &gp, const vector<vector<uint8_t>> 
         seq_lens[i] = annos[gp[i]].size();
         bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
         for (j = 0; j < seq_lens[i]; ++j)
-            bseqs[i][j] = annos[gp[i]][j];
+        {
+        	bseqs[i][j] = annos[gp[i]][j];
+
+        	// if (annos[gp[i]][j] >= 0 and annos[gp[i]][j] < 45) 
+        	// {
+        	// 	bseqs[i][j] = annos[gp[i]][j] + 33;
+        	// }
+        	// else 
+        	// {
+        	// 	bseqs[i][j] = annos[gp[i]][j] + 34;
+        	// }
+            
+        }
     }
 
 	MSA_helper (motifs_size, n_seqs, consensus, seq_lens, bseqs);
