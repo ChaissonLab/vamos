@@ -10,11 +10,12 @@
 #include "edlib.h"
 #include "dataanalysis.h"
 #include "abpoa.h"
+#include "option.h"
 
 // #include "seqan/sequence.h"
 // #include "seqan/align.h"
 // #include "seqan/score.h"
-void VNTR::motifAnnoForOneVNTR (bool naiveAnnoAlg) 
+void VNTR::motifAnnoForOneVNTR (const OPTION &opt) 
 {
 	if (nreads == 0) return;
 
@@ -26,10 +27,10 @@ void VNTR::motifAnnoForOneVNTR (bool naiveAnnoAlg)
 			input:   string : reads[i].seq; vector<MOTIF> : motifs
 			output:  vector<vector<int>> annos[i]
 		*/
-		if (naiveAnnoAlg)
-			naive_anno(annos[i], motifs, reads[i]->seq);
+		if (opt.fasterAnnoAlg)
+			bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
 		else
-			bounded_anno(annos[i], motifs, reads[i]->seq);
+			naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
 		// cerr << "finish for reads: " << i << endl;
 	}
 	return;
@@ -40,7 +41,7 @@ static void encode (int motifs_size, vector<uint8_t> &annoNum, string &annoStr)
 {
 	string tmp_s;
 	uint8_t num;
-	for (int i = 0; i < annoNum.size(); ++i)
+	for (size_t i = 0; i < annoNum.size(); ++i)
 	{
 		num = annoNum[i];
 		assert(num < motifs_size);
@@ -49,7 +50,7 @@ static void encode (int motifs_size, vector<uint8_t> &annoNum, string &annoStr)
 		// annoStr.replace(i, 1, tmp_s);  
 
 		// for outputing string to stdout
-		if (num >= 0 and num < 45)
+		if (num < 45)
 		{
 			tmp_s.assign(1, (char) (num + 33));
 			annoStr.replace(i, 1, tmp_s);  
@@ -71,16 +72,14 @@ void annoTostring_helper (int motifs_size, string &annoStr, vector<uint8_t> &ann
 	return;
 }
 
-void VNTR::annoTostring ()
+void VNTR::annoTostring (const OPTION &opt)
 {
 	if (nreads == 0) return;
 	annoStrs.resize(nreads);
-	int l, r, i, num;
 	for (int r = 0; r < nreads; ++r)
 	{
 		annoTostring_helper(motifs.size(), annoStrs[r], annos[r]);
-	    cerr << "string " << r << ":  " << annoStrs[r];
-	    cerr << endl;
+		if (opt.debug) cerr << "string " << r << ":  " << annoStrs[r] << endl;
 	}
 	return;
 }
@@ -98,14 +97,20 @@ int VNTR::hClust (vector<int> &gp1, vector<int> &gp2, double edist [])
 	 input: vector<string> annoStrs
 	 output: double edist[nreads * nreads] = {...}
 	*/
+    gp1.clear(); gp2.clear();
+	if (nreads == 1)
+	{
+	   gp1.push_back(0);
+	   return 0;
+	}
+
 	int i, j;
 	EdlibAlignResult result;
 	for (i = 0; i < nreads; ++i)
 	{
 		for (j = i + 1; j < nreads; ++j) 
 		{
-			result = edlibAlign(annoStrs[i].c_str(), getAnnoStrLen(i), 
-								annoStrs[j].c_str(), getAnnoStrLen(j), edlibDefaultAlignConfig());
+			result = edlibAlign(annoStrs[i].c_str(), getAnnoStrLen(i), annoStrs[j].c_str(), getAnnoStrLen(j), edlibDefaultAlignConfig());
             if (result.status == EDLIB_STATUS_OK) 
             {
                 edist[i * nreads + j] = (double) result.editDistance; // [i][j]
@@ -122,7 +127,6 @@ int VNTR::hClust (vector<int> &gp1, vector<int> &gp2, double edist [])
 	/* do hierarchical clustering based on the edit ditance matrix */
     alglib::clusterizerstate s;
     alglib::ahcreport rep;
-    alglib::ae_int_t disttype;
     alglib::clusterizercreate(s);
 
     alglib::real_2d_array d;
@@ -146,18 +150,21 @@ int VNTR::hClust (vector<int> &gp1, vector<int> &gp2, double edist [])
     return 0;
 }
 
-void outputConsensus (vector<uint8_t> &consensus)
+void outputConsensus (vector<uint8_t> &consensus, const OPTION &opt)
 {
-	int i = 0;
+	size_t i = 0;
     for (auto &it : consensus)
     {
-    	if (i < consensus.size() - 1)
-			cerr << to_string(it) << "->";
-		else
-			cerr << to_string(it);
+    	if (opt.debug)
+    	{
+			if (i < consensus.size() - 1)
+				cerr << to_string(it) << "->";
+			else
+				cerr << to_string(it);    		
+    	}
 		i += 1;
     }
-	cerr << endl;
+	if (opt.debug) cerr << endl;
 	return;
 }
 
@@ -240,11 +247,11 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
     if (msa_l) 
     {
         for (i = 0; i < n_seqs; ++i) 
-        	free(msa_seq[i]); free(msa_seq);
+        {
+        	free(msa_seq[i]); 
+        	free(msa_seq);
+        }
     }
-
-    for (i = 0; i < n_seqs; ++i) 
-    	free(bseqs[i]); free(bseqs); free(seq_lens);
 
     abpoa_free(ab); 
     abpoa_free_para(abpt); 
@@ -288,6 +295,9 @@ void MSA (int motifs_size, const vector<int> &gp, const vector<vector<uint8_t>> 
 
 	MSA_helper (motifs_size, n_seqs, consensus, seq_lens, bseqs);
 
+    for (i = 0; i < n_seqs; ++i) free(bseqs[i]); 
+   	free(bseqs); 
+    free(seq_lens);
     return;
 }
 
@@ -312,14 +322,14 @@ void MSA (const vector<vector<uint8_t>> &annos, vector<uint8_t> &consensus)
     }
 
 	MSA_helper (n_seqs, n_seqs, consensus, seq_lens, bseqs);
-
+    for (i = 0; i < n_seqs; ++i) free(bseqs[i]); 
+   	free(bseqs); 
+    free(seq_lens);
     return;
 }
 
 double avgSilhouetteCoeff (int nreads, double edist [], vector<int> &gp1, vector<int> &gp2)
 {
-	double sumSilC = 0;
-	EdlibAlignResult result;
 	double a1 = 0.0;
 	double b1 = 10000000.0;
 	double sc1 = 0.0;
@@ -371,7 +381,7 @@ double avgSilhouetteCoeff (int nreads, double edist [], vector<int> &gp1, vector
    input:   vector<vector<uint8_t>> annos
    output:  vector<uint8_t> consensus_h1, vector<uint8_t> consensus_h2
 */
-void VNTR::concensusMotifAnnoForOneVNTR ()
+void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 {
 	/* compute the MSA for each cluster when nclusts == 2 */
 	vector<int> gp1, gp2;
@@ -394,17 +404,15 @@ void VNTR::concensusMotifAnnoForOneVNTR ()
 
 	if (het)
 	{
-		cerr << "het! " << endl;
-		cerr << "h1 anno: " << endl;
-		outputConsensus(consensus_h1);
-		cerr << "h2 anno: " << endl;
-		outputConsensus(consensus_h2);
+		if (opt.debug) {cerr << "het! " << endl; cerr << "h1 anno: " << endl;}
+		outputConsensus(consensus_h1, opt);
+		if (opt.debug) cerr << "h2 anno: " << endl;
+		outputConsensus(consensus_h2, opt);
 	}
 	else
 	{
-		cerr << "hom! " << endl;
-		cerr << "h1&h2 anno: " << endl;
-		outputConsensus(consensus);		
+		if (opt.debug) {cerr << "hom! " << endl; cerr << "h1&h2 anno: " << endl;}
+		outputConsensus(consensus, opt);		
 	}
 	return;
 }

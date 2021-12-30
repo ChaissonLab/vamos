@@ -9,13 +9,13 @@ asan?=""
 tsan?=""
 
 ifneq ($(DEBUG), "")
-CFLAGS=-g -O0 
+CFLAGS=-g -O0 -Wall -Wextra
 else
 CFLAGS=-O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
 endif
 
 ifneq ($(asan), "")
-  CFLAGS+=-fsanitize=address
+  CFLAGS+=-fsanitize=address # boundaries check for memory access
   LIBS+=-fsanitize=address
 endif
 
@@ -33,7 +33,7 @@ all:$(PROG)
 vamos: main.o io.o vcf.o vntr.o
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L ../static_lib/ -lalglib -ledlib 
 
-main.o: main.cpp io.h vcf.h vntr.h read.h
+main.o: main.cpp io.h vcf.h vntr.h read.h option.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include  
 
 io.o: io.cpp io.h vcf.h vntr.h read.h
@@ -42,7 +42,7 @@ io.o: io.cpp io.h vcf.h vntr.h read.h
 vcf.o: vcf.cpp vcf.h 
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include 
 
-vntr.o: vntr.cpp naive_anno.cpp bounded_anno.cpp io.h vntr.h read.h 
+vntr.o: vntr.cpp naive_anno.cpp bounded_anno.cpp io.h vntr.h read.h option.h
 	$(CXX) $(CFLAGS) -c $< -I ../alglib/src -I ../edlib/include -I ../abpoa/include -I $(CONDA_PREFIX)/include 
 
 # edlib.o:

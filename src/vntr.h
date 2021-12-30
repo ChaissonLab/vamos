@@ -8,6 +8,7 @@
 #include <string>
 #include <iostream>
 #include "read.h"
+#include "option.h"
 
 using namespace std;
 
@@ -42,7 +43,7 @@ class VNTR
 public: 
 	uint32_t ref_start;
 	uint32_t ref_end;
-	uint32_t len;
+	int len;
 	string chr;
 	string region;
 	vector<MOTIF> motifs;
@@ -54,7 +55,6 @@ public:
 	vector<uint8_t> consensus;
 	int nreads;
 	bool het;
-	bool naive;
 
 	VNTR () { het = false; nreads = 0; };
 
@@ -80,16 +80,16 @@ public:
 	}
 
 	/* for each sequence, get the annotation of motifs */
-	void motifAnnoForOneVNTR (bool naiveAnnoAlg);
+	void motifAnnoForOneVNTR (const OPTION &opt);
 
 	// string * getAnnoStr (int i);
 
 	size_t getAnnoStrLen (int i);
 
-	void annoTostring ();
+	void annoTostring (const OPTION &opt);
 
 	/* for all the sequences at the current VNTR locus, get the consensus; annotation */
-	void concensusMotifAnnoForOneVNTR ();
+	void concensusMotifAnnoForOneVNTR (const OPTION &opt);
 
 	int hClust (vector<int> &gp1, vector<int> &gp2, double edist []);
 

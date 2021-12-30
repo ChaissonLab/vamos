@@ -45,10 +45,8 @@ void VcfWriter::writeBody(vector<VNTR *> &vntrs, ostream& out)
 	    it->commaSeparatedMotifAnnoForConsensus(1, motif_anno_h1);
 	    it->commaSeparatedMotifAnnoForConsensus(0, motif_anno_h2);
 
-	    if (motif_anno_h1 == motif_anno_h2)
-	    	GT = "1/1";
-	    else
-	    	GT = "1/2";
+	    if (motif_anno_h1 == motif_anno_h2) GT = "1/1";
+	    else GT = "1/2";
 
 		out << it->chr << "\t"
 			<< to_string(it->ref_start) << "\t"

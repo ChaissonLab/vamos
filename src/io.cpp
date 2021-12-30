@@ -5,6 +5,7 @@
 #include <sstream>
 #include <assert.h>
 #include <string>
+#include <algorithm>
 #include <tuple> 
 #include <vector>
 #include "io.h"
@@ -16,10 +17,14 @@
 
 using namespace std;
 
+//0123456789ABCDEF
+//=ACMGRSVTWYHKDBN  aka seq_nt16_str[]
+//=TGKCYSBAWRDMHVN  comp1ement of seq_nt16_str
+//084C2A6E195D3B7F
+static int seqi_rc[] = { 0,8,4,12,2,10,6,14,1,9,5,13,3,11,7,15 };
+
 int IO::readMotifsFromCsv (vector<VNTR *> &vntrs) 
 {
-    int vntr_size = vntrs.size();
-
     ifstream ifs(motif_csv);
     if (ifs.fail()) 
     {
@@ -28,7 +33,7 @@ int IO::readMotifsFromCsv (vector<VNTR *> &vntrs)
     }    
 
     string line;
-    int numOfLine = 0;
+    size_t numOfLine = 0;
     while (getline(ifs, line)) 
     {
         stringstream ss(line);
@@ -90,7 +95,7 @@ void IO::readVNTRFromBed (vector<VNTR*> &vntrs)
 
 pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGAR_start, uint32_t target_crd, uint32_t &ref_aln_start, uint32_t &read_aln_start)
 {
-    assert(read_aln_start <= aln->core.l_qseq);
+    assert(read_aln_start <= (uint32_t) aln->core.l_qseq);
     /* trivial case: when ref_aln_start equals target_crd*/
     if (target_crd == ref_aln_start) return make_pair(read_aln_start, 1);
 
@@ -126,7 +131,7 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGA
         // assert(read_aln_start == callen);
     }
 
-    assert(read_aln_start <= aln->core.l_qseq);
+    assert(read_aln_start <= (uint32_t) aln->core.l_qseq);
     return make_pair(read_aln_start, 1);
 }
 
@@ -156,8 +161,6 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
     uint32_t read_aln_start, read_len;
     uint32_t ref_len;
     uint32_t VNTR_s, VNTR_e;
-    uint32_t k;
-    uint32_t liftover_read_s, liftover_read_e;
 
     for (auto &vntr : vntrs)
     {
@@ -182,7 +185,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
             if (isize == 0) // 9th col: Tlen is unavailable in bam
                 isize = bam_endpos(aln);
 
-            if (isize > 0 and isize < vntr->len) {
+            if (isize > 0 and isize < (uint32_t) vntr->len) {
                 // cerr << "       skip short size" << endl;
                 continue; // skip alignment with length < vntr->len
             }
@@ -242,8 +245,10 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
                 {
                     assert(i + liftover_read_s < read_len);
                     assert(bam_seqi(s, i + liftover_read_s) < 16);
-                    read->seq[i] = seq_nt16_str[bam_seqi(s, i + liftover_read_s)]; //gets nucleotide id and converts them into IUPAC id.
+                    if (rev) read->seq[i] = seqi_rc[bam_seqi(s, i + liftover_read_s)];
+                    else read->seq[i] = seq_nt16_str[bam_seqi(s, i + liftover_read_s)]; //gets nucleotide id and converts them into IUPAC id.
                 }
+                if (rev) reverse(read->seq, read->seq + read->len);
                 vntr->reads.push_back(read); 
                 // cerr << "read_name: " << bam_get_qname(aln) << endl; 
                 // cerr << "vntr->ref_start: " << vntr->ref_start << " vntr->ref_end: " << vntr->ref_end << endl;
@@ -285,8 +290,11 @@ int IO::outputVCF (vector<VNTR *> &vntrs)
         cerr << "Unable to open file " << out_vcf << endl;
         return 1;
     }
+    cerr << "write header" << endl;
     VcfWriteHeader(out, vcfWriter);
+    cerr << "write body" << endl;
     VCFWriteBody(vntrs, vcfWriter, out);
+    cerr << "finish" << endl;
     out.close();  
     return 0;
 }

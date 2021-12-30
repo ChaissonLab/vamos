@@ -6,13 +6,14 @@
 #include "io.h"
 #include "vntr.h"
 #include "vcf.h"
+#include "option.h"
 using namespace std;
 
 /* vamos -in read.bam -vntr vntrs.bed -motif motifs.csv -o out.vcf */
 
 void printUsage(IO &io) 
 {
-	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-f]\n");
+	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-f] [-debug]\n");
 	printf("Version: %s\n", io.version);
 	printf("Options:\n");
 	printf("       -i  FILE      input alignment file (bam format), bam file needs to be indexed \n");
@@ -20,7 +21,8 @@ void printUsage(IO &io)
 	printf("       -m  FILE      the comma-delimited motif sequences list for each VNTR locus, each row represents a VNTR locus\n");
 	printf("       -o  FILE      output vcf file\n");
 	printf("       -s  CHAR      the sample name\n");
-	printf("       -f            specify faster version of code to do the annotation, default is naive implementation\n");
+	printf("       -n            specify the naive version of code to do the annotation, default is faster implementation\n");
+	printf("       -d        print out debug information\n");
 	printf("       -h            print out help message\n");
 } 
 
@@ -28,6 +30,7 @@ int main (int argc, char **argv)
 {
 	int c;
 	IO io;
+	OPTION opt;
 
 	const struct option long_options[] =
 	{
@@ -44,7 +47,7 @@ int main (int argc, char **argv)
 	/* getopt_long stores the option index here. */
 	int option_index = 0;
 
-	while ((c = getopt_long (argc, argv, "i:v:m:o:s:hf", long_options, &option_index)) != -1)
+	while ((c = getopt_long (argc, argv, "i:v:m:o:s:hnd", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -78,9 +81,14 @@ int main (int argc, char **argv)
 			strcpy(io.sampleName, optarg);
 			break;
 
-		case 'f':
+		case 'n':
 			printf ("option -fasterAnnoAlg");
-			io.naiveAnnoAlg = false;
+			opt.fasterAnnoAlg = false;
+			break;
+
+		case 'd':
+			printf ("option -debug");
+			opt.debug = true;
 			break;
 
 		case 'h':
@@ -146,19 +154,24 @@ int main (int argc, char **argv)
 	/* process each VNTR */
 	io.readSeqFromBam(vntrs); // TODO: read one sequence, check all vntrs;
 
+	int s = 0;
 	for (auto &it: vntrs) 
 	{
 		// io.readSeq(it);
-		if (it->nreads == 0) {
+		if (it->nreads == 0 and io.debug) {
 			cerr << "skip one vntr" << endl;
 			continue;
 		}
-		cerr << "start to do the annotation" << endl;
-		it->motifAnnoForOneVNTR(io.naiveAnnoAlg); 
-		it->annoTostring();
-		it->concensusMotifAnnoForOneVNTR();
+
+		if (io.debug) cerr << "start to do the annotation: " << s << endl;
+
+		it->motifAnnoForOneVNTR(opt); 
+		it->annoTostring(opt);
+		it->concensusMotifAnnoForOneVNTR(opt);
+		s += 1;
 	}
 
+	cerr << "outputing vcf" << endl;
 	io.outputVCF(vntrs);
 	exit(EXIT_SUCCESS);
 }
