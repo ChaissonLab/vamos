@@ -43,11 +43,12 @@ static int compare(double update[], int l) {
 // function to compute the variant N-W alignment (linear space, only computes opt distance and traces starting position)
 // (leading gaps cost 0)
 static void
-global(const string &motif, char *vntr, double dist[], uint8_t start[]) { 
+global(const string &motif, char *vntr, uint32_t n, double dist[], uint8_t start[]) { 
 
     int i, j, k;
     uint8_t oldStart, tempStart; // i as row (string A) index, j as column (string B) index, k as distance index for "compare" function
-    const int m = motif.size(), n = strlen(vntr);
+    int m = motif.size();
+    // int n = strlen(vntr);
     double oldDist, update[3];
 
     // initialization for the first row (dist=0, start=j for first row, 0 penalty for leading gaps)
@@ -92,11 +93,15 @@ global(const string &motif, char *vntr, double dist[], uint8_t start[]) {
 
 
 // function to compute the S_i distances (the naive occurrence)
-int bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char * vntr) 
+int bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr, uint32_t n) 
 {
+    if ((vntr != NULL) && (vntr[0] == '\0')) {
+       printf("vntr sequence is empty\n");
+    }
     optMotifs.clear();
     int i, k, m; // i as position index (of vntr), m as motif index, k as distance index for "compare" function
-    int n = strlen(vntr), M = motifs.size();
+    // int n = strlen(vntr); // strlen cannot use on a pointer
+    int M = motifs.size();
     double dist[n+1], update[M];
     uint8_t traceI[n+1], traceM[n+1];
 
@@ -104,7 +109,7 @@ int bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char * vntr)
     double dists[M][n+1];
     uint8_t starts[M][n+1];
     for (int m=0; m<M; m++) 
-        global(motifs[m].seq, vntr, dists[m], starts[m]);
+        global(motifs[m].seq, vntr, n, dists[m], starts[m]);
 
     // calculate S_i distances
     // initialization for i=0
@@ -115,7 +120,7 @@ int bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char * vntr)
     // propagate
     for (i=1; i<=n; i++) {
         for (m=0; m<M; m++) {
-			update[m] = dist[starts[m][i]] + dists[m][i];
+            update[m] = dist[starts[m][i]] + dists[m][i];
         }
         k = compare(update, M); // k gives the index of the picked motif
         dist[i] = update[k];
