@@ -215,7 +215,7 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
     for (j = 0; j < cons_l[0]; ++j)
     {
     	assert(cons_seq[0][j] < motifs_size);
-    	consensus.push_back(cons_seq[0][j]);
+    	consensus.push_back((uint8_t)cons_seq[0][j]);
     }
 
     // fprintf(stdout, "=== output to variables ===\n");
@@ -279,6 +279,7 @@ void MSA (int motifs_size, const vector<int> &gp, const vector<vector<uint8_t>> 
         bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
         for (j = 0; j < seq_lens[i]; ++j)
         {
+        	assert(annos[gp[i]][j] < motifs_size);
         	bseqs[i][j] = annos[gp[i]][j];
 
         	// if (annos[gp[i]][j] >= 0 and annos[gp[i]][j] < 45) 
@@ -301,7 +302,7 @@ void MSA (int motifs_size, const vector<int> &gp, const vector<vector<uint8_t>> 
     return;
 }
 
-void MSA (const vector<vector<uint8_t>> &annos, vector<uint8_t> &consensus)
+void MSA (int motifs_size, const vector<vector<uint8_t>> &annos, vector<uint8_t> &consensus)
 {
     int n_seqs = annos.size();
 	if (n_seqs == 1)
@@ -317,11 +318,14 @@ void MSA (const vector<vector<uint8_t>> &annos, vector<uint8_t> &consensus)
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = annos[i].size();
         bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
-        for (j = 0; j < seq_lens[i]; ++j)
-            bseqs[i][j] = annos[i][j];
+        for (j = 0; j < seq_lens[i]; ++j) 
+        {
+        	assert(annos[i][j] < motifs_size); 
+        	bseqs[i][j] = annos[i][j];
+        }
     }
 
-	MSA_helper (n_seqs, n_seqs, consensus, seq_lens, bseqs);
+	MSA_helper (motifs_size, n_seqs, consensus, seq_lens, bseqs);
     for (i = 0; i < n_seqs; ++i) free(bseqs[i]); 
    	free(bseqs); 
     free(seq_lens);
@@ -399,7 +403,7 @@ void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 	else 
 	{
 		het = false;
-		MSA (annos, consensus);
+		MSA (motifs.size(), annos, consensus);
 	}
 
 	if (het)
