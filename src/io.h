@@ -23,8 +23,6 @@ public:
 	char * out_vcf;
 	char * sampleName;
 	char * version;
-	bool fasterAnnoAlg;
-	bool debug;
 	IO () 
 	{
 		version = (char *) malloc(7);
@@ -34,8 +32,6 @@ public:
 		motif_csv = NULL;
 		out_vcf = NULL;
 		sampleName = NULL;
-		fasterAnnoAlg = true;
-		debug = false;
 	};
 	~IO() 
 	{

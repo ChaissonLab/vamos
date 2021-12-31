@@ -8,7 +8,6 @@
 
 using namespace std;
 
-
 // function to compute the distance of given pair of characters
 static double distance(char a, char b) {
 
@@ -25,7 +24,7 @@ static double distance(char a, char b) {
 
 
 // function to find min edit distance in dynamic programming
-static int compare(double update[], int l) {
+static int compare(vector<double> &update, int l) {
 
     double min = update[0];
     int k = 0;
@@ -43,13 +42,14 @@ static int compare(double update[], int l) {
 // function to compute the variant N-W alignment (linear space, only computes opt distance and traces starting position)
 // (leading gaps cost 0)
 static void
-global(const string &motif, char *vntr, int n, double dist[], uint8_t start[]) { 
+global(const string &motif, char *vntr, int n, vector<double> &dist, vector<uint8_t> &start) { 
 
     int i, j, k;
     uint8_t oldStart, tempStart; // i as row (string A) index, j as column (string B) index, k as distance index for "compare" function
     int m = motif.size();
     // int n = strlen(vntr);
-    double oldDist, update[3];
+    double oldDist;
+    vector<double> update(3);
 
     // initialization for the first row (dist=0, start=j for first row, 0 penalty for leading gaps)
     for (j=0; j<=n; j++) {
@@ -102,14 +102,24 @@ int bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr, 
     int i, k, m; // i as position index (of vntr), m as motif index, k as distance index for "compare" function
     // int n = strlen(vntr); // strlen cannot use on a pointer
     int M = motifs.size();
-    double dist[n+1], update[M];
-    uint8_t traceI[n+1], traceM[n+1];
+    // double dist[n+1], update[M];
+    // uint8_t traceI[n+1], traceM[n+1];
+
+    vector<double> dist(n + 1);
+    vector<double> update(M);
+    vector<uint8_t> traceI(n + 1);
+    vector<uint8_t> traceM(n + 1);
 
     // generate dp matrix for each motif
-    double dists[M][n+1];
-    uint8_t starts[M][n+1];
-    for (m=0; m<M; m++) 
-        global(motifs[m].seq, vntr, n, dists[m], starts[m]);
+    vector<vector<double>> dists(M);
+    vector<vector<uint8_t>> starts(M);
+    for (i = 0; i < M; ++i) {dists[i].resize(n + 1);}
+    for (i = 0; i < M; ++i) {starts[i].resize(n + 1);}
+
+    // double dists[M][n+1];
+    // uint8_t starts[M][n+1];
+
+    for (m = 0; m < M; m++) global(motifs[m].seq, vntr, n, dists[m], starts[m]);
 
     // calculate S_i distances
     // initialization for i=0
@@ -137,6 +147,7 @@ int bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr, 
     reverse(optMotifs.begin(), optMotifs.end());
     return 0;
 }
+
 
 
 int main (int argc, const char* argv[]) {
