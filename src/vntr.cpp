@@ -5,7 +5,8 @@
 #include <algorithm>
 #include <utility>
 #include "vntr.h"
-#include "bounded_anno.cpp"
+// #include "bounded_anno.cpp"
+#include "bounded_anno_local.cpp"
 #include "naive_anno.cpp"
 #include "edlib.h"
 #include "dataanalysis.h"
@@ -17,9 +18,10 @@
 // #include "seqan/score.h"
 void VNTR::motifAnnoForOneVNTR (const OPTION &opt) 
 {
-	if (nreads == 0) return;
+	if (skip) return;
 
 	annos.resize(nreads);
+	nullAnnos.resize(nreads, false);
 	for (int i = 0; i < nreads; ++i)
 	{
 		/* 
@@ -31,6 +33,13 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt)
 			bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
 		else
 			naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
+		if (annos[i].size() == 0) 
+		{
+			skip = true;
+			nullAnno = true;
+			nullAnnos[i] = true;
+			cerr << "skip the vntr" << endl;
+		}
 	}
 	return;
 }
@@ -43,22 +52,23 @@ static void encode (int motifs_size, vector<uint8_t> &annoNum, string &annoStr)
 	for (size_t i = 0; i < annoNum.size(); ++i)
 	{
 		num = annoNum[i];
-		assert(num < motifs_size);
+		assert(num < motifs_size and motifs_size <= 255);
 
-		// tmp_s.assign(1, (char) num);
-		// annoStr.replace(i, 1, tmp_s);  
+		tmp_s.assign(1, (char) num);
+		annoStr.replace(i, 1, tmp_s);  
+		assert(!annoStr.empty());
 
 		// for outputing string to stdout
-		if (num < 45)
-		{
-			tmp_s.assign(1, (char) (num + 33));
-			annoStr.replace(i, 1, tmp_s);  
-		}
-		else if (num >= 45 and num <= 221)
-		{
-			tmp_s.assign(1, (char) (num + 34));
-			annoStr.replace(i, 1, tmp_s);  		
-		}		
+		// if (num < 45)
+		// {
+		// 	tmp_s.assign(1, (char) (num + 33));
+		// 	annoStr.replace(i, 1, tmp_s);  
+		// }
+		// else if (num >= 45 and num <= 221)
+		// {
+		// 	tmp_s.assign(1, (char) (num + 34));
+		// 	annoStr.replace(i, 1, tmp_s);  		
+		// }		
 	}
 	return;
 }
@@ -73,11 +83,12 @@ void annoTostring_helper (int motifs_size, string &annoStr, vector<uint8_t> &ann
 
 void VNTR::annoTostring (const OPTION &opt)
 {
-	if (nreads == 0) return;
+	if (skip) return;
 	annoStrs.resize(nreads);
 	for (int r = 0; r < nreads; ++r)
 	{
 		annoTostring_helper(motifs.size(), annoStrs[r], annos[r]);
+		assert(annoStrs[r].length() > 0);
 		if (opt.debug) cerr << "string " << r << ":  " << annoStrs[r] << endl;
 	}
 	return;
@@ -387,6 +398,17 @@ double avgSilhouetteCoeff (int nreads, double edist [], vector<int> &gp1, vector
 */
 void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 {
+	if (skip) return;
+    int n_seqs = annos.size();
+    if (n_seqs == 0) return;
+
+	if (n_seqs == 1)
+	{
+		consensus.resize(1);
+		consensus[0] = annos[0];
+		return;
+	}
+
 	/* compute the MSA for each cluster when nclusts == 2 */
 	vector<int> gp1, gp2;
 	double edist [nreads * nreads];
@@ -427,8 +449,11 @@ void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 
 void VNTR::concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt)
 {
+	if (skip) return;
     int n_seqs = annos.size();
     int motifs_size = motifs.size();
+    if (n_seqs == 0) return;
+
 	if (n_seqs == 1)
 	{
 		consensus.resize(1);
@@ -483,10 +508,11 @@ void VNTR::concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt)
     abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
 
     assert(cons_n > 0); // cons_n == 0 means no consensus sequence exists
+    if (cons_n > 1) cerr << "het" << endl;
 
     int numHap = cons_n > 1 ? 2 : 1;
 	consensus.resize(numHap);
-	het = cons_n > 1 ? 1 : 0;
+	het = cons_n > 1 ? true : false;
 	for (i = 0; i < numHap; ++i)
 	{
 		for (j = 0; j < cons_l[i]; ++j)

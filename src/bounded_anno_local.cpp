@@ -48,7 +48,6 @@ global(const string &motif, char *vntr, int n, vector<double> &dist, vector<uint
     int i, j, k;
     uint8_t oldStart, tempStart; // i as row (string A) index, j as column (string B) index, k as distance index for "compare" function
     int m = motif.size();
-    // int n = strlen(vntr);
     double oldDist;
     vector<double> update(3);
 
@@ -93,32 +92,29 @@ global(const string &motif, char *vntr, int n, vector<double> &dist, vector<uint
 }
 
 
-// function to compute the S_i distances (the naive occurrence)
+// function to compute the S_i distances (O(nm) time)
 int bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr, int n) 
 {
+    vector<uint8_t> optAnno;
     if ((vntr != NULL) && (vntr[0] == '\0')) {
        printf("vntr sequence is empty\n");
     }
-    optMotifs.clear();
+    optAnno.clear();
     int i, k, m; // i as position index (of vntr), m as motif index, k as distance index for "compare" function
-    // int n = strlen(vntr); // strlen cannot use on a pointer
     int M = motifs.size();
-    // double dist[n+1], update[M];
-    // uint8_t traceI[n+1], traceM[n+1];
 
     vector<double> dist(n + 1);
     vector<double> update(M);
+    vector<int> gap(M);
     vector<uint8_t> traceI(n + 1);
     vector<uint8_t> traceM(n + 1);
+    double ratio = 0.80;
 
     // generate dp matrix for each motif
     vector<vector<double>> dists(M);
     vector<vector<uint8_t>> starts(M);
     for (i = 0; i < M; ++i) {dists[i].resize(n + 1);}
     for (i = 0; i < M; ++i) {starts[i].resize(n + 1);}
-
-    // double dists[M][n+1];
-    // uint8_t starts[M][n+1];
 
     for (m = 0; m < M; m++) global(motifs[m].seq, vntr, n, dists[m], starts[m]);
 
@@ -131,23 +127,41 @@ int bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr, 
     // propagate
     for (i=1; i<=n; i++) {
         for (m=0; m<M; m++) {
-			update[m] = dist[starts[m][i]] + dists[m][i];
+            if (dists[m][i] > motifs[m].len * ratio){
+                update[m] = dist[starts[m][i]] + motifs[m].len * ratio;
+                gap[m] = 1;
+            } else {
+                update[m] = dist[starts[m][i]] + dists[m][i];
+                gap[m] = 0;
+            }
         }
         k = compare(update, M); // k gives the index of the picked motif
         dist[i] = update[k];
         traceI[i] = starts[k][i];
-        traceM[i] = k;
+        if (gap[k] == 1) {
+            traceM[i] = M;
+        } else {
+            traceM[i] = k;
+        }
     }
 
     // traceback
     i = n;
     while (i > 0) {
-        optMotifs.push_back(traceM[i]);
+        optAnno.push_back(traceM[i]);
         i = traceI[i];
     }
-    reverse(optMotifs.begin(), optMotifs.end());
+    reverse(optAnno.begin(), optAnno.end());
+
+    // skip the gap 
+    for (auto &it : optAnno)
+    {
+        if (it < M)
+            optMotifs.push_back(it);
+    }
+
+    assert(optMotifs.size() > 0);
     return 0;
 }
-
 
 

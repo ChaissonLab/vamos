@@ -55,8 +55,11 @@ public:
 	vector<vector<uint8_t>> consensus; 
 	int nreads;
 	bool het;
+	bool skip;
+	bool nullAnno;
+	vector<bool> nullAnnos;
 
-	VNTR () { het = false; nreads = 0; };
+	VNTR () { het = false; nreads = 0; skip = false; nullAnno = false;};
 
 	VNTR (string Chr, uint32_t Start, uint32_t End, uint32_t Len) : chr(Chr), ref_start(Start), ref_end(End), len(Len) 
 	{
@@ -65,6 +68,8 @@ public:
 		region = Chr + s + e;
 		het = false; 
 		nreads = 0;
+		skip = false;
+		nullAnno = false;
 	};
 
 	~VNTR () {};

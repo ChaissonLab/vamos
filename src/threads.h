@@ -16,6 +16,7 @@ public:
 	OPTION * opt;
 	IO * io;
 	ofstream * out;
+	ofstream * out_nullAnno;
 	mutex *mtx; 
 	int * numOfProcessed;
 

@@ -39,6 +39,8 @@ public:
     void writeHeader(ofstream &out);
 
     void writeBody(vector<VNTR *> &vntrs, ofstream &out, int tid, int nproc);
+
+	void writeNullAnno(vector<VNTR *> &vntrs, ofstream &out_nullAnno, int tid, int nproc);
 };
 
 #endif

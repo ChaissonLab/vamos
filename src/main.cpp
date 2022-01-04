@@ -13,7 +13,7 @@
 
 using namespace std;
 
-struct timeval start_time, stop_time;
+struct timeval start_time, stop_time, elapsed_time;
 
 /* vamos -in read.bam -vntr vntrs.bed -motif motifs.csv -o out.vcf */
 
@@ -33,21 +33,23 @@ void printUsage(IO &io)
 	printf("       -h            print out help message\n");
 } 
 
-int ProcVNTR (int s, VNTR * it, const OPTION &opt) 
+void ProcVNTR (int s, VNTR * it, const OPTION &opt) 
 {
-	if (it->nreads == 0 and opt.debug) {
-		cerr << "skip one vntr" << endl;
-		return 0;
+	if (it->nreads == 0 or it->motifs.size() > 255) 
+	{
+		it->skip = true;
+		if (opt.debug) cerr << "skip one vntr" << endl;
+		return;
 	}
 
 	if (opt.debug) cerr << "start to do the annotation: " << s << endl;
 
 	it->motifAnnoForOneVNTR(opt); 
 	it->annoTostring(opt);
-	it->concensusMotifAnnoForOneVNTRUsingABpoa(opt);
-	// it->concensusMotifAnnoForOneVNTR(opt);
+	// it->concensusMotifAnnoForOneVNTRUsingABpoa(opt);
+	it->concensusMotifAnnoForOneVNTR(opt);
 	it->clear();
-	return 1;
+	return;
 }
 
 void *ProcVNTRs (void *procInfoValue)
@@ -59,13 +61,17 @@ void *ProcVNTRs (void *procInfoValue)
 
 	for (i = procInfo->thread, s = 0; i < sz; i += (procInfo->opt)->nproc, s += 1)
 	{
-		cerr << "processing vntr: " << i << endl;
-		procInfo->numOfProcessed += ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt));
+		if (procInfo->opt->debug) cerr << "processing vntr: " << i << endl;
+		// procInfo->numOfProcessed += ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt));
+		ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt));
 	}
 
 	procInfo->mtx->lock();
+
 	cerr << "outputing vcf" << endl;
 	(procInfo->io)->writeVCFBody(*(procInfo->out), (*(procInfo->vntrs)), procInfo->thread, (procInfo->opt)->nproc);	
+	// (procInfo->io->vcfWriter).writeNullAnno((*(procInfo->vntrs)), *(procInfo->out_nullAnno), procInfo->thread, (procInfo->opt)->nproc);	
+
 	procInfo->mtx->unlock();
 	cerr << "finish thread: " << procInfo->thread << endl;
 	pthread_exit(NULL);     /* Thread exits (dies) */	
@@ -196,6 +202,8 @@ int main (int argc, char **argv)
 
 	vector<VNTR *> vntrs;
 
+	gettimeofday(&start_time,NULL);
+
 	/* read VNTR bed file */
 	io.readVNTRFromBed(vntrs);
 
@@ -215,6 +223,14 @@ int main (int argc, char **argv)
 	io.writeVCFHeader(out);
 	cerr << "finishing reading!" << endl;
 
+	gettimeofday(&stop_time,NULL);
+	timersub(&stop_time, &start_time, &elapsed_time); 
+	printf("reading time was %f sec\n",
+	elapsed_time.tv_sec+elapsed_time.tv_usec/1000000.0);
+
+	/* debug code */
+	// ofstream out_nullAnno("/project/mchaisso_100/cmb-16/jingwenr/trfCall/vamos/src/test_pipeline/sub_50000/nullAnno.bed");
+
 	/* Create threads */
 	int i;
 	if (opt.nproc > 1)
@@ -231,6 +247,8 @@ int main (int argc, char **argv)
 			procInfo[i].mtx = &mtx;
 			procInfo[i].numOfProcessed = &numOfProcessed;
 			procInfo[i].out = &out;
+			// procInfo[i].out_nullAnno = &out_nullAnno;
+
 			if (pthread_create(&tid[i], NULL, ProcVNTRs, (void *) &procInfo[i]) )
 			{
 				cerr << "ERROR: Cannot create thread" << endl;
@@ -262,6 +280,7 @@ int main (int argc, char **argv)
 	}
 
 	out.close();
+	// out_nullAnno.close();
 	exit(EXIT_SUCCESS);
 }
 

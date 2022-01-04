@@ -57,7 +57,7 @@ void VcfWriter::writeHeader(ofstream &out)
 
 void writeSingleBody(VNTR * it, ofstream &out)
 {
-	if (it->nreads == 0) return;
+	if (it->skip) return;
 	string motif_list, motif_anno_h1, motif_anno_h2, GT; 
 	for (auto &piece : it->motifs) 
 	{ 
@@ -104,6 +104,50 @@ void VcfWriter::writeBody(vector<VNTR *> &vntrs, ofstream& out, int tid, int npr
 	{
 		for (auto &it : vntrs) 
 			writeSingleBody(it, out);
+	}
+
+	return;
+}
+
+void writeSingleNullAnno(VNTR * it, ofstream &out_nullAnno)
+{
+	if (!it->nullAnno) return;
+
+	bool na;
+	for (int t = 0; t < it->nreads; ++t)
+	{
+		na = it->nullAnnos[t];
+		if (na)
+		{
+			out_nullAnno << it->region << "\t";
+			out_nullAnno.write(it->reads[t]->seq, it->reads[t]->len);
+			out_nullAnno << "\t"; 
+			size_t t = 0;
+			for (auto &mt : it->motifs)
+			{
+				if (t < it->motifs.size() - 1)
+					out_nullAnno << mt.seq << ",";
+				else
+					out_nullAnno << mt.seq << "\n";
+				t++;
+			}			
+		}
+	}
+
+	return;
+}
+
+void VcfWriter::writeNullAnno(vector<VNTR *> &vntrs, ofstream &out_nullAnno, int tid, int nproc)
+{
+	if (nproc > 1)
+	{
+		for (size_t i = tid; i < vntrs.size(); i += nproc)
+			writeSingleNullAnno(vntrs[i], out_nullAnno);
+	}
+	else
+	{
+		for (auto &it : vntrs) 
+			writeSingleNullAnno(it, out_nullAnno);
 	}
 
 	return;
