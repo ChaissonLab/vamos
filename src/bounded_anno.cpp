@@ -95,10 +95,11 @@ global(const string &motif, char *vntr, int n, vector<double> &dist, vector<uint
 // function to compute the S_i distances (O(nm) time)
 int bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr, int n) 
 {
+    vector<uint8_t> optAnno;
     if ((vntr != NULL) && (vntr[0] == '\0')) {
        printf("vntr sequence is empty\n");
     }
-    optMotifs.clear();
+    optAnno.clear();
     int i, k, m; // i as position index (of vntr), m as motif index, k as distance index for "compare" function
     int M = motifs.size();
 
@@ -146,10 +147,18 @@ int bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr, 
     // traceback
     i = n;
     while (i > 0) {
-        optMotifs.push_back(traceM[i]);
+        optAnno.push_back(traceM[i]);
         i = traceI[i];
     }
-    reverse(optMotifs.begin(), optMotifs.end());
+    reverse(optAnno.begin(), optAnno.end());
+
+    // skip the gap 
+    for (auto &it : optAnno)
+    {
+        if (it < M)
+            optMotifs.push_back(it);
+    }
+    
     return 0;
 }
 
