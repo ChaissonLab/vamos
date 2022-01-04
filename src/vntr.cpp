@@ -31,7 +31,6 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt)
 			bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
 		else
 			naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
-		// cerr << "finish for reads: " << i << endl;
 	}
 	return;
 }
@@ -487,6 +486,7 @@ void VNTR::concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt)
 
     int numHap = cons_n > 1 ? 2 : 1;
 	consensus.resize(numHap);
+	het = cons_n > 1 ? 1 : 0;
 	for (i = 0; i < numHap; ++i)
 	{
 		for (j = 0; j < cons_l[i]; ++j)
