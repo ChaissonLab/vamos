@@ -8,14 +8,15 @@ class OPTION
 public:
 	bool fasterAnnoAlg;
 	bool debug;
+	int nproc;
 
 	OPTION ()
 	{
 		fasterAnnoAlg = true;
 		debug = false;
+		nproc = 1;
 	};
 
-	OPTION (bool FasterAnnoAlg, bool Debug) : fasterAnnoAlg(FasterAnnoAlg), debug(Debug) {};
 	~OPTION () {};
 };
 

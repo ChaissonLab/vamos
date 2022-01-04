@@ -217,6 +217,7 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
     	assert(cons_seq[0][j] < motifs_size);
     	consensus.push_back((uint8_t)cons_seq[0][j]);
     }
+    assert(consensus.size() > 0);
 
     // fprintf(stdout, "=== output to variables ===\n");
     // for (i = 0; i < cons_n; ++i) {
@@ -383,7 +384,7 @@ double avgSilhouetteCoeff (int nreads, double edist [], vector<int> &gp1, vector
 
 /* based on vector<vector<uint8_t>> annos, get a consensus representation of the current locus 
    input:   vector<vector<uint8_t>> annos
-   output:  vector<uint8_t> consensus_h1, vector<uint8_t> consensus_h2
+   output:  vector<vector<uint8_t>> consensus
 */
 void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 {
@@ -394,39 +395,161 @@ void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 
 	/* compare which is better: nclusts == 2 or nclusts == 1 */
 	double sc_2clusts = avgSilhouetteCoeff(nreads, edist, gp1, gp2);
-	if (sc_2clusts > 0.0)
+	if (sc_2clusts > 0.0 and gp1.size() > 0 and gp2.size() > 0)
 	{
 		het = true;
-		MSA (motifs.size(), gp1, annos, consensus_h1);
-		MSA (motifs.size(), gp2, annos, consensus_h2);
+		consensus.resize(2);
+		MSA (motifs.size(), gp1, annos, consensus[0]);
+		MSA (motifs.size(), gp2, annos, consensus[1]);
+		assert(consensus[0].size() > 0 and consensus[1].size() > 0);
 	}
 	else 
 	{
 		het = false;
-		MSA (motifs.size(), annos, consensus);
+		consensus.resize(1);
+		MSA (motifs.size(), annos, consensus[0]);
+		assert(consensus[0].size() > 0);
 	}
 
 	if (het)
 	{
 		if (opt.debug) {cerr << "het! " << endl; cerr << "h1 anno: " << endl;}
-		outputConsensus(consensus_h1, opt);
+		outputConsensus(consensus[0], opt);
 		if (opt.debug) cerr << "h2 anno: " << endl;
-		outputConsensus(consensus_h2, opt);
+		outputConsensus(consensus[1], opt);
 	}
 	else
 	{
 		if (opt.debug) {cerr << "hom! " << endl; cerr << "h1&h2 anno: " << endl;}
-		outputConsensus(consensus, opt);		
+		outputConsensus(consensus[0], opt);		
 	}
+	return;
+}
+
+void VNTR::concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt)
+{
+    int n_seqs = annos.size();
+    int motifs_size = motifs.size();
+	if (n_seqs == 1)
+	{
+		consensus.resize(1);
+		consensus[0] = annos[0];
+		return;
+	}
+
+    // collect sequence length
+    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
+    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
+    int i, j;
+    for (i = 0; i < n_seqs; ++i) {
+        seq_lens[i] = annos[i].size();
+        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
+        for (j = 0; j < seq_lens[i]; ++j) 
+        {
+        	assert(annos[i][j] < motifs_size); 
+        	bseqs[i][j] = annos[i][j];
+        }
+    }
+
+    // initialize variables
+    abpoa_t *ab = abpoa_init();
+    abpoa_para_t *abpt = abpoa_init_para();
+
+    // alignment parameters
+    abpt->align_mode = 0; // 0:global 1:local, 2:extension
+    abpt->match = 1;      // match score
+    abpt->mismatch = 1;   // mismatch penalty
+    abpt->gap_mode = ABPOA_AFFINE_GAP; // gap penalty mode
+    abpt->gap_open1 = 1;  // gap open penalty #1
+    abpt->gap_ext1 = 1;   // gap extension penalty #1
+    abpt->gap_open2 = 1; // gap open penalty #2
+    abpt->gap_ext2 = 1;   // gap extension penalty #2
+                    	  // gap_penalty = min{gap_open1 + gap_len * gap_ext1, gap_open2 + gap_len * gap_ext2}
+    // abpt->bw = 10;        // extra band used in adaptive banded DP
+    // abpt->bf = 0.01; 
+
+    abpt->is_diploid = 0;
+	// abpt->min_freq = 0.8; 
+    abpt->out_msa = 1; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
+    abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
+    // abpt->w = 6, abpt->k = 2; abpt->min_w = 10; // minimizer-based seeding and partition
+    abpt->progressive_poa = 1;
+
+    // variables to store result
+    uint8_t **cons_seq; int **cons_cov, *cons_l, cons_n = 0;
+    uint8_t **msa_seq; int msa_l = 0;
+
+    abpoa_post_set_para(abpt);
+
+    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
+
+    assert(cons_n > 0); // cons_n == 0 means no consensus sequence exists
+
+    int numHap = cons_n > 1 ? 2 : 1;
+	consensus.resize(numHap);
+	for (i = 0; i < numHap; ++i)
+	{
+		for (j = 0; j < cons_l[i]; ++j)
+		{
+			assert(cons_seq[i][j] < motifs_size);
+			consensus[i].push_back((uint8_t)cons_seq[i][j]);
+		}
+		assert(consensus[i].size() > 0); 		
+	}
+
+    if (cons_n) {
+        for (i = 0; i < cons_n; ++i) 
+        {
+            free(cons_seq[i]); 
+            free(cons_cov[i]);
+        } 
+        free(cons_seq); 
+        free(cons_cov); 
+        free(cons_l);
+    }
+
+    if (msa_l) 
+    {
+        for (i = 0; i < n_seqs; ++i) 
+        {
+        	free(msa_seq[i]); 
+        	free(msa_seq);
+        }
+    }
+
+    abpoa_free(ab); 
+    abpoa_free_para(abpt); 
+
+    for (i = 0; i < n_seqs; ++i) free(bseqs[i]); 
+   	free(bseqs); 
+    free(seq_lens);
+
+	if (het)
+	{
+		if (opt.debug) {cerr << "het! " << endl; cerr << "h1 anno: " << endl;}
+		outputConsensus(consensus[0], opt);
+		if (opt.debug) cerr << "h2 anno: " << endl;
+		outputConsensus(consensus[1], opt);
+	}
+	else
+	{
+		if (opt.debug) {cerr << "hom! " << endl; cerr << "h1&h2 anno: " << endl;}
+		outputConsensus(consensus[0], opt);		
+	}
+
 	return;
 }
 
 void VNTR::commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_anno)
 {
 	if (h1)
-		for (auto &it : consensus_h1) { motif_anno += "MOTIF_" + to_string(it) + ",";}
-	else
-		for (auto &it : consensus_h2) { motif_anno += "MOTIF_" + to_string(it) + ",";}
+		for (auto &it : consensus[0]) { motif_anno += "MOTIF_" + to_string(it) + ",";}
+	else if (het)
+		for (auto &it : consensus[1]) { motif_anno += "MOTIF_" + to_string(it) + ",";}	
+	else 
+		for (auto &it : consensus[0]) { motif_anno += "MOTIF_" + to_string(it) + ",";}
+
 	if (!motif_anno.empty()) motif_anno.pop_back();
+	// assert(!motif_anno.empty());
 	return;
 }

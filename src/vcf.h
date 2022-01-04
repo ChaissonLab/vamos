@@ -28,29 +28,17 @@ public:
 		set = 0;
 	};
 
-	VcfWriter (char * input_bam_file, char * Version, char * SampleName) : version(Version), sampleName(SampleName)
+	~VcfWriter () 
 	{
-	    samFile * fp_in = hts_open(input_bam_file, "r"); //open bam file
-	    bam_hdr_t * bamHdr = sam_hdr_read(fp_in); //read header
-
-	    int32_t ncontigs = bamHdr->n_targets;
-
-	    for (int32_t i = 0; i < ncontigs; ++i)
-	    {
-	    	contigLengths.push_back(bamHdr->target_len[i]);
-	    	target_names.push_back(string(bamHdr->target_name[i]));
-	    }
-
-	    bam_hdr_destroy(bamHdr);
-	    sam_close(fp_in); 
-	    set = 1;
+		// free(version);
+		// free(sampleName);
 	};
 
-	~VcfWriter () {};
+	void init (char * input_bam_file, char * Version, char * SampleName);
 
-    void writeHeader(ostream &out);
+    void writeHeader(ofstream &out);
 
-    void writeBody(vector<VNTR *> &vntrs, ostream &out);
+    void writeBody(vector<VNTR *> &vntrs, ofstream &out, int tid, int nproc);
 };
 
 #endif

@@ -23,6 +23,8 @@ public:
 	char * out_vcf;
 	char * sampleName;
 	char * version;
+	VcfWriter vcfWriter;
+
 	IO () 
 	{
 		version = (char *) malloc(7);
@@ -33,6 +35,7 @@ public:
 		out_vcf = NULL;
 		sampleName = NULL;
 	};
+
 	~IO() 
 	{
 		free(version);
@@ -42,6 +45,7 @@ public:
 		free(out_vcf);
 		free(sampleName);
 	};
+
 	int readMotifsFromCsv (vector<VNTR *> &vntrs);
 
 	int read_tsv(vector<vector<string>> &items);
@@ -54,11 +58,11 @@ public:
 	// void readSeqFromBam (vector<READ*> &reads, string &chr, const uint32_t &ref_VNTR_start, 
  //                       const uint32_t &ref_VNTR_end, const uint32_t &VNTR_len, string &region);
 	
-	int outputVCF (vector<VNTR *> &vntrs);
+	// int outputVCF (vector<VNTR *> &vntrs);
+
+	int writeVCFHeader(ofstream& out);
+
+	int writeVCFBody(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc);
 };
-
-void VcfWriteHeader(ostream& out, VcfWriter & vcfWriter);
-
-void VCFWriteBody(vector<VNTR *> &vntrs, VcfWriter & vcfWriter, ostream& out);
 
 #endif

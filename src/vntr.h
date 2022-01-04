@@ -50,9 +50,9 @@ public:
 	vector<READ *> reads; 
 	vector<vector<uint8_t>> annos; // the motif annotation for each read sequence
 	vector<string> annoStrs; 
-	vector<uint8_t> consensus_h1; // diploid genome
-	vector<uint8_t> consensus_h2;
-	vector<uint8_t> consensus;
+	// vector<uint8_t> consensus_h1; // diploid genome
+	// vector<uint8_t> consensus_h2;
+	vector<vector<uint8_t>> consensus; 
 	int nreads;
 	bool het;
 
@@ -90,6 +90,8 @@ public:
 
 	/* for all the sequences at the current VNTR locus, get the consensus; annotation */
 	void concensusMotifAnnoForOneVNTR (const OPTION &opt);
+
+	void concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt);
 
 	int hClust (vector<int> &gp1, vector<int> &gp2, double edist []);
 

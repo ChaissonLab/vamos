@@ -1,5 +1,5 @@
 PROG=vamos
-LIBS=-lhts -labpoa -lz 
+LIBS=-lhts -labpoa -lz -lpthread
 PROF=/home/cmb-16/mjc/shared/lib/
 DEBUG?=""
 OPT?=""
@@ -33,7 +33,7 @@ all:$(PROG)
 vamos: main.o io.o vcf.o vntr.o
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L ../static_lib/ -lalglib -ledlib 
 
-main.o: main.cpp io.h vcf.h vntr.h read.h option.h
+main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include  
 
 io.o: io.cpp io.h vcf.h vntr.h read.h

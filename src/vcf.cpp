@@ -7,7 +7,33 @@
 #include <ostream>
 #include "vcf.h"
 
-void VcfWriter::writeHeader(ostream& out)
+void VcfWriter::init (char * input_bam_file, char * Version, char * SampleName)
+{
+	// version = (char *) malloc(strlen(Version) + 1);
+	// strcpy(version, Version);
+	// sampleName = (char *) malloc(strlen(SampleName) + 1);
+	// strcpy(sampleName, SampleName);
+	version = Version;
+	sampleName = SampleName;
+
+    samFile * fp_in = hts_open(input_bam_file, "r"); //open bam file
+    bam_hdr_t * bamHdr = sam_hdr_read(fp_in); //read header
+
+    int32_t ncontigs = bamHdr->n_targets;
+
+    for (int32_t i = 0; i < ncontigs; ++i)
+    {
+    	contigLengths.push_back(bamHdr->target_len[i]);
+    	target_names.push_back(string(bamHdr->target_name[i]));
+    }
+
+    bam_hdr_destroy(bamHdr);
+    sam_close(fp_in); 
+    set = 1;
+};
+
+
+void VcfWriter::writeHeader(ofstream &out)
 {
     out << "##fileformat=VCFv4.1\n";
     out << "##source=vamos" << version << '\n';
@@ -29,44 +55,58 @@ void VcfWriter::writeHeader(ostream& out)
     return;
 }
 
-
-void VcfWriter::writeBody(vector<VNTR *> &vntrs, ostream& out)
+void writeSingleBody(VNTR * it, ofstream &out)
 {
-	for (auto &it : vntrs)
-	{
-		if (it->nreads == 0) continue;
-		string motif_list, motif_anno_h1, motif_anno_h2, GT; 
-		for (auto &piece : it->motifs) 
-		{ 
-			motif_list += piece.seq + ',';
-		}
-	    if (!motif_list.empty()) motif_list.pop_back();
-
-	    it->commaSeparatedMotifAnnoForConsensus(1, motif_anno_h1);
-	    it->commaSeparatedMotifAnnoForConsensus(0, motif_anno_h2);
-
-	    if (motif_anno_h1 == motif_anno_h2) GT = "1/1";
-	    else GT = "1/2";
-
-		out << it->chr << "\t"
-			<< to_string(it->ref_start) << "\t"
-			<< ".\t"
-			<< "N\t"
-			<< "<VNTR>\t"
-			<< ".\t"
-			<< "PASS\t"
-			<< "END=" + to_string(it->ref_end) + ";" 
-			<< "RU=" + motif_list + ";"
-			<< "SVTYPE=VNTR;"
-			<< "ALTANNO_H1=" + motif_anno_h1 + ";";
-
-		if (GT == "1/2")
-			out << "ALTANNO_H2=" + motif_anno_h2 + ";\t";
-
-		out	<< "PASS\t"
-			<< "GT\t"
-			<< GT + "\n";
+	if (it->nreads == 0) return;
+	string motif_list, motif_anno_h1, motif_anno_h2, GT; 
+	for (auto &piece : it->motifs) 
+	{ 
+		motif_list += piece.seq + ',';
 	}
+    if (!motif_list.empty()) motif_list.pop_back();
+
+    it->commaSeparatedMotifAnnoForConsensus(1, motif_anno_h1);
+    it->commaSeparatedMotifAnnoForConsensus(0, motif_anno_h2);
+
+    if (motif_anno_h1 == motif_anno_h2) GT = "1/1";
+    else GT = "1/2";
+
+	out << it->chr << "\t";
+	out	<< to_string(it->ref_start) << "\t";
+	out	<< ".\t";
+	out	<< "N\t";
+	out	<< "<VNTR>\t";
+	out	<< ".\t";
+	out	<< "PASS\t";
+	out	<< "END=" + to_string(it->ref_end) + ";";
+	out	<< "RU=" + motif_list + ";";
+	out	<< "SVTYPE=VNTR;";
+	out	<< "ALTANNO_H1=" + motif_anno_h1 + ";";
+
+	if (GT == "1/2")
+		out << "ALTANNO_H2=" + motif_anno_h2 + ";\t";
+
+	out	<< "PASS\t";
+	out	<< "GT\t";
+	out << GT + "\n";
 	return;
 }
+
+
+void VcfWriter::writeBody(vector<VNTR *> &vntrs, ofstream& out, int tid, int nproc)
+{
+	if (nproc > 1)
+	{
+		for (size_t i = tid; i < vntrs.size(); i += nproc)
+			writeSingleBody(vntrs[i], out);
+	}
+	else
+	{
+		for (auto &it : vntrs) 
+			writeSingleBody(it, out);
+	}
+
+	return;
+}
+
 

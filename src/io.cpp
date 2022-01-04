@@ -268,33 +268,38 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
     return;  
 }
 
-void VcfWriteHeader(ostream& out, VcfWriter & vcfWriter)
+int IO::writeVCFHeader(ofstream& out)
 {
-    vcfWriter.writeHeader(out);
-    return;
-}
-
-void VCFWriteBody(vector<VNTR *> &vntrs, VcfWriter & vcfWriter, ostream& out)
-{
-    vcfWriter.writeBody(vntrs, out);
-    return;
-}
-
-int IO::outputVCF (vector<VNTR *> &vntrs)
-{
-    VcfWriter vcfWriter(input_bam, version, sampleName);
-
-    ofstream out(out_vcf);
-    if (out.fail()) 
-    {
-        cerr << "Unable to open file " << out_vcf << endl;
-        return 1;
-    }
+    vcfWriter.init(input_bam, version, sampleName);
     cerr << "write header" << endl;
-    VcfWriteHeader(out, vcfWriter);
-    cerr << "write body" << endl;
-    VCFWriteBody(vntrs, vcfWriter, out);
-    cerr << "finish" << endl;
-    out.close();  
+    vcfWriter.writeHeader(out);
     return 0;
 }
+
+int IO::writeVCFBody(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc)
+{
+    // cerr << "write body" << endl;
+    vcfWriter.writeBody(vntrs, out, tid, nproc);
+    // cerr << "finish" << endl;
+    return 0;
+}
+
+
+// int IO::outputVCF (vector<VNTR *> &vntrs)
+// {
+//     VcfWriter vcfWriter(input_bam, version, sampleName);
+
+//     ofstream out(out_vcf);
+//     if (out.fail()) 
+//     {
+//         cerr << "Unable to open file " << out_vcf << endl;
+//         return 1;
+//     }
+//     cerr << "write header" << endl;
+//     VcfWriteHeader(out, vcfWriter);
+//     cerr << "write body" << endl;
+//     VCFWriteBody(vntrs, vcfWriter, out);
+//     cerr << "finish" << endl;
+//     out.close();  
+//     return 0;
+// }

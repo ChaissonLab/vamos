@@ -7,13 +7,19 @@
 #include "vntr.h"
 #include "vcf.h"
 #include "option.h"
+#include <sys/time.h>
+#include "threads.h"
+#include <mutex>   
+
 using namespace std;
+
+struct timeval start_time, stop_time;
 
 /* vamos -in read.bam -vntr vntrs.bed -motif motifs.csv -o out.vcf */
 
 void printUsage(IO &io) 
 {
-	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-f] [-debug]\n");
+	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-t threads] [-f] [-debug]\n");
 	printf("Version: %s\n", io.version);
 	printf("Options:\n");
 	printf("       -i  FILE      input alignment file (bam format), bam file needs to be indexed \n");
@@ -21,10 +27,49 @@ void printUsage(IO &io)
 	printf("       -m  FILE      the comma-delimited motif sequences list for each VNTR locus, each row represents a VNTR locus\n");
 	printf("       -o  FILE      output vcf file\n");
 	printf("       -s  CHAR      the sample name\n");
+	printf("       -t  INT       number of threads\n");
 	printf("       -n            specify the naive version of code to do the annotation, default is faster implementation\n");
-	printf("       -d        print out debug information\n");
+	printf("       -d            print out debug information\n");
 	printf("       -h            print out help message\n");
 } 
+
+int ProcVNTR (int s, VNTR * it, const OPTION &opt) 
+{
+	if (it->nreads == 0 and opt.debug) {
+		cerr << "skip one vntr" << endl;
+		return 0;
+	}
+
+	if (opt.debug) cerr << "start to do the annotation: " << s << endl;
+
+	it->motifAnnoForOneVNTR(opt); 
+	it->annoTostring(opt);
+	it->concensusMotifAnnoForOneVNTRUsingABpoa(opt);
+	// it->concensusMotifAnnoForOneVNTR(opt);
+	it->clear();
+	return 1;
+}
+
+void *ProcVNTRs (void *procInfoValue)
+{
+	ProcInfo *procInfo = (ProcInfo *)procInfoValue;
+	cerr << "start thread: " << procInfo->thread << endl;
+	int i, s;
+	int sz = (procInfo->vntrs)->size();
+
+	for (i = procInfo->thread, s = 0; i < sz; i += (procInfo->opt)->nproc, s += 1)
+	{
+		cerr << "processing vntr: " << i << endl;
+		procInfo->numOfProcessed += ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt));
+	}
+
+	procInfo->mtx->lock();
+	cerr << "outputing vcf" << endl;
+	(procInfo->io)->writeVCFBody(*(procInfo->out), (*(procInfo->vntrs)), procInfo->thread, (procInfo->opt)->nproc);	
+	procInfo->mtx->unlock();
+	cerr << "finish thread: " << procInfo->thread << endl;
+	pthread_exit(NULL);     /* Thread exits (dies) */	
+}
 
 int main (int argc, char **argv)
 {
@@ -40,14 +85,15 @@ int main (int argc, char **argv)
 		{"motif",         required_argument,       0, 'm'},
 		{"output",        required_argument,       0, 'o'},
 		{"sampleName",    required_argument,       0, 's'},
-		{"fasterAnnoAlg",       no_argument,             0, 'f'},
+		{"numThreads",    required_argument,       0, 't'},
+		{"fasterAnnoAlg", no_argument,             0, 'f'},
 		{"help",          no_argument,             0, 'h'},
 		{NULL, 0, 0, '\0'}
 	};
 	/* getopt_long stores the option index here. */
 	int option_index = 0;
 
-	while ((c = getopt_long (argc, argv, "i:v:m:o:s:hnd", long_options, &option_index)) != -1)
+	while ((c = getopt_long (argc, argv, "i:v:m:o:s:t:hnd", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -81,13 +127,18 @@ int main (int argc, char **argv)
 			strcpy(io.sampleName, optarg);
 			break;
 
+		case 't':
+			printf ("option -numThreads with `%s'\n", optarg);
+			opt.nproc = atoi(optarg);
+			break;
+
 		case 'n':
 			printf ("option -fasterAnnoAlg");
 			opt.fasterAnnoAlg = false;
 			break;
 
 		case 'd':
-			printf ("option -debug");
+			printf ("option -debug\n");
 			opt.debug = true;
 			break;
 
@@ -154,25 +205,63 @@ int main (int argc, char **argv)
 	/* process each VNTR */
 	io.readSeqFromBam(vntrs); // TODO: read one sequence, check all vntrs;
 
-	int s = 0;
-	for (auto &it: vntrs) 
+	/* set up out stream and write VCF header */
+    ofstream out(io.out_vcf);
+    if (out.fail()) 
+    {
+        cerr << "ERROR: Unable to open file " << io.out_vcf << endl;
+        exit(EXIT_FAILURE);
+    } 	
+	io.writeVCFHeader(out);
+	cerr << "finishing reading!" << endl;
+
+	/* Create threads */
+	int i;
+	if (opt.nproc > 1)
 	{
-		// io.readSeq(it);
-		if (it->nreads == 0 and opt.debug) {
-			cerr << "skip one vntr" << endl;
-			continue;
+		pthread_t *tid = new pthread_t[opt.nproc];
+		mutex mtx; 
+		int numOfProcessed = 0;
+		vector<ProcInfo> procInfo(opt.nproc);		
+		for (i = 0; i < opt.nproc; i++){ 
+			procInfo[i].vntrs = &vntrs;
+			procInfo[i].thread = i;
+			procInfo[i].opt = &opt;
+			procInfo[i].io = &io;
+			procInfo[i].mtx = &mtx;
+			procInfo[i].numOfProcessed = &numOfProcessed;
+			procInfo[i].out = &out;
+			if (pthread_create(&tid[i], NULL, ProcVNTRs, (void *) &procInfo[i]) )
+			{
+				cerr << "ERROR: Cannot create thread" << endl;
+				exit(EXIT_FAILURE);
+			}
 		}
 
-		if (opt.debug) cerr << "start to do the annotation: " << s << endl;
-
-		it->motifAnnoForOneVNTR(opt); 
-		it->annoTostring(opt);
-		it->concensusMotifAnnoForOneVNTR(opt);
-		s += 1;
+		for (i = 0; i < opt.nproc; i++) {
+			pthread_join(tid[i], NULL);
+		}
+		
+		// for (i = 1; i < opt.nproc; i++) 
+		// 	procInfo[0].timing.Add(procnfo[i].timing);
+		
+		// if (opt.timing != "") 
+		// 	procInfo[0].timing.Summarize(opt.timing);
+		
+	}
+	else 
+	{
+		int s = 0;
+		for (auto &it: vntrs) 
+		{
+			ProcVNTR (s, it, opt);
+			s += 1;
+		}	
+		cerr << "outputing vcf" << endl;
+		io.writeVCFBody(out, vntrs, -1, 1);
 	}
 
-	cerr << "outputing vcf" << endl;
-	io.outputVCF(vntrs);
+	out.close();
 	exit(EXIT_SUCCESS);
 }
 
