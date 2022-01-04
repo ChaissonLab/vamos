@@ -154,6 +154,7 @@ int bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr, 
     reverse(optAnno.begin(), optAnno.end());
 
     // skip the gap 
+    optMotifs.clear();
     for (auto &it : optAnno)
     {
         if (it < M)
