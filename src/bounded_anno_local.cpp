@@ -24,12 +24,12 @@ static double distance(char a, char b) {
 
 
 // function to find min edit distance in dynamic programming
-static int compare(vector<double> &update, int l) {
+static uint8_t compare(vector<double> &update, uint8_t l) {
 
     double min = update[0];
-    int k = 0;
+    uint8_t k = 0;
 
-    for (int i=1; i<l; i++) {
+    for (uint8_t i = 1; i < l; i++) {
         if (update[i] <= min) {
             min = update[i];
             k = i;
@@ -40,14 +40,13 @@ static int compare(vector<double> &update, int l) {
 
 // function to compute the variant N-W alignment (linear space, only computes opt distance and traces starting position)
 // (leading gaps cost 0)
-static void
-global(const string &motif, char *vntr, vector<vector<double>> &dists, vector<vector<int>> &starts, int m, int N) { 
+void global(const string &motif, char *vntr, vector<vector<double>> &dists, vector<vector<int>> &starts, uint8_t m, int N) { 
 
-    uint8_t i, k;
-    int j, oldStart, tempStart; // i as row (string A) index, j as column (string B) index, k as distance index for "compare" function
-    uint8_t M = motif.size();
+    int i, j, oldStart, tempStart; // i as row (string A) index, j as column (string B) index, k as distance index for "compare" function
+    int M = motif.length();
     double oldDist;
-    vector<double> update(3);
+    vector<double> update(3, 0.0);
+    uint8_t k;
 
     // initialization for the first row (dist=0, start=j for first row, 0 penalty for leading gaps)
     for (j=0; j<=N; j++) {
@@ -158,6 +157,6 @@ void bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr,
             optMotifs.push_back(it);
     }
 
-    assert(optMotifs.size() > 0);
+    // assert(optMotifs.size() > 0);
     return;
 }

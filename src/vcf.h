@@ -26,6 +26,7 @@ public:
 		sampleName = NULL;
 		version = NULL;
 		set = 0;
+		ncontigs = 0;
 	};
 
 	~VcfWriter () 

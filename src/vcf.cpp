@@ -5,6 +5,7 @@
 #include <istream>
 #include <fstream>
 #include <ostream>
+#include "assert.h"
 #include "vcf.h"
 
 void VcfWriter::init (char * input_bam_file, char * Version, char * SampleName)
@@ -18,8 +19,7 @@ void VcfWriter::init (char * input_bam_file, char * Version, char * SampleName)
 
     samFile * fp_in = hts_open(input_bam_file, "r"); //open bam file
     bam_hdr_t * bamHdr = sam_hdr_read(fp_in); //read header
-
-    int32_t ncontigs = bamHdr->n_targets;
+    ncontigs = bamHdr->n_targets;
 
     for (int32_t i = 0; i < ncontigs; ++i)
     {
@@ -27,6 +27,7 @@ void VcfWriter::init (char * input_bam_file, char * Version, char * SampleName)
     	target_names.push_back(string(bamHdr->target_name[i]));
     }
 
+    assert((uint32_t) ncontigs == target_names.size() and (uint32_t) ncontigs == contigLengths.size());
     bam_hdr_destroy(bamHdr);
     sam_close(fp_in); 
     set = 1;
@@ -52,6 +53,7 @@ void VcfWriter::writeHeader(ofstream &out)
 		<< "##ALT=<ID=VNTR,Description=\"Allele comprised of VNTR repeat units\">" << "\n";
 
     out << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" << sampleName << "\n";
+    cerr << "finish writing the header" << endl;
     return;
 }
 

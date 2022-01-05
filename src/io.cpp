@@ -268,7 +268,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
     return;  
 }
 
-int IO::writeVCFHeader(ofstream& out)
+int IO::writeVCFHeader(ofstream &out)
 {
     vcfWriter.init(input_bam, version, sampleName);
     cerr << "write header" << endl;

@@ -19,7 +19,7 @@ struct timeval start_time, stop_time, elapsed_time;
 
 void printUsage(IO &io) 
 {
-	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-t threads] [-f] [-debug]\n");
+	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-t threads] [-f] [-d] [-c]\n");
 	printf("Version: %s\n", io.version);
 	printf("Options:\n");
 	printf("       -i  FILE      input alignment file (bam format), bam file needs to be indexed \n");
@@ -30,6 +30,7 @@ void printUsage(IO &io)
 	printf("       -t  INT       number of threads\n");
 	printf("       -n            specify the naive version of code to do the annotation, default is faster implementation\n");
 	printf("       -d            print out debug information\n");
+	printf("       -c            use hierarchical clustering to judge if a VNTR locus is het or hom\n");
 	printf("       -h            print out help message\n");
 } 
 
@@ -46,9 +47,11 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt)
 
 	it->motifAnnoForOneVNTR(opt); 
 	it->annoTostring(opt);
-	// it->concensusMotifAnnoForOneVNTRUsingABpoa(opt);
-	it->concensusMotifAnnoForOneVNTR(opt);
-	it->clear();
+	if (opt.hc)
+		it->concensusMotifAnnoForOneVNTR(opt);
+	else
+		it->concensusMotifAnnoForOneVNTRUsingABpoa(opt);
+	it->clearRead();
 	return;
 }
 
@@ -93,13 +96,14 @@ int main (int argc, char **argv)
 		{"sampleName",    required_argument,       0, 's'},
 		{"numThreads",    required_argument,       0, 't'},
 		{"fasterAnnoAlg", no_argument,             0, 'f'},
+		{"hclust",        no_argument,             0, 'c'},
 		{"help",          no_argument,             0, 'h'},
 		{NULL, 0, 0, '\0'}
 	};
 	/* getopt_long stores the option index here. */
 	int option_index = 0;
 
-	while ((c = getopt_long (argc, argv, "i:v:m:o:s:t:hnd", long_options, &option_index)) != -1)
+	while ((c = getopt_long (argc, argv, "i:v:m:o:s:t:hndc", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -146,6 +150,11 @@ int main (int argc, char **argv)
 		case 'd':
 			printf ("option -debug\n");
 			opt.debug = true;
+			break;
+
+		case 'c':
+			printf ("option -hclust\n");
+			opt.hc = true;
 			break;
 
 		case 'h':
@@ -260,6 +269,7 @@ int main (int argc, char **argv)
 			pthread_join(tid[i], NULL);
 		}
 		
+		delete[] tid;
 		// for (i = 1; i < opt.nproc; i++) 
 		// 	procInfo[0].timing.Add(procnfo[i].timing);
 		
@@ -279,6 +289,9 @@ int main (int argc, char **argv)
 		io.writeVCFBody(out, vntrs, -1, 1);
 	}
 
+	for (size_t i = 0; i < vntrs.size(); ++i) 
+		delete vntrs[i];
+	
 	out.close();
 	// out_nullAnno.close();
 	exit(EXIT_SUCCESS);
