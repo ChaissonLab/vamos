@@ -1,3 +1,13 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <algorithm>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+using namespace std;
+
 // function to compute the distance of given pair of characters
 static double distance(char a, char b) {
 
@@ -80,7 +90,7 @@ global(const string &motif, char *vntr, vector<vector<double>> &dists, vector<ve
 }
 
 // function to compute the S_i distances (the naive occurrence)
-void bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr, int n) 
+void bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr, int N) 
 {
     vector<uint8_t> optAnno;
     optAnno.clear();
@@ -88,21 +98,21 @@ void bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr,
     uint8_t M = motifs.size();
     uint8_t k, m;
 
-    vector<double> dist(n + 1);
+    vector<double> dist(N + 1);
     vector<double> update(M);
     vector<bool> gap(M);
-    vector<int> traceI(n + 1);
-    vector<uint8_t> traceM(n + 1);
+    vector<int> traceI(N + 1);
+    vector<uint8_t> traceM(N + 1);
     double ratio = 0.80;
 
     // generate dp matrix for each motif
     vector<vector<double>> dists(M);
     vector<vector<int>> starts(M);
-    for (i = 0; i < M; ++i) {dists[i].resize(n + 1, 0);}
-    for (i = 0; i < M; ++i) {starts[i].resize(n + 1, 0);}
+    for (i = 0; i < M; ++i) {dists[i].resize(N + 1, 0);}
+    for (i = 0; i < M; ++i) {starts[i].resize(N + 1, 0);}
 
     for (m = 0; m < M; m++) {
-        global(motifs[m].seq, vntr, dists, starts, m, n);
+        global(motifs[m].seq, vntr, dists, starts, m, N);
     }
 
     // calculate S_i distances
@@ -112,7 +122,7 @@ void bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr,
     traceM[0] = 0;
 
     // propagate
-    for (i = 1; i <= n; i++) {
+    for (i = 1; i <= N; i++) {
         for (m = 0; m < M; m++) {
             if (dists[m][i] > motifs[m].len * ratio){
                 update[m] = dist[starts[m][i]] + motifs[m].len * ratio;
@@ -133,7 +143,7 @@ void bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr,
     }
 
     // traceback
-    i = n;
+    i = N;
     while (i > 0) {
         optAnno.push_back(traceM[i]);
         i = traceI[i];
