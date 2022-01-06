@@ -1,6 +1,6 @@
 PROG=vamos
 LIBS=-lhts -labpoa -lz -lpthread
-PROF=/home/cmb-16/mjc/shared/lib/
+PROF=/home1/jingwenr/.conda/envs/trf/lib
 DEBUG?=""
 OPT?=""
 CXX=g++ -std=c++17 
@@ -9,7 +9,7 @@ asan?=""
 tsan?=""
 
 ifneq ($(DEBUG), "")
-CFLAGS=-g -O0 -Wall -Wextra
+CFLAGS=-g -O0 #-Wall -Wextra
 else
 CFLAGS=-O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
 endif
