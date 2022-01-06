@@ -21,7 +21,9 @@ using namespace std;
 //=ACMGRSVTWYHKDBN  aka seq_nt16_str[]
 //=TGKCYSBAWRDMHVN  comp1ement of seq_nt16_str
 //084C2A6E195D3B7F
-static int seqi_rc[] = { 0,8,4,12,2,10,6,14,1,9,5,13,3,11,7,15 };
+// static int seqi_rc[] = { 0,8,4,12,2,10,6,14,1,9,5,13,3,11,7,15 };
+
+const char rcseq_nt16_str[] = "!TGKCYSBAWRDMHVN";
 
 int IO::readMotifsFromCsv (vector<VNTR *> &vntrs) 
 {
@@ -161,6 +163,9 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
     uint32_t read_aln_start, read_len;
     uint32_t ref_len;
     uint32_t VNTR_s, VNTR_e;
+    unsigned char base;
+
+    int i;
 
     for (auto &vntr : vntrs)
     {
@@ -239,22 +244,36 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
                 read->qname = bam_get_qname(aln);
                 read->len = liftover_read_e - liftover_read_s + 1; // read length
                 read->seq = (char *) malloc(read->len + 1); // read sequence array
+                read->rev = rev;
                 s = bam_get_seq(aln); 
 
-                for(uint32_t i = 0; i < read->len; i++)
-                {
-                    assert(i + liftover_read_s < read_len);
-                    assert(bam_seqi(s, i + liftover_read_s) < 16);
-                    if (rev) read->seq[i] = seqi_rc[bam_seqi(s, i + liftover_read_s)];
-                    else read->seq[i] = seq_nt16_str[bam_seqi(s, i + liftover_read_s)]; //gets nucleotide id and converts them into IUPAC id.
+                if (rev)
+                {	for (i = read->len - 1; i >= 0; i--)
+                	{
+						assert(i + liftover_read_s < read_len);
+						base = bam_seqi(s, i + liftover_read_s);
+						assert(0 < base < 16);
+						read->seq[read->len - 1 - i] = rcseq_nt16_str[base];
+                	}             	
                 }
-                if (rev) reverse(read->seq, read->seq + read->len);
+                else 
+				{
+					for(i = 0; i < read->len; i++)
+					{
+					    assert(i + liftover_read_s < read_len);
+					    base = bam_seqi(s, i + liftover_read_s);
+					    assert(0 < base < 16);
+					    read->seq[i] = seq_nt16_str[base]; //gets nucleotide id and converts them into IUPAC id.
+					}                	
+                }
+                // if (rev) reverse(read->seq, read->seq + read->len);
                 vntr->reads.push_back(read); 
                 // cerr << "read_name: " << bam_get_qname(aln) << endl; 
                 // cerr << "vntr->ref_start: " << vntr->ref_start << " vntr->ref_end: " << vntr->ref_end << endl;
                 // cerr << "liftover_read_s: " << liftover_read_s << " liftover_read_e: " << liftover_read_e << endl;
                 // cerr << "read length: " << aln->core.l_qseq << endl;
-                // cerr << "read_seq: " << read->seq << endl; 
+                // cerr.write(read->seq, read->len);
+                // cerr << endl; 
             }
         }
         vntr->nreads = vntr->reads.size();
@@ -264,6 +283,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
     bam_destroy1(aln);
     bam_hdr_destroy(bamHdr);
     hts_itr_destroy(itr);
+    hts_idx_destroy(idx);
     sam_close(fp_in); 
     return;  
 }
