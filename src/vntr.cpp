@@ -39,7 +39,10 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt)
 			nullAnno = true;
 			nullAnnos[i] = true;
 			cerr << "skip the vntr" << endl;
-		}
+            // cerr.write(reads[i]->seq, reads[i]->len);
+            // cerr << "motifs: " << endl;
+            // for (auto &mt : motifs) cerr << mt.seq << endl;
+		} 
 	}
 	return;
 }

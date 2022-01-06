@@ -16,11 +16,13 @@ public:
 	char * chr;
 	uint32_t len;
 	char * seq;
+	bool rev;
 	READ () 
 	{
 		qname = NULL;
 		chr = NULL;
 		seq = NULL;
+		rev = false;
 	};
 	READ (char * Qname, char * Chr, uint32_t Len) : qname(Qname), chr(Chr), len(Len) { seq = NULL;};
 	~READ () 
