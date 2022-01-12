@@ -216,8 +216,12 @@ int main (int argc, char **argv)
 	/* read VNTR bed file */
 	io.readVNTRFromBed(vntrs);
 
+	cerr << "finish reading vntrs.bed" << endl;
+
 	/* read motif csv file */
 	io.readMotifsFromCsv(vntrs);
+
+	cerr << "finish reading motifs.csv" << endl;
 
 	/* process each VNTR */
 	io.readSeqFromBam(vntrs); // TODO: read one sequence, check all vntrs;
