@@ -271,9 +271,9 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
                 // cerr << "read_name: " << bam_get_qname(aln) << endl; 
                 // cerr << "vntr->ref_start: " << vntr->ref_start << " vntr->ref_end: " << vntr->ref_end << endl;
                 // cerr << "liftover_read_s: " << liftover_read_s << " liftover_read_e: " << liftover_read_e << endl;
-                // cerr << "read length: " << aln->core.l_qseq << endl;
-                // cerr.write(read->seq, read->len);
-                // cerr << endl; 
+                // cerr << "read length: " << read->len << endl;
+                // cout.write(read->seq, read->len);
+                // cout << endl; 
             }
         }
         vntr->nreads = vntr->reads.size();
