@@ -33,6 +33,7 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt)
 			bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
 		else
 			naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
+
 		if (annos[i].size() == 0) 
 		{
 			skip = true;
@@ -42,6 +43,13 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt)
             // cerr << "motifs: " << endl;
             // for (auto &mt : motifs) cerr << mt.seq << endl;
 		} 
+        // else {
+        //     cerr.write(reads[i]->seq, reads[i]->len);
+        //     cerr << endl;
+        //     for (auto &idx : annos[i])
+        //         cerr << int(idx) << ",";
+        //     cerr << endl;
+        // }
 	}
     if (skip)
         cerr << "skip the vntr" << endl;
