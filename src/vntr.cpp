@@ -43,13 +43,17 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt)
             // cerr << "motifs: " << endl;
             // for (auto &mt : motifs) cerr << mt.seq << endl;
 		} 
-        // else {
-        //     cerr.write(reads[i]->seq, reads[i]->len);
-        //     cerr << endl;
-        //     for (auto &idx : annos[i])
-        //         cerr << int(idx) << ",";
-        //     cerr << endl;
-        // }
+        else if (opt.debug) {
+            cerr << endl;
+            cerr.write(reads[i]->qname, reads[i]->l_qname);
+            cerr << endl;
+            cerr.write(reads[i]->seq, reads[i]->len);
+            cerr << endl;
+            cerr << reads[i]->len << "  " << i << endl;
+            for (auto &idx : annos[i])
+                cerr << int(idx) << ",";
+            cerr << endl;
+        }
 	}
     if (skip)
         cerr << "skip the vntr" << endl;
@@ -101,7 +105,7 @@ void VNTR::annoTostring (const OPTION &opt)
 	{
 		annoTostring_helper(motifs.size(), annoStrs[r], annos[r]);
 		assert(annoStrs[r].length() > 0);
-		if (opt.debug) cerr << "string " << r << ":  " << annoStrs[r] << endl;
+		// if (opt.debug) cerr << "string " << r << ":  " << annoStrs[r] << endl;
 	}
 	return;
 }
@@ -180,7 +184,7 @@ void outputConsensus (vector<uint8_t> &consensus, const OPTION &opt)
     	if (opt.debug)
     	{
 			if (i < consensus.size() - 1)
-				cerr << to_string(it) << "->";
+				cerr << to_string(it) << ",";
 			else
 				cerr << to_string(it);    		
     	}
@@ -428,7 +432,7 @@ void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 
 	/* compare which is better: nclusts == 2 or nclusts == 1 */
 	double sc_2clusts = avgSilhouetteCoeff(nreads, edist, gp1, gp2);
-	if (sc_2clusts > 0.0 and gp1.size() > 0 and gp2.size() > 0)
+	if (sc_2clusts > 0.0 and (float) gp1.size() / nreads >= 0.3 and (float) gp2.size() / nreads >= 0.3)
 	{
 		het = true;
 		consensus.resize(2);
@@ -440,7 +444,11 @@ void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 	{
 		het = false;
 		consensus.resize(1);
-		MSA (motifs.size(), annos, consensus[0]);
+
+        if ((float) gp1.size() / nreads >= (float) gp2.size() / nreads)
+            MSA (motifs.size(), gp1, annos, consensus[0]);
+        else
+            MSA (motifs.size(), gp2, annos, consensus[0]);
 		assert(consensus[0].size() > 0);
 	}
 

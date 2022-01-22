@@ -13,6 +13,7 @@ class READ
 {
 public: 
 	char * qname;
+	uint16_t l_qname;
 	char * chr;
 	uint32_t len;
 	char * seq;
@@ -20,6 +21,7 @@ public:
 	READ () 
 	{
 		qname = NULL;
+		l_qname = 0;
 		chr = NULL;
 		seq = NULL;
 		rev = false;
@@ -28,6 +30,7 @@ public:
 	~READ () 
 	{
 		free(seq);
+		free(qname);
 	};
 };
 

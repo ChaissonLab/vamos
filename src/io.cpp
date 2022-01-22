@@ -142,7 +142,7 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGA
  liftover ref_VNTR_start, ref_VNTR_end of every vntr
  get the subsequence 
 */
-void IO::readSeqFromBam (vector<VNTR *> &vntrs) 
+void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int sz) 
 {
     char * bai = (char *) malloc(strlen(input_bam) + 4 + 1); // input_bam.bai
     strcpy(bai, input_bam);
@@ -158,6 +158,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
     uint32_t * cigar;
     uint8_t * s; // pointer to the read sequence
     bool rev;
+    char * name;
 
     uint32_t ref_aln_start, ref_aln_end;
     uint32_t read_aln_start, read_len;
@@ -166,9 +167,12 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
     unsigned char base;
 
     int i;
+    VNTR * vntr = NULL;
 
-    for (auto &vntr : vntrs)
+    for (int j = cur_thread; j < sz; j += nproc) 
     {
+        vntr = vntrs[j];
+        cerr << "reading vntr " << j << endl;
         // cerr << "starting processing vntr" << endl;
         itr = bam_itr_querys(idx, bamHdr, vntr->region.c_str());
         while(bam_itr_next(fp_in, itr, aln) >= 0)
@@ -240,31 +244,34 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
                 assert(liftover_read_e < read_len);
 
                 READ * read = new READ();
+                read->l_qname = aln->core.l_qname;
                 read->chr = bamHdr->target_name[aln->core.tid]; 
-                read->qname = bam_get_qname(aln);
+                read->qname = (char *) malloc(read->l_qname + 1);
+                name = bam_get_qname(aln);
+                strcpy(read->qname, name);
                 read->len = liftover_read_e - liftover_read_s + 1; // read length
                 read->seq = (char *) malloc(read->len + 1); // read sequence array
                 read->rev = rev;
                 s = bam_get_seq(aln); 
 
     //             if (rev)
-    //             {	for (i = read->len - 1; i >= 0; i--)
-    //             	{
-				// 		assert(i + liftover_read_s < read_len);
-				// 		base = bam_seqi(s, i + liftover_read_s);
-				// 		assert(0 < base < 16);
-				// 		read->seq[read->len - 1 - i] = rcseq_nt16_str[base];
-    //             	}             	
+    //             {    for (i = read->len - 1; i >= 0; i--)
+    //              {
+                //      assert(i + liftover_read_s < read_len);
+                //      base = bam_seqi(s, i + liftover_read_s);
+                //      assert(0 < base < 16);
+                //      read->seq[read->len - 1 - i] = rcseq_nt16_str[base];
+    //              }               
     //             }
     //             else 
-				// {
-				// 	for(i = 0; i < read->len; i++)
-				// 	{
-				// 	    assert(i + liftover_read_s < read_len);
-				// 	    base = bam_seqi(s, i + liftover_read_s);
-				// 	    assert(0 < base < 16);
-				// 	    read->seq[i] = seq_nt16_str[base]; //gets nucleotide id and converts them into IUPAC id.
-				// 	}                	
+                // {
+                //  for(i = 0; i < read->len; i++)
+                //  {
+                //      assert(i + liftover_read_s < read_len);
+                //      base = bam_seqi(s, i + liftover_read_s);
+                //      assert(0 < base < 16);
+                //      read->seq[i] = seq_nt16_str[base]; //gets nucleotide id and converts them into IUPAC id.
+                //  }                   
     //             }
                 for(i = 0; i < read->len; i++)
                 {
@@ -294,6 +301,172 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs)
     sam_close(fp_in); 
     return;  
 }
+
+
+// /*
+//  read alignment from bam
+//  liftover ref_VNTR_start, ref_VNTR_end of every vntr
+//  get the subsequence 
+// */
+// void IO::readSeqFromBam (vector<VNTR *> &vntrs) 
+// {
+//     char * bai = (char *) malloc(strlen(input_bam) + 4 + 1); // input_bam.bai
+//     strcpy(bai, input_bam);
+//     strcat(bai, ".bai");
+
+//     samFile * fp_in = hts_open(input_bam, "r"); //open bam file
+//     bam_hdr_t * bamHdr = sam_hdr_read(fp_in); //read header
+//     hts_idx_t * idx = sam_index_load(fp_in, bai);
+//     bam1_t * aln = bam_init1(); //initialize an alignment
+//     hts_itr_t * itr;
+
+//     uint32_t isize; // observed template size
+//     uint32_t * cigar;
+//     uint8_t * s; // pointer to the read sequence
+//     bool rev;
+//     char * name;
+
+//     uint32_t ref_aln_start, ref_aln_end;
+//     uint32_t read_aln_start, read_len;
+//     uint32_t ref_len;
+//     uint32_t VNTR_s, VNTR_e;
+//     unsigned char base;
+
+//     int i;
+//     int vntr_idx = 0;
+
+//     for (auto &vntr : vntrs)
+//     {
+//         // cerr << "starting processing vntr" << endl;
+//         itr = bam_itr_querys(idx, bamHdr, vntr->region.c_str());
+//         while(bam_itr_next(fp_in, itr, aln) >= 0)
+//         {
+//             rev = bam_is_rev(aln);
+//             if (aln->core.flag & BAM_FSECONDARY or aln->core.flag & BAM_FUNMAP) 
+//             {
+//                 // cerr << "       skip secondary and unmmaped" << endl;
+//                 continue; // skip secondary alignment / unmapped reads
+//             }
+
+//             if (aln->core.qual < 20) 
+//             {
+//                 // cerr << "       skip low mapq" << endl;
+//                 continue; // skip alignment with mapping qual < 20
+//             }
+
+//             isize = aln->core.isize;
+//             if (isize == 0) // 9th col: Tlen is unavailable in bam
+//                 isize = bam_endpos(aln);
+
+//             if (isize > 0 and isize < (uint32_t) vntr->len) {
+//                 // cerr << "       skip short size" << endl;
+//                 continue; // skip alignment with length < vntr->len
+//             }
+
+//             // cerr << "starting lifting read " << bam_get_qname(aln) << endl;
+
+//             cigar = bam_get_cigar(aln);
+//             ref_aln_start = aln->core.pos;
+//             ref_aln_end = ref_aln_start + isize;
+//             ref_len = bamHdr->target_len[aln->core.tid]; 
+
+//             read_aln_start = 0;
+//             read_len = aln->core.l_qseq;
+
+//             uint32_t tmp;
+//             VNTR_s = vntr->ref_start;
+//             VNTR_e = vntr->ref_end;
+
+//             // if (rev) 
+//             // {   
+//             //     tmp = VNTR_s;
+//             //     VNTR_s = ref_len - VNTR_e;
+//             //     VNTR_e = ref_len - tmp - 1;
+
+//             //     tmp = ref_aln_start;
+//             //     ref_aln_start = ref_len - ref_aln_end;
+//             //     ref_aln_end = ref_len - tmp - 1;
+//             // }
+
+//             if (VNTR_s < ref_aln_start or VNTR_e > ref_aln_end) // the alignment doesn't fully cover the VNTR locus
+//                 continue;
+
+//             /*
+//             reference: VNTR_s, VNTR_e
+//             read alignment: ref_aln_start, ref_aln_end; read_aln_start, read_aln_end;
+//             */
+//             uint32_t cigar_start = 0;
+//             auto [liftover_read_s, iflift_s] = processCigar(aln, cigar, cigar_start, VNTR_s, ref_aln_start, read_aln_start);
+//             auto [liftover_read_e, iflift_e] = processCigar(aln, cigar, cigar_start, VNTR_e, ref_aln_start, read_aln_start);
+
+//             // [liftover_read_s, liftover_read_e]
+//             if (iflift_s and iflift_e and liftover_read_e > liftover_read_s and liftover_read_e <= read_len)
+//             {
+//                 liftover_read_s = (liftover_read_s == 0) ? 0 : liftover_read_s - 1;
+//                 liftover_read_e = (liftover_read_e == 0) ? 0 : liftover_read_e - 1;
+
+//                 assert(liftover_read_e < read_len);
+
+//                 READ * read = new READ();
+//                 read->l_qname = aln->core.l_qname;
+//                 read->chr = bamHdr->target_name[aln->core.tid]; 
+//                 read->qname = (char *) malloc(read->l_qname + 1);
+//                 name = bam_get_qname(aln);
+//                 strcpy(read->qname, name);
+//                 read->len = liftover_read_e - liftover_read_s + 1; // read length
+//                 read->seq = (char *) malloc(read->len + 1); // read sequence array
+//                 read->rev = rev;
+//                 s = bam_get_seq(aln); 
+
+//     //             if (rev)
+//     //             {	for (i = read->len - 1; i >= 0; i--)
+//     //             	{
+// 				// 		assert(i + liftover_read_s < read_len);
+// 				// 		base = bam_seqi(s, i + liftover_read_s);
+// 				// 		assert(0 < base < 16);
+// 				// 		read->seq[read->len - 1 - i] = rcseq_nt16_str[base];
+//     //             	}             	
+//     //             }
+//     //             else 
+// 				// {
+// 				// 	for(i = 0; i < read->len; i++)
+// 				// 	{
+// 				// 	    assert(i + liftover_read_s < read_len);
+// 				// 	    base = bam_seqi(s, i + liftover_read_s);
+// 				// 	    assert(0 < base < 16);
+// 				// 	    read->seq[i] = seq_nt16_str[base]; //gets nucleotide id and converts them into IUPAC id.
+// 				// 	}                	
+//     //             }
+//                 for(i = 0; i < read->len; i++)
+//                 {
+//                     assert(i + liftover_read_s < read_len);
+//                     base = bam_seqi(s, i + liftover_read_s);
+//                     assert(0 < base < 16);
+//                     read->seq[i] = seq_nt16_str[base]; //gets nucleotide id and converts them into IUPAC id.
+//                 } 
+//                 // if (rev) reverse(read->seq, read->seq + read->len);
+//                 vntr->reads.push_back(read); 
+//                 // cerr << "read_name: " << bam_get_qname(aln) << endl; 
+//                 // cerr << "vntr->ref_start: " << vntr->ref_start << " vntr->ref_end: " << vntr->ref_end << endl;
+//                 // cerr << "liftover_read_s: " << liftover_read_s << " liftover_read_e: " << liftover_read_e << endl;
+//                 // cerr << "read length: " << read->len << endl;
+//                 // cerr.write(read->seq, read->len);
+//                 // cerr << endl; 
+//             }
+//         }
+//         vntr->nreads = vntr->reads.size();
+//         // cerr << "vntr read size: " << vntr->nreads << endl;
+//         cerr << "reading vntr " << vntr_idx << endl;
+//         vntr_idx += 1;
+//     }
+//     free(bai);
+//     bam_destroy1(aln);
+//     bam_hdr_destroy(bamHdr);
+//     hts_itr_destroy(itr);
+//     hts_idx_destroy(idx);
+//     sam_close(fp_in); 
+//     return;  
+// }
 
 int IO::writeVCFHeader(ofstream &out)
 {

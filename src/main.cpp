@@ -39,7 +39,8 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt)
 	if (it->nreads == 0 or it->motifs.size() > 255) 
 	{
 		it->skip = true;
-		if (opt.debug) cerr << "skip one vntr due to > 255 motifs" << endl;
+		// if (opt.debug) 
+		cerr << "skip one vntr due to > 255 motifs" << endl;
 		return;
 	}
 
@@ -61,6 +62,9 @@ void *ProcVNTRs (void *procInfoValue)
 	cerr << "start thread: " << procInfo->thread << endl;
 	int i, s;
 	int sz = (procInfo->vntrs)->size();
+
+	// read bam 
+	(procInfo->io)->readSeqFromBam ((*(procInfo->vntrs)), (procInfo->opt)->nproc, procInfo->thread, sz);
 
 	for (i = procInfo->thread, s = 0; i < sz; i += (procInfo->opt)->nproc, s += 1)
 	{
@@ -224,7 +228,7 @@ int main (int argc, char **argv)
 	cerr << "finish reading motifs.csv" << endl;
 
 	/* process each VNTR */
-	io.readSeqFromBam(vntrs); // TODO: read one sequence, check all vntrs;
+	// io.readSeqFromBam(vntrs); 
 
 	/* set up out stream and write VCF header */
     ofstream out(io.out_vcf);
@@ -283,6 +287,7 @@ int main (int argc, char **argv)
 	}
 	else 
 	{
+		io.readSeqFromBam (vntrs, 1, 0, vntrs.size());
 		int s = 0;
 		for (auto &it: vntrs) 
 		{
