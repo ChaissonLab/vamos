@@ -1,4 +1,4 @@
-# Vamos: VNTR Annotation tool using MOtifs Selection
+# Vamos: VNTR Annotation tool using efficient MOtifs Sets
 ## Getting Started
 ```sh
 # Install vamos (g++, htslib, abpoa, edlib and alglib required)
