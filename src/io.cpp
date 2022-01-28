@@ -14,6 +14,7 @@
 #include "vcf.h"
 #include "htslib/hts.h"
 #include "htslib/sam.h"
+#include "abpoa.h"
 
 using namespace std;
 
@@ -137,6 +138,80 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGA
     return make_pair(read_aln_start, 1);
 }
 
+
+void consensus_seq (vector<READ *> &initial_reads, READ * consensus_read)
+{
+    int i, j;
+    int n_seqs = initial_reads.size();
+
+    // collect sequence length
+    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
+    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
+    for (i = 0; i < n_seqs; ++i) {
+        // cerr << "i: " << i << "  len: " << initial_reads[i]->len << endl;
+        seq_lens[i] = initial_reads[i]->len;
+        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
+        for (j = 0; j < seq_lens[i]; ++j)
+            bseqs[i][j] = (uint8_t) initial_reads[i]->seq[j];            
+    }
+
+    // initialize variables
+    abpoa_t *ab = abpoa_init();
+    abpoa_para_t *abpt = abpoa_init_para();
+
+    // alignment parameters
+    abpt->align_mode = 0; // 0:global 1:local, 2:extension
+    abpt->match = 1;      // match score
+    abpt->mismatch = 1;   // mismatch penalty
+    abpt->gap_mode = ABPOA_AFFINE_GAP; // gap penalty mode
+    abpt->gap_open1 = 1;  // gap open penalty #1
+    abpt->gap_ext1 = 1;   // gap extension penalty #1
+    abpt->gap_open2 = 1; // gap open penalty #2
+    abpt->gap_ext2 = 1;   // gap extension penalty #2
+
+    abpt->is_diploid = 0;
+    abpt->out_msa = 0; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
+    abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
+    abpt->progressive_poa = 1;
+
+    // variables to store result
+    uint8_t **cons_seq; int **cons_cov, *cons_l, cons_n = 0;
+    uint8_t **msa_seq; int msa_l = 0;
+
+    abpoa_post_set_para(abpt);
+    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
+
+    consensus_read->len = cons_l[0]; // read length
+    consensus_read->seq = (char *) malloc(consensus_read->len + 1); // read sequence array
+    for (j = 0; j < cons_l[0]; ++j)
+        consensus_read->seq[j] = (uint8_t)cons_seq[0][j];
+
+    if (cons_n) {
+        for (i = 0; i < cons_n; ++i) 
+        {
+            free(cons_seq[i]); 
+            free(cons_cov[i]);
+        } 
+        free(cons_seq); 
+        free(cons_cov); 
+        free(cons_l);
+    }
+
+    if (msa_l) 
+    {
+        for (i = 0; i < n_seqs; ++i) 
+        {
+            free(msa_seq[i]); 
+            free(msa_seq);
+        }
+    }
+
+    abpoa_free(ab); 
+    abpoa_free_para(abpt); 
+    return;
+}
+
+
 /*
  read alignment from bam
  liftover ref_VNTR_start, ref_VNTR_end of every vntr
@@ -172,8 +247,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
     for (int j = cur_thread; j < sz; j += nproc) 
     {
         vntr = vntrs[j];
-        cerr << "reading vntr " << j << endl;
-        // cerr << "starting processing vntr" << endl;
+        // vector<READ *> initial_reads;
         itr = bam_itr_querys(idx, bamHdr, vntr->region.c_str());
         while(bam_itr_next(fp_in, itr, aln) >= 0)
         {
@@ -184,7 +258,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 continue; // skip secondary alignment / unmapped reads
             }
 
-            if (aln->core.qual < 20) 
+            if (aln->core.qual < 40) 
             {
                 // cerr << "       skip low mapq" << endl;
                 continue; // skip alignment with mapping qual < 20
@@ -213,16 +287,6 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
             VNTR_s = vntr->ref_start;
             VNTR_e = vntr->ref_end;
 
-            // if (rev) 
-            // {   
-            //     tmp = VNTR_s;
-            //     VNTR_s = ref_len - VNTR_e;
-            //     VNTR_e = ref_len - tmp - 1;
-
-            //     tmp = ref_aln_start;
-            //     ref_aln_start = ref_len - ref_aln_end;
-            //     ref_aln_end = ref_len - tmp - 1;
-            // }
 
             if (VNTR_s < ref_aln_start or VNTR_e > ref_aln_end) // the alignment doesn't fully cover the VNTR locus
                 continue;
@@ -254,25 +318,6 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 read->rev = rev;
                 s = bam_get_seq(aln); 
 
-    //             if (rev)
-    //             {    for (i = read->len - 1; i >= 0; i--)
-    //              {
-                //      assert(i + liftover_read_s < read_len);
-                //      base = bam_seqi(s, i + liftover_read_s);
-                //      assert(0 < base < 16);
-                //      read->seq[read->len - 1 - i] = rcseq_nt16_str[base];
-    //              }               
-    //             }
-    //             else 
-                // {
-                //  for(i = 0; i < read->len; i++)
-                //  {
-                //      assert(i + liftover_read_s < read_len);
-                //      base = bam_seqi(s, i + liftover_read_s);
-                //      assert(0 < base < 16);
-                //      read->seq[i] = seq_nt16_str[base]; //gets nucleotide id and converts them into IUPAC id.
-                //  }                   
-    //             }
                 for(i = 0; i < read->len; i++)
                 {
                     assert(i + liftover_read_s < read_len);
@@ -280,18 +325,23 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                     assert(0 < base < 16);
                     read->seq[i] = seq_nt16_str[base]; //gets nucleotide id and converts them into IUPAC id.
                 } 
-                // if (rev) reverse(read->seq, read->seq + read->len);
                 vntr->reads.push_back(read); 
-                // cerr << "read_name: " << bam_get_qname(aln) << endl; 
-                // cerr << "vntr->ref_start: " << vntr->ref_start << " vntr->ref_end: " << vntr->ref_end << endl;
-                // cerr << "liftover_read_s: " << liftover_read_s << " liftover_read_e: " << liftover_read_e << endl;
-                // cerr << "read length: " << read->len << endl;
-                // cerr.write(read->seq, read->len);
-                // cerr << endl; 
             }
         }
         vntr->nreads = vntr->reads.size();
-        // cerr << "vntr read size: " << vntr->nreads << endl;
+        // // add code to find consensus sequence from reads
+        // READ * consensus_read = new READ();
+        // string dummy = "consensus_read";
+        // consensus_read->qname = (char *) malloc(20);
+        // strcpy(consensus_read->qname, dummy.c_str());
+        // consensus_seq(initial_reads, consensus_read);
+        // vntr->reads.push_back(consensus_read);
+        // vntr->nreads = 1;
+
+        // // clear initial_reads
+        // for (size_t z = 0; z < initial_reads.size(); ++z) 
+        //     delete initial_reads[z];
+        // initial_reads.clear();
     }
     free(bai);
     bam_destroy1(aln);

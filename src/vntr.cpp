@@ -13,9 +13,6 @@
 #include "abpoa.h"
 #include "option.h"
 
-// #include "seqan/sequence.h"
-// #include "seqan/align.h"
-// #include "seqan/score.h"
 void VNTR::motifAnnoForOneVNTR (const OPTION &opt) 
 {
 	if (skip) return;
@@ -39,9 +36,6 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt)
 			skip = true;
 			nullAnno = true;
 			nullAnnos[i] = true;
-            // cerr.write(reads[i]->seq, reads[i]->len);
-            // cerr << "motifs: " << endl;
-            // for (auto &mt : motifs) cerr << mt.seq << endl;
 		} 
         else if (opt.debug) {
             cerr << endl;
@@ -50,13 +44,11 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt)
             cerr.write(reads[i]->seq, reads[i]->len);
             cerr << endl;
             cerr << reads[i]->len << "  " << i << endl;
-            for (auto &idx : annos[i])
-                cerr << int(idx) << ",";
+            for (auto &idx : annos[i]) cerr << int(idx) << ",";
             cerr << endl;
         }
 	}
-    if (skip)
-        cerr << "skip the vntr" << endl;
+    if (skip) cerr << "skip the vntr" << endl;
 	return;
 }
 
@@ -116,7 +108,136 @@ size_t VNTR::getAnnoStrLen (int i)
 	return annoStrs[i].length();
 }
 
-int VNTR::hClust (vector<int> &gp1, vector<int> &gp2, double edist [])
+double findMedian(Order &a, int n)
+{
+    if (n % 2 == 0) 
+        return (double)(a[(n - 1) / 2] + a[n / 2]) / 2.0;
+    else 
+        return (double)a[n / 2];
+}
+  
+pair<double, double> findQuantile (Order &a, int n)
+{
+    int Q2 = n / 4;
+    int Q3 = (n * 3) / 4;
+    return make_pair(a[Q2], a[Q3]);
+}
+
+int VNTR::cleanNoiseAnno(const OPTION &opt) 
+{
+    if (skip)
+        return 0;
+    int i, j;
+    vector<vector<double>> edist(nreads);
+    for (i = 0; i < nreads; ++i) edist[i].resize(nreads, 0);
+
+    EdlibAlignResult result;
+    for (i = 0; i < nreads; ++i)
+    {
+        for (j = i + 1; j < nreads; ++j) 
+        {
+            result = edlibAlign(annoStrs[i].c_str(), getAnnoStrLen(i), annoStrs[j].c_str(), getAnnoStrLen(j), edlibDefaultAlignConfig());
+            if (result.status == EDLIB_STATUS_OK) 
+            {
+                edist[i][j] = (double) result.editDistance; // [i][j]
+                edist[j][i] = (double) result.editDistance; // [j][i]
+            }
+            else 
+            {
+                printf("edlib goes wrong!\n");
+                return 1;
+            }
+        }
+    }  
+
+    if (opt.filterNoisy)
+    {
+        vector<Order> edist_order(nreads);
+        for (i = 0; i < nreads; ++i)
+            edist_order[i].Update(&edist[i]);
+
+        vector<double> median(nreads, 0.0);
+        for (i = 0; i < nreads; ++i) 
+            median[i] = findMedian(edist_order[i], nreads);
+
+        Order median_order(&median);
+        median_order.Update(&median);
+        auto [q2, q3] = findQuantile(median_order, nreads);
+        auto IQR = q3 - q2;
+        auto outliner = q3 + opt.filterStrength * IQR;
+
+        vector<bool> remove(nreads, 0);
+        for (i = 0; i < nreads; ++i)
+        {
+            if (median[i] > outliner) remove[i] = 1;
+        }
+
+        ncleanreads = 0;
+        for (i = 0; i < nreads; ++i) 
+        {
+            if (remove[i] == 0)
+            {
+                ncleanreads += 1;
+                clean_reads.push_back(reads[i]);
+                clean_annoStrs.push_back(annoStrs[i]);
+            }
+        }
+
+        clean_annos.resize(ncleanreads);
+        j = 0;
+        for (i = 0; i < nreads; ++i)
+        {
+            if (remove[i] == 0)
+            {
+                clean_annos[j].resize(annos[i].size());
+                copy (annos[i].begin(), annos[i].end(), clean_annos[j].begin());
+                j += 1;
+            }
+        }
+
+        clean_edist.resize(ncleanreads);
+        int new_i = 0, new_j = 0;
+        for (i = 0; i < nreads; ++i)
+        {
+            if (remove[i] == 0)
+            {
+                for (j = 0; j < nreads; ++j) 
+                {
+                   if (remove[j] == 0)
+                     clean_edist[new_i].push_back(edist[i][j]); 
+                }
+                new_i += 1;
+            }
+        }    
+
+        for (i = 0; i < ncleanreads; ++i)
+            assert(clean_edist[i].size() == ncleanreads);
+
+        if (ncleanreads == 0) skip = true;
+        if (opt.debug) cerr << "ncleanreads: " << ncleanreads << endl;       
+    }
+    else
+    {
+        ncleanreads = nreads;
+        for (i = 0; i < nreads; ++i) 
+        {
+            clean_reads.push_back(reads[i]);
+            clean_annoStrs.push_back(annoStrs[i]);
+        }
+
+        clean_annos.resize(ncleanreads);
+        for (i = 0; i < nreads; ++i)
+            clean_annos[i] = annos[i];  
+
+        clean_edist.resize(ncleanreads);
+        for (i = 0; i < nreads; ++i)
+            clean_edist[i] = edist[i]; 
+    }
+
+    return 0;    
+}
+
+int VNTR::hClust (vector<int> &gp1, vector<int> &gp2, double dists [])
 {
 	/*
 	 compute the edit distance matrix for annotation strings 
@@ -124,31 +245,13 @@ int VNTR::hClust (vector<int> &gp1, vector<int> &gp2, double edist [])
 	 output: double edist[nreads * nreads] = {...}
 	*/
     gp1.clear(); gp2.clear();
-	if (nreads == 1)
+	if (ncleanreads == 1)
 	{
 	   gp1.push_back(0);
 	   return 0;
 	}
 
-	int i, j;
-	EdlibAlignResult result;
-	for (i = 0; i < nreads; ++i)
-	{
-		for (j = i + 1; j < nreads; ++j) 
-		{
-			result = edlibAlign(annoStrs[i].c_str(), getAnnoStrLen(i), annoStrs[j].c_str(), getAnnoStrLen(j), edlibDefaultAlignConfig());
-            if (result.status == EDLIB_STATUS_OK) 
-            {
-                edist[i * nreads + j] = (double) result.editDistance; // [i][j]
-                edist[j * nreads + i] = (double) result.editDistance; // [j][i]
-            }
-            else 
-            {
-                printf("edlib goes wrong!\n");
-                return 1;
-            }
-		}
-	}
+    int i, j;
 
 	/* do hierarchical clustering based on the edit ditance matrix */
     alglib::clusterizerstate s;
@@ -156,7 +259,7 @@ int VNTR::hClust (vector<int> &gp1, vector<int> &gp2, double edist [])
     alglib::clusterizercreate(s);
 
     alglib::real_2d_array d;
-    d.setcontent(nreads, nreads, edist);
+    d.setcontent(ncleanreads, ncleanreads, dists);
     alglib::clusterizersetdistances(s, d, true);
     alglib::clusterizerrunahc(s, rep);
 
@@ -166,7 +269,7 @@ int VNTR::hClust (vector<int> &gp1, vector<int> &gp2, double edist [])
     clusterizergetkclusters(rep, 2, cidx, cz);
 
     gp1.clear(); gp2.clear();
-    for (i = 0; i < nreads; ++i)
+    for (i = 0; i < ncleanreads; ++i)
     {
     	if (cidx[i] == 0)
     		gp1.push_back(i);
@@ -415,29 +518,40 @@ double avgSilhouetteCoeff (int nreads, double edist [], vector<int> &gp1, vector
 void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 {
 	if (skip) return;
-    int n_seqs = annos.size();
+    int n_seqs = clean_annos.size();
     if (n_seqs == 0) return;
 
 	if (n_seqs == 1)
 	{
 		consensus.resize(1);
-		consensus[0] = annos[0];
+		consensus[0] = clean_annos[0];
 		return;
 	}
 
 	/* compute the MSA for each cluster when nclusts == 2 */
 	vector<int> gp1, gp2;
-	double edist [nreads * nreads];
-	hClust(gp1, gp2, edist); 
+
+    // change from clean_edist to dists
+    int i, j;
+    double dists [ncleanreads * ncleanreads];
+
+    for (i = 0; i < ncleanreads; ++i)
+    {
+        for (j = 0; j < ncleanreads; ++j)
+           dists[i * ncleanreads + j] = clean_edist[i][j];
+    }        
+
+
+	hClust(gp1, gp2, dists); 
 
 	/* compare which is better: nclusts == 2 or nclusts == 1 */
-	double sc_2clusts = avgSilhouetteCoeff(nreads, edist, gp1, gp2);
-	if (sc_2clusts > 0.0 and (float) gp1.size() / nreads >= 0.3 and (float) gp2.size() / nreads >= 0.3)
+	double sc_2clusts = avgSilhouetteCoeff(ncleanreads, dists, gp1, gp2);
+	if (sc_2clusts > 0.0 and (float) gp1.size() / ncleanreads >= 0.4 and (float) gp2.size() / ncleanreads >= 0.4)
 	{
 		het = true;
 		consensus.resize(2);
-		MSA (motifs.size(), gp1, annos, consensus[0]);
-		MSA (motifs.size(), gp2, annos, consensus[1]);
+		MSA (motifs.size(), gp1, clean_annos, consensus[0]);
+		MSA (motifs.size(), gp2, clean_annos, consensus[1]);
 		assert(consensus[0].size() > 0 and consensus[1].size() > 0);
 	}
 	else 
@@ -445,10 +559,10 @@ void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 		het = false;
 		consensus.resize(1);
 
-        if ((float) gp1.size() / nreads >= (float) gp2.size() / nreads)
-            MSA (motifs.size(), gp1, annos, consensus[0]);
+        if ((float) gp1.size() / ncleanreads >= (float) gp2.size() / ncleanreads)
+            MSA (motifs.size(), gp1, clean_annos, consensus[0]);
         else
-            MSA (motifs.size(), gp2, annos, consensus[0]);
+            MSA (motifs.size(), gp2, clean_annos, consensus[0]);
 		assert(consensus[0].size() > 0);
 	}
 
@@ -470,28 +584,36 @@ void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 void VNTR::concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt)
 {
 	if (skip) return;
-    int n_seqs = annos.size();
+    int n_seqs = clean_annos.size();
     int motifs_size = motifs.size();
     if (n_seqs == 0) return;
 
 	if (n_seqs == 1)
 	{
 		consensus.resize(1);
-		consensus[0] = annos[0];
+		consensus[0] = clean_annos[0];
 		return;
 	}
+
+    // change from clean_edist to dists
+    int i, j;
+    double dists [ncleanreads * ncleanreads];
+    for (i = 0; i < ncleanreads; ++i)
+    {
+        for (j = 0; j < ncleanreads; ++j)
+           dists[i * ncleanreads + j] = clean_edist[i][j];
+    }        
 
     // collect sequence length
     int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
     uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
-    int i, j;
     for (i = 0; i < n_seqs; ++i) {
-        seq_lens[i] = annos[i].size();
+        seq_lens[i] = clean_annos[i].size();
         bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
         for (j = 0; j < seq_lens[i]; ++j) 
         {
-        	assert(annos[i][j] < motifs_size); 
-        	bseqs[i][j] = annos[i][j];
+        	assert(clean_annos[i][j] < motifs_size); 
+        	bseqs[i][j] = clean_annos[i][j];
         }
     }
 

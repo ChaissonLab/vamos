@@ -3,12 +3,12 @@
 #include <getopt.h>
 #include <string>
 #include <unistd.h>
-#include "io.h"
 #include "vntr.h"
 #include "vcf.h"
 #include "option.h"
 #include <sys/time.h>
 #include "threads.h"
+#include "io.h"
 #include <mutex>   
 
 using namespace std;
@@ -19,7 +19,7 @@ struct timeval start_time, stop_time, elapsed_time;
 
 void printUsage(IO &io) 
 {
-	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-t threads] [-f] [-d] [-c]\n");
+	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-t threads] [-n] [-d] [-c] [-f]\n");
 	printf("Version: %s\n", io.version);
 	printf("Options:\n");
 	printf("       -i  FILE      input alignment file (bam format), bam file needs to be indexed \n");
@@ -31,6 +31,7 @@ void printUsage(IO &io)
 	printf("       -n            specify the naive version of code to do the annotation, default is faster implementation\n");
 	printf("       -d            print out debug information\n");
 	printf("       -c            use hierarchical clustering to judge if a VNTR locus is het or hom\n");
+	printf("       -f            filter noisy read annotations\n");
 	printf("       -h            print out help message\n");
 } 
 
@@ -39,8 +40,7 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt)
 	if (it->nreads == 0 or it->motifs.size() > 255) 
 	{
 		it->skip = true;
-		// if (opt.debug) 
-		cerr << "skip one vntr due to > 255 motifs" << endl;
+		if (opt.debug) cerr << "skip one vntr due to > 255 motifs" << endl;
 		return;
 	}
 
@@ -48,6 +48,7 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt)
 
 	it->motifAnnoForOneVNTR(opt); 
 	it->annoTostring(opt);
+	it->cleanNoiseAnno(opt);
 	if (opt.hc)
 		it->concensusMotifAnnoForOneVNTR(opt);
 	else
@@ -99,15 +100,16 @@ int main (int argc, char **argv)
 		{"output",        required_argument,       0, 'o'},
 		{"sampleName",    required_argument,       0, 's'},
 		{"numThreads",    required_argument,       0, 't'},
-		{"fasterAnnoAlg", no_argument,             0, 'f'},
+		{"naiveAnnoAlg",  no_argument,             0, 'n'},
 		{"hclust",        no_argument,             0, 'c'},
+		{"filterNoisy",   required_argument,       0, 'f'},
 		{"help",          no_argument,             0, 'h'},
 		{NULL, 0, 0, '\0'}
 	};
 	/* getopt_long stores the option index here. */
 	int option_index = 0;
 
-	while ((c = getopt_long (argc, argv, "i:v:m:o:s:t:hndc", long_options, &option_index)) != -1)
+	while ((c = getopt_long (argc, argv, "i:v:m:o:s:t:f:hndc", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -147,7 +149,7 @@ int main (int argc, char **argv)
 			break;
 
 		case 'n':
-			printf ("option -fasterAnnoAlg");
+			printf ("option -naiveAnnoAlg");
 			opt.fasterAnnoAlg = false;
 			break;
 
@@ -159,6 +161,12 @@ int main (int argc, char **argv)
 		case 'c':
 			printf ("option -hclust\n");
 			opt.hc = true;
+			break;
+
+		case 'f':
+			printf ("option -filterNoisy\n");
+			opt.filterStrength = stod(optarg);
+			opt.filterNoisy = true;
 			break;
 
 		case 'h':

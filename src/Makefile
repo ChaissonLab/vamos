@@ -37,7 +37,7 @@ main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include  
 
 io.o: io.cpp io.h vcf.h vntr.h read.h
-	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include 
+	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -I ../abpoa/include 
 
 vcf.o: vcf.cpp vcf.h 
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include 

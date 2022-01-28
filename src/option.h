@@ -10,6 +10,8 @@ public:
 	bool debug;
 	int nproc;
 	bool hc;
+	bool filterNoisy;
+	double filterStrength;
 
 	OPTION ()
 	{
@@ -17,6 +19,8 @@ public:
 		debug = false;
 		nproc = 1;
 		hc = false;
+		filterNoisy = false;
+		filterStrength = 0.0;
 	};
 
 	~OPTION () {};

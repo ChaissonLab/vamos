@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <algorithm>
 #include "read.h"
 #include "option.h"
 
@@ -50,10 +51,15 @@ public:
 	vector<READ *> reads; 
 	vector<vector<uint8_t>> annos; // the motif annotation for each read sequence
 	vector<string> annoStrs; 
-	// vector<uint8_t> consensus_h1; // diploid genome
-	// vector<uint8_t> consensus_h2;
-	vector<vector<uint8_t>> consensus; 
 	int nreads;
+
+	vector<READ *> clean_reads; 
+	vector<vector<uint8_t>> clean_annos; 
+	vector<string> clean_annoStrs;
+	int ncleanreads; 
+	vector<vector<double>> clean_edist;
+
+	vector<vector<uint8_t>> consensus; 
 	bool het;
 	bool skip;
 	bool nullAnno;
@@ -98,13 +104,54 @@ public:
 
 	void concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt);
 
-	int hClust (vector<int> &gp1, vector<int> &gp2, double edist []);
+	int hClust (vector<int> &gp1, vector<int> &gp2, double dists []);
 
 	/* for one consensus; annotation, output the comma-delimited annotation */
 	void commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_rep);
+
+	int cleanNoiseAnno(const OPTION &opt);
 };
 
 
 void outputConsensus (vector<uint8_t> &consensus);
+
+
+class Order {
+public:
+	vector<double> *dist;
+	vector<int> index;
+
+	Order() {dist = NULL;};
+	Order(vector<double> *a): dist(a) {};
+
+	void Update(vector<double> *a) 
+	{
+		dist = a;
+		index.resize(a->size());
+		for (int i = 0; i < index.size(); i++) index[i] = i;
+		Sort();
+	}
+
+	int operator()(const int i, const int j) 
+	{
+		return (*dist)[i] < (*dist)[j];
+	}
+
+	void Sort() 
+	{
+		std::sort(index.begin(), index.end(), *this);
+	}
+
+	double & operator[](int i) 
+	{
+		return (*dist)[index[i]];
+	}
+
+	int size() 
+	{
+		return index.size();
+	}
+};
+
 
 #endif
