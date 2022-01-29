@@ -12,32 +12,14 @@
 #include "dataanalysis.h"
 #include "abpoa.h"
 #include "option.h"
+#include <seqan/align.h>
+#include <seqan/graph_msa.h>
 
 extern int naive_flag;
 extern int debug_flag;
 extern int hclust_flag;
 extern int consensus_seq_flag;
-
-// AaCcGgTtNn ... ==> 0,1,2,3,4 ...
-// BbDdEeFf   ... ==> 5,6,7,8 ...
-unsigned char _char26_table[256] = {
-     0,  1,  2,  3,   4,  5,  6,  7,   8,  9, 10, 11,  12, 13, 14, 15, 
-    16, 17, 18, 19,  20, 21, 22, 23,  24, 25, 26, 26,  26, 26, 26, 26, 
-    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,
-    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
-    26,  0,  5,  1,   6,  7,  8,  2,   9, 10, 11, 12,  13, 14,  4, 15, 
-    16, 17, 18, 19,   3, 20, 21, 22,  23, 24, 25, 26,  26, 26, 26, 26, 
-    26,  0,  5,  1,   6,  7,  8,  2,   9, 10, 11, 12,  13, 14,  4, 15, 
-    16, 17, 18, 19,   3, 20, 21, 22,  23, 24, 25, 26,  26, 26, 26, 26, 
-    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
-    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
-    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
-    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
-    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
-    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
-    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
-    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26
-};
+extern int seqan_flag;
 
 void VNTR::motifAnnoForOneVNTR (const OPTION &opt) 
 {
@@ -342,14 +324,11 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
     abpt->gap_open2 = 1; // gap open penalty #2
     abpt->gap_ext2 = 1;   // gap extension penalty #2
                     	  // gap_penalty = min{gap_open1 + gap_len * gap_ext1, gap_open2 + gap_len * gap_ext2}
-    // abpt->bw = 10;        // extra band used in adaptive banded DP
-    // abpt->bf = 0.01; 
 
     abpt->is_diploid = 0;
 	// abpt->min_freq = 0.8; 
     abpt->out_msa = 1; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
-    // abpt->w = 6, abpt->k = 2; abpt->min_w = 10; // minimizer-based seeding and partition
     abpt->progressive_poa = 1;
 
     // variables to store result
@@ -608,7 +587,7 @@ void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 	return;
 }
 
-void VNTR::concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt)
+void VNTR::concensusMotifAnnoForOneVNTRBySeqan (const OPTION &opt)
 {
 	if (skip) return;
     int n_seqs = clean_annos.size();
@@ -632,6 +611,65 @@ void VNTR::concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt)
     }        
 
     // collect sequence length and sequence
+    seqan::StringSet<seqan::String<char>> annoSet;
+    for (int r = 0; r < n_seqs; ++r)
+        seqan::appendValue(annoSet, clean_annoStrs[r]);
+
+    seqan::Score<int> scoreScheme(1, -1, -1, -1); 
+    seqan::Align <seqan::String <char> > align(annoSet);
+
+    int score = seqan::globalAlignment(align, scoreScheme);  // Compute a global alingment using the Align object.
+
+    int r, num, decode_num; uint32_t l;
+    int idx;
+    int alnSz = seqan::length(seqan::row(align, 0));
+    seqan::String<seqan::ProfileChar<char>> profile; 
+    seqan::resize(profile, alnSz); 
+    for (int r = 0; r < n_seqs; ++r) 
+    {
+        for (i = 0; i < alnSz; ++i) {
+            num = seqan::getValue(seqan::row(align, r), i);
+            // decode_num = decode(num);
+            profile[i].count[num] += 1;
+        }
+    }
+    consensus.resize(1);
+    for (l = 0; l < alnSz; ++l)
+    {
+        idx = seqan::getMaxIndex(profile[l]);
+        consensus[0].push_back((uint8_t) idx);
+    }
+
+	if (debug_flag) {cerr << "hom! " << endl; cerr << "h1&h2 anno: " << endl;}
+	outputConsensus(consensus[0], opt);		
+
+	return;
+}
+
+void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
+{
+    if (skip) return;
+    int n_seqs = clean_annos.size();
+    int motifs_size = motifs.size();
+    if (n_seqs == 0) return;
+
+    if (n_seqs == 1)
+    {
+        consensus.resize(1);
+        consensus[0] = clean_annos[0];
+        return;
+    }
+
+    // change from clean_edist to dists
+    int i, j;
+    double dists [ncleanreads * ncleanreads];
+    for (i = 0; i < ncleanreads; ++i)
+    {
+        for (j = 0; j < ncleanreads; ++j)
+           dists[i * ncleanreads + j] = clean_edist[i][j];
+    }        
+
+    // collect sequence length and sequence
     int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
     uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
     for (i = 0; i < n_seqs; ++i) {
@@ -639,8 +677,8 @@ void VNTR::concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt)
         bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * seq_lens[i]);
         for (j = 0; j < seq_lens[i]; ++j) 
         {
-        	assert(clean_annos[i][j] < motifs_size); 
-        	bseqs[i][j] = clean_annos[i][j];
+            assert(clean_annos[i][j] < motifs_size); 
+            bseqs[i][j] = clean_annos[i][j];
         }
     }
 
@@ -649,50 +687,46 @@ void VNTR::concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt)
     abpoa_para_t *abpt = abpoa_init_para();
 
     // alignment parameters
-    abpt->align_mode = 0; // 0:global 1:local, 2:extension
-    abpt->match = 1;      // match score
-    abpt->mismatch = 1;   // mismatch penalty
+    abpt->align_mode = 0;  // 0:global 1:local, 2:extension
+    abpt->match = 1;       // match score
+    abpt->mismatch = 1;    // mismatch penalty
     abpt->gap_mode = ABPOA_AFFINE_GAP; // gap penalty mode
-    abpt->gap_open1 = 1;  // gap open penalty #1
-    abpt->gap_ext1 = 1;   // gap extension penalty #1
-    abpt->gap_open2 = 1; // gap open penalty #2
-    abpt->gap_ext2 = 1;   // gap extension penalty #2
-                    	  // gap_penalty = min{gap_open1 + gap_len * gap_ext1, gap_open2 + gap_len * gap_ext2}
-    // abpt->bw = 10;        // extra band used in adaptive banded DP
-    // abpt->bf = 0.01; 
+    abpt->gap_open1 = 1;   // gap open penalty #1
+    abpt->gap_ext1 = 1;    // gap extension penalty #1
+    abpt->gap_open2 = 1;   // gap open penalty #2
+    abpt->gap_ext2 = 1;    // gap extension penalty #2
+                           // gap_penalty = min{gap_open1 + gap_len * gap_ext1, gap_open2 + gap_len * gap_ext2}
 
     abpt->is_diploid = 0;
-	// abpt->min_freq = 0.8; 
+    // abpt->min_freq = 0.8; 
     abpt->out_msa = 1; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
-    // abpt->w = 6, abpt->k = 2; abpt->min_w = 10; // minimizer-based seeding and partition
     abpt->progressive_poa = 1;
+    abpt->out_gfa = 0;
+    abpoa_post_set_para(abpt);
 
     // variables to store result
     uint8_t **cons_seq; int **cons_cov, *cons_l, cons_n = 0;
-    // uint8_t **msa_seq; int msa_l = 0;
+    uint8_t **msa_seq; int msa_l = 0;
 
-    abpoa_post_set_para(abpt);
-    
     // perform abpoa-msa
-    // ab->abs->n_seq = 0; // To re-use ab, n_seq needs to be set as 0
-    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, NULL, NULL);
-
+    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
+    
     assert(cons_n > 0); // cons_n == 0 means no consensus sequence exists
     if (cons_n > 1) cerr << "het" << endl;
 
     int numHap = cons_n > 1 ? 2 : 1;
-	consensus.resize(numHap);
-	het = cons_n > 1 ? true : false;
-	for (i = 0; i < numHap; ++i)
-	{
-		for (j = 0; j < cons_l[i]; ++j)
-		{
-			assert(cons_seq[i][j] < motifs_size);
-			consensus[i].push_back((uint8_t)cons_seq[i][j]);
-		}
-		assert(consensus[i].size() > 0); 		
-	}
+    consensus.resize(numHap);
+    het = cons_n > 1 ? true : false;
+    for (i = 0; i < numHap; ++i)
+    {
+        for (j = 0; j < cons_l[i]; ++j)
+        {
+            assert(cons_seq[i][j] < motifs_size);
+            consensus[i].push_back((uint8_t)cons_seq[i][j]);
+        }
+        assert(consensus[i].size() > 0);        
+    }
 
     if (cons_n) {
         for (i = 0; i < cons_n; ++i) 
@@ -705,36 +739,36 @@ void VNTR::concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt)
         free(cons_l);
     }
 
-    // if (msa_l) 
-    // {
-    //     for (i = 0; i < n_seqs; ++i) 
-    //     {
-    //     	free(msa_seq[i]); 
-    //     	free(msa_seq);
-    //     }
-    // }
+    if (msa_l) 
+    {
+        for (i = 0; i < n_seqs; ++i) 
+        {
+            free(msa_seq[i]); 
+            free(msa_seq);
+        }
+    }
 
     abpoa_free(ab); 
     abpoa_free_para(abpt); 
 
     for (i = 0; i < n_seqs; ++i) free(bseqs[i]); 
-   	free(bseqs); 
+    free(bseqs); 
     free(seq_lens);
 
-	if (het)
-	{
-		if (debug_flag) {cerr << "het! " << endl; cerr << "h1 anno: " << endl;}
-		outputConsensus(consensus[0], opt);
-		if (debug_flag) cerr << "h2 anno: " << endl;
-		outputConsensus(consensus[1], opt);
-	}
-	else
-	{
-		if (debug_flag) {cerr << "hom! " << endl; cerr << "h1&h2 anno: " << endl;}
-		outputConsensus(consensus[0], opt);		
-	}
+    if (het)
+    {
+        if (debug_flag) {cerr << "het! " << endl; cerr << "h1 anno: " << endl;}
+        outputConsensus(consensus[0], opt);
+        if (debug_flag) cerr << "h2 anno: " << endl;
+        outputConsensus(consensus[1], opt);
+    }
+    else
+    {
+        if (debug_flag) {cerr << "hom! " << endl; cerr << "h1&h2 anno: " << endl;}
+        outputConsensus(consensus[0], opt);     
+    }
 
-	return;
+    return;
 }
 
 void VNTR::commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_anno)

@@ -16,10 +16,9 @@ int naive_flag = false;
 int debug_flag = false;
 int hclust_flag = false;
 int consensus_seq_flag = false;
+int seqan_flag = false;
 
 struct timeval start_time, stop_time, elapsed_time;
-
-/* vamos -in read.bam -vntr vntrs.bed -motif motifs.csv -o out.vcf */
 
 void printUsage(IO &io) 
 {
@@ -31,12 +30,13 @@ void printUsage(IO &io)
 	printf("       -m  FILE         the comma-delimited motif sequences list for each VNTR locus, each row represents a VNTR locus\n");
 	printf("       -o  FILE         output vcf file\n");
 	printf("       -s  CHAR         the sample name\n");
-	printf("       -t  INT          number of threads\n");
-	printf("       -f  double       filter noisy read annotations, default 0.0 (no filter)\n");
-	printf("       --naive          specify the naive version of code to do the annotation, default is faster implementation\n");
+	printf("       -t  INT          number of threads, DEFAULT: 1\n");
+	printf("       -f  double       filter noisy read annotations, DEFAULT: 0.0 (no filter)\n");
+	printf("       --naive          specify the naive version of code to do the annotation, DEFAULT: faster implementation\n");
 	printf("       --debug          print out debug information\n");
 	printf("       --clust          use hierarchical clustering to judge if a VNTR locus is het or hom\n");
 	printf("       --consensus      get consensus sequence from reads\n");
+	printf("       --seqan          use seqan lib to do MSA (haploid only), DEFAULT: abPoa\n");
 	printf("       -h               print out help message\n");
 } 
 
@@ -56,8 +56,10 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt)
 	it->cleanNoiseAnno(opt);
 	if (hclust_flag)
 		it->concensusMotifAnnoForOneVNTR(opt);
+	else if (seqan_flag)
+		it->concensusMotifAnnoForOneVNTRBySeqan(opt);
 	else
-		it->concensusMotifAnnoForOneVNTRUsingABpoa(opt);
+		it->concensusMotifAnnoForOneVNTRByABpoa(opt);
 	it->clearRead();
 	return;
 }
@@ -103,6 +105,7 @@ int main (int argc, char **argv)
 		{"debug",         no_argument,             &debug_flag,         1},
 		{"clust",         no_argument,             &hclust_flag,        1},
 		{"consensus",     no_argument,             &consensus_seq_flag, 1},
+		{"seqan",         no_argument,             &seqan_flag,         1},
 		/* These options don’t set a flag. We distinguish them by their indices. */
 		{"input",         required_argument,       0, 'i'},
 		{"vntr",          required_argument,       0, 'v'},
@@ -229,6 +232,7 @@ int main (int argc, char **argv)
   	if (debug_flag) puts ("debug_flag is set");
    	if (hclust_flag) puts ("hclust_flag is set");
   	if (consensus_seq_flag) puts ("consensus_seq_flag is set");
+  	if (seqan_flag) puts ("seqan_flag is set");
 
 	/* Print any remaining command line arguments (not options). */
 	if (optind < argc)

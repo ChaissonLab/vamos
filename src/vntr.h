@@ -102,7 +102,9 @@ public:
 	/* for all the sequences at the current VNTR locus, get the consensus; annotation */
 	void concensusMotifAnnoForOneVNTR (const OPTION &opt);
 
-	void concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt);
+	void concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt);
+
+	void concensusMotifAnnoForOneVNTRBySeqan (const OPTION &opt);
 
 	int hClust (vector<int> &gp1, vector<int> &gp2, double dists []);
 

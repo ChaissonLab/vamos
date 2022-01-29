@@ -22,6 +22,7 @@ extern int naive_flag;
 extern int debug_flag;
 extern int hclust_flag;
 extern int consensus_seq_flag;
+extern int seqan_flag;
 
 //0123456789ABCDEF
 //=ACMGRSVTWYHKDBN  aka seq_nt16_str[]
@@ -32,109 +33,118 @@ extern int consensus_seq_flag;
 const char rcseq_nt16_str[] = "!TGKCYSBAWRDMHVN";
 
 
-// void consensus_seq_abPoa (vector<READ *> &initial_reads, READ * consensus_read)
-// {
-//     int i, j;
-//     int n_seqs = initial_reads.size();
+void consensus_seq_abPoa (vector<READ *> &initial_reads, READ * consensus_read)
+{
+    int i, j;
+    int n_seqs = initial_reads.size();
 
-//     // collect sequence length
-//     int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
-//     uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
-//     for (i = 0; i < n_seqs; ++i) {
-//         seq_lens[i] = initial_reads[i]->len;
-//         bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * seq_lens[i]);
-//         for (j = 0; j < seq_lens[i]; ++j)
-//             bseqs[i][j] = (uint8_t) initial_reads[i]->seq[j];            
-//     }
+    // collect sequence length
+    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
+    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
+    for (i = 0; i < n_seqs; ++i) {
+        seq_lens[i] = initial_reads[i]->len;
+        bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * seq_lens[i]);
+        for (j = 0; j < seq_lens[i]; ++j)
+            bseqs[i][j] = (uint8_t) initial_reads[i]->seq[j];            
+    }
 
-//     // initialize variables
-//     abpoa_t *ab = abpoa_init();
-//     abpoa_para_t *abpt = abpoa_init_para();
+    // initialize variables
+    abpoa_t *ab = abpoa_init();
+    abpoa_para_t *abpt = abpoa_init_para();
 
-//     // alignment parameters
-//     abpt->align_mode = 0; // 0:global 1:local, 2:extension
-//     abpt->match = 1;      // match score
-//     abpt->mismatch = 1;   // mismatch penalty
-//     abpt->gap_mode = ABPOA_AFFINE_GAP; // gap penalty mode
-//     abpt->gap_open1 = 1;  // gap open penalty #1
-//     abpt->gap_ext1 = 1;   // gap extension penalty #1
-//     abpt->gap_open2 = 1; // gap open penalty #2
-//     abpt->gap_ext2 = 1;   // gap extension penalty #2
+    // alignment parameters
+    abpt->align_mode = 0; // 0:global 1:local, 2:extension
+    abpt->match = 1;      // match score
+    abpt->mismatch = 1;   // mismatch penalty
+    abpt->gap_mode = ABPOA_AFFINE_GAP; // gap penalty mode
+    abpt->gap_open1 = 1;  // gap open penalty #1
+    abpt->gap_ext1 = 1;   // gap extension penalty #1
+    abpt->gap_open2 = 1; // gap open penalty #2
+    abpt->gap_ext2 = 1;   // gap extension penalty #2
 
-//     abpt->is_diploid = 0;
-//     abpt->out_msa = 0; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
-//     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
-//     abpt->progressive_poa = 1;
+    abpt->is_diploid = 0;
+    abpt->out_msa = 0; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
+    abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
+    abpt->progressive_poa = 1;
 
-//     // variables to store result
-//     uint8_t **cons_seq; int **cons_cov, *cons_l, cons_n = 0;
+    // variables to store result
+    uint8_t **cons_seq; int **cons_cov, *cons_l, cons_n = 0;
 
-//     abpoa_post_set_para(abpt);
-//     abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, NULL, NULL);
+    abpoa_post_set_para(abpt);
+    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, NULL, NULL);
 
-//     consensus_read->len = cons_l[0]; // read length
-//     consensus_read->seq = (char *) malloc(consensus_read->len + 1); // read sequence array
-//     for (j = 0; j < cons_l[0]; ++j)
-//         consensus_read->seq[j] = (uint8_t)cons_seq[0][j];
+    consensus_read->len = cons_l[0]; // read length
+    consensus_read->seq = (char *) malloc(consensus_read->len + 1); // read sequence array
+    for (j = 0; j < cons_l[0]; ++j)
+        consensus_read->seq[j] = (uint8_t)cons_seq[0][j];
 
-//     if (cons_n) {
-//         for (i = 0; i < cons_n; ++i) 
-//         {
-//             free(cons_seq[i]); 
-//             free(cons_cov[i]);
-//         } 
-//         free(cons_seq); 
-//         free(cons_cov); 
-//         free(cons_l);
-//     }
+    if (cons_n) {
+        for (i = 0; i < cons_n; ++i) 
+        {
+            free(cons_seq[i]); 
+            free(cons_cov[i]);
+        } 
+        free(cons_seq); 
+        free(cons_cov); 
+        free(cons_l);
+    }
 
-//     abpoa_free(ab); 
-//     abpoa_free_para(abpt); 
-//     return;
-// }
+    abpoa_free(ab); 
+    abpoa_free_para(abpt); 
+    return;
+}
 
 
-// void consensus_seq_seqan (vector<READ *> &initial_reads, READ * consensus_read)
-// {
-//     int n_seqs = initial_reads.size();
-//     seqan::Align <seqan::String <seqan::AminoAcid> > align;
-//     seqan::resize(seqan::rows(align), n_seqs);
-//     for (int i = 0; i < n_seqs; ++i)
-//         seqan::assignSource(seqan::row(align, i), initial_reads[i]->seq);   
+void consensus_seq_seqan (vector<READ *> &initial_reads, READ * consensus_read)
+{
+    int n_seqs = initial_reads.size();
+    seqan::Align <seqan::String <seqan::Dna> > align;
+    seqan::resize(seqan::rows(align), n_seqs);
+    string tmp_str;
+    int i, j;
+    for (i = 0; i < n_seqs; ++i)
+    {
+        tmp_str = string(initial_reads[i]->seq);
+        seqan::assignSource(seqan::row(align, i), tmp_str);   
+    }
 
-//     seqan::globalMsaAlignment(align, seqan::Blosum62(-1, -11));
+    seqan::Score<int> scoreScheme(1, -1, -1, -1); 
+    seqan::globalMsaAlignment(align, scoreScheme);
 
-//     // create the profile string
-//     seqan::String <seqan::ProfileChar <seqan::Dna>> profile;
-//     seqan::resize(profile, seqan::length(seqan::row(align, 0)));
-//     for (unsigned rowNo = 0; rowNo < n_seqs; ++rowNo)
-//         for (unsigned i = 0; i < seqan::length(seqan::row(align, rowNo)); ++i)
-//             profile[i].count[seqan::ordValue(seqan::getValue(seqan::row(align, rowNo), i))] += 1;
+    // create the profile string
+    seqan::String <seqan::ProfileChar <seqan::Dna>> profile;
+    seqan::resize(profile, seqan::length(seqan::row(align, 0)));
 
-//     consensus_read->len = 0;
-//     int idx;
-//     for (unsigned i = 0; i < seqan::length(profile); ++i)
-//     {
-//         idx = seqan::getMaxIndex(profile[i]);
-//         if (idx < 4)  // is not gap
-//             consensus_read->len += 1;
-//     }    
+    for (j = 0; j < n_seqs; ++j)
+    {
+        for (i = 0; i < seqan::length(seqan::row(align, j)); ++i)
+            profile[i].count[seqan::ordValue(seqan::getValue(seqan::row(align, j), i))] += 1;
+    }
 
-//     // call consensus from this string
-//     consensus_read->seq = (char *) malloc(consensus_read->len + 1); // read sequence array
-//     unsigned j = 0;
-//     for (unsigned i = 0; i < seqan::length(profile), j < consensus_read->len; ++i)
-//     {
-//         idx = seqan::getMaxIndex(profile[i]);
-//         if (idx < 4)  // is not gap
-//         {
-//             consensus_read->seq[j] = (char) seqan::Dna(seqan::getMaxIndex(profile[i]));
-//             j += 1;
-//         }
-//     }
+    consensus_read->len = 0;
+    int idx;
+    for (i = 0; i < seqan::length(profile); ++i)
+    {
+        idx = seqan::getMaxIndex(profile[i]);
+        if (idx < 4)  // is not gap
+            consensus_read->len += 1;
+    }    
+
+    // call consensus from this string
+    consensus_read->seq = (char *) malloc(consensus_read->len + 1); // read sequence array
+    j = 0;
+    for (i = 0; i < seqan::length(profile), j < consensus_read->len; ++i)
+    {
+        idx = seqan::getMaxIndex(profile[i]);
+        if (idx < 4)  // is not gap
+        {
+            consensus_read->seq[j] = (char) seqan::Dna(seqan::getMaxIndex(profile[i]));
+            j += 1;
+        }
+    }
        
-//     return;
-// }
+    return;
+}
 
 int IO::readMotifsFromCsv (vector<VNTR *> &vntrs) 
 {
@@ -353,26 +363,51 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                     read->seq[i] = seq_nt16_str[base]; //gets nucleotide id and converts them into IUPAC id.
                 } 
                 if (!consensus_seq_flag) vntr->reads.push_back(read); 
-                // else initial_reads.push_back(read); 
+                else initial_reads.push_back(read); 
+
+                if (debug_flag)
+                {
+                     cerr << "read_name: " << bam_get_qname(aln) << endl; 
+                     // cerr << "vntr->ref_start: " << vntr->ref_start << " vntr->ref_end: " << vntr->ref_end << endl;
+                     // cerr << "liftover_read_s: " << liftover_read_s << " liftover_read_e: " << liftover_read_e << endl;
+                     cerr << "read length: " << read->len << endl;
+                     cout.write(read->seq, read->len);
+                     cout << endl; 
+                }
             }
         }
         if (!consensus_seq_flag) vntr->nreads = vntr->reads.size();
-        // else
-        // {
-        //     // add code to find consensus sequence from reads
-        //     READ * consensus_read = new READ();
-        //     string dummy = "consensus_read";
-        //     consensus_read->qname = (char *) malloc(20);
-        //     strcpy(consensus_read->qname, dummy.c_str());
-        //     consensus_seq_seqan(initial_reads, consensus_read);
-        //     vntr->reads.push_back(consensus_read);
-        //     vntr->nreads = 1;
+        else
+        {
+            // add code to find consensus sequence from reads
+            READ * consensus_read = new READ();
+            string dummy = "consensus_read";
+            consensus_read->qname = (char *) malloc(20);
+            strcpy(consensus_read->qname, dummy.c_str());
 
-        //     // clear initial_reads
-        //     for (size_t z = 0; z < initial_reads.size(); ++z) 
-        //         delete initial_reads[z];
-        //     initial_reads.clear();
-        // }
+            if (seqan_flag)
+                consensus_seq_seqan(initial_reads, consensus_read);
+            else
+                consensus_seq_abPoa(initial_reads, consensus_read);
+
+            vntr->reads.push_back(consensus_read);
+            vntr->nreads = 1;
+
+            if (debug_flag)
+            {
+                 cerr << "consensus_read: " << endl; 
+                 // cerr << "vntr->ref_start: " << vntr->ref_start << " vntr->ref_end: " << vntr->ref_end << endl;
+                 // cerr << "liftover_read_s: " << liftover_read_s << " liftover_read_e: " << liftover_read_e << endl;
+                 cerr << "consensus_read length: " << consensus_read->len << endl;
+                 cout.write(consensus_read->seq, consensus_read->len);
+                 cout << endl; 
+            }
+
+            // clear initial_reads
+            for (size_t z = 0; z < initial_reads.size(); ++z) 
+                delete initial_reads[z];
+            initial_reads.clear();
+        }
 
     }
     free(bai);
