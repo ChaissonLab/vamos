@@ -11,7 +11,11 @@
 #include "io.h"
 #include <mutex>   
 
-using namespace std;
+// using namespace std;
+int naive_flag = false;
+int debug_flag = false;
+int hclust_flag = false;
+int consensus_seq_flag = false;
 
 struct timeval start_time, stop_time, elapsed_time;
 
@@ -19,20 +23,21 @@ struct timeval start_time, stop_time, elapsed_time;
 
 void printUsage(IO &io) 
 {
-	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-t threads] [-n] [-d] [-c] [-f]\n");
+	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-t threads] [options]\n");
 	printf("Version: %s\n", io.version);
 	printf("Options:\n");
-	printf("       -i  FILE      input alignment file (bam format), bam file needs to be indexed \n");
-	printf("       -v  FILE      the tab-delimited coordinate of each VNTR locus - `chrom\tstart\tend`, each row represents a VNTR locus\n");
-	printf("       -m  FILE      the comma-delimited motif sequences list for each VNTR locus, each row represents a VNTR locus\n");
-	printf("       -o  FILE      output vcf file\n");
-	printf("       -s  CHAR      the sample name\n");
-	printf("       -t  INT       number of threads\n");
-	printf("       -n            specify the naive version of code to do the annotation, default is faster implementation\n");
-	printf("       -d            print out debug information\n");
-	printf("       -c            use hierarchical clustering to judge if a VNTR locus is het or hom\n");
-	printf("       -f            filter noisy read annotations\n");
-	printf("       -h            print out help message\n");
+	printf("       -i  FILE         input alignment file (bam format), bam file needs to be indexed \n");
+	printf("       -v  FILE         the tab-delimited coordinate of each VNTR locus - `chrom\tstart\tend`, each row represents a VNTR locus\n");
+	printf("       -m  FILE         the comma-delimited motif sequences list for each VNTR locus, each row represents a VNTR locus\n");
+	printf("       -o  FILE         output vcf file\n");
+	printf("       -s  CHAR         the sample name\n");
+	printf("       -t  INT          number of threads\n");
+	printf("       -f  double       filter noisy read annotations, default 0.0 (no filter)\n");
+	printf("       --naive          specify the naive version of code to do the annotation, default is faster implementation\n");
+	printf("       --debug          print out debug information\n");
+	printf("       --clust          use hierarchical clustering to judge if a VNTR locus is het or hom\n");
+	printf("       --consensus      get consensus sequence from reads\n");
+	printf("       -h               print out help message\n");
 } 
 
 void ProcVNTR (int s, VNTR * it, const OPTION &opt) 
@@ -40,16 +45,16 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt)
 	if (it->nreads == 0 or it->motifs.size() > 255) 
 	{
 		it->skip = true;
-		if (opt.debug) cerr << "skip one vntr due to > 255 motifs" << endl;
+		if (debug_flag) cerr << "skip one vntr due to > 255 motifs" << endl;
 		return;
 	}
 
-	if (opt.debug) cerr << "start to do the annotation: " << s << endl;
+	if (debug_flag) cerr << "start to do the annotation: " << s << endl;
 
 	it->motifAnnoForOneVNTR(opt); 
 	it->annoTostring(opt);
 	it->cleanNoiseAnno(opt);
-	if (opt.hc)
+	if (hclust_flag)
 		it->concensusMotifAnnoForOneVNTR(opt);
 	else
 		it->concensusMotifAnnoForOneVNTRUsingABpoa(opt);
@@ -69,7 +74,7 @@ void *ProcVNTRs (void *procInfoValue)
 
 	for (i = procInfo->thread, s = 0; i < sz; i += (procInfo->opt)->nproc, s += 1)
 	{
-		if (procInfo->opt->debug) cerr << "processing vntr: " << i << endl;
+		if (debug_flag) cerr << "processing vntr: " << i << endl;
 		// procInfo->numOfProcessed += ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt));
 		ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt));
 	}
@@ -93,6 +98,11 @@ int main (int argc, char **argv)
 
 	const struct option long_options[] =
 	{
+		/* These options set a flag. */
+		{"naive",         no_argument,             &naive_flag,         1},
+		{"debug",         no_argument,             &debug_flag,         1},
+		{"clust",         no_argument,             &hclust_flag,        1},
+		{"consensus",     no_argument,             &consensus_seq_flag, 1},
 		/* These options don’t set a flag. We distinguish them by their indices. */
 		{"input",         required_argument,       0, 'i'},
 		{"vntr",          required_argument,       0, 'v'},
@@ -100,19 +110,25 @@ int main (int argc, char **argv)
 		{"output",        required_argument,       0, 'o'},
 		{"sampleName",    required_argument,       0, 's'},
 		{"numThreads",    required_argument,       0, 't'},
-		{"naiveAnnoAlg",  no_argument,             0, 'n'},
-		{"hclust",        no_argument,             0, 'c'},
 		{"filterNoisy",   required_argument,       0, 'f'},
-		{"help",          no_argument,             0, 'h'},
 		{NULL, 0, 0, '\0'}
 	};
 	/* getopt_long stores the option index here. */
 	int option_index = 0;
 
-	while ((c = getopt_long (argc, argv, "i:v:m:o:s:t:f:hndc", long_options, &option_index)) != -1)
+	while ((c = getopt_long (argc, argv, "i:v:m:o:s:t:f:h", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
+
+        case 0:
+          /* If this option set a flag, do nothing else now. */
+          if (long_options[option_index].flag != 0) break;
+          printf ("option %s", long_options[option_index].name);
+          if (optarg) printf (" with arg %s", optarg);
+          printf ("\n");
+          break;
+
 		case 'i':
 			printf ("option -input with `%s'\n", optarg);
 			io.input_bam = (char *) malloc(strlen(optarg) + 1);
@@ -146,21 +162,6 @@ int main (int argc, char **argv)
 		case 't':
 			printf ("option -numThreads with `%s'\n", optarg);
 			opt.nproc = atoi(optarg);
-			break;
-
-		case 'n':
-			printf ("option -naiveAnnoAlg");
-			opt.fasterAnnoAlg = false;
-			break;
-
-		case 'd':
-			printf ("option -debug\n");
-			opt.debug = true;
-			break;
-
-		case 'c':
-			printf ("option -hclust\n");
-			opt.hc = true;
 			break;
 
 		case 'f':
@@ -221,6 +222,22 @@ int main (int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+  	/* Instead of reporting ‘--verbose’
+     and ‘--brief’ as they are encountered,
+     we report the final status resulting from them. */
+  	if (naive_flag) puts ("naive_flag is set");
+  	if (debug_flag) puts ("debug_flag is set");
+   	if (hclust_flag) puts ("hclust_flag is set");
+  	if (consensus_seq_flag) puts ("consensus_seq_flag is set");
+
+	/* Print any remaining command line arguments (not options). */
+	if (optind < argc)
+	{
+		printf ("non-option ARGV-elements: ");
+		while (optind < argc) printf ("%s ", argv[optind++]);
+		putchar ('\n');
+	}
+
 	vector<VNTR *> vntrs;
 
 	gettimeofday(&start_time,NULL);
@@ -246,7 +263,6 @@ int main (int argc, char **argv)
         exit(EXIT_FAILURE);
     } 	
 	io.writeVCFHeader(out);
-	cerr << "finishing reading!" << endl;
 
 	gettimeofday(&stop_time,NULL);
 	timersub(&stop_time, &start_time, &elapsed_time); 

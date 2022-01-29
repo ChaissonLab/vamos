@@ -1,5 +1,5 @@
 PROG=vamos
-LIBS=-lhts -labpoa -lz -lpthread
+LIBS=-lhts -labpoa -lz -lpthread -ledit
 PROF=/home1/jingwenr/.conda/envs/trf/lib
 DEBUG?=""
 OPT?=""
@@ -37,10 +37,10 @@ main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include  
 
 io.o: io.cpp io.h vcf.h vntr.h read.h
-	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -I ../abpoa/include 
+	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -I ../abpoa/include -I $(CONDA_PREFIX)/include 
 
 vcf.o: vcf.cpp vcf.h 
-	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include 
+	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -I $(CONDA_PREFIX)/include 
 
 vntr.o: vntr.cpp naive_anno.cpp bounded_anno.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h
 	$(CXX) $(CFLAGS) -c $< -I ../alglib/src -I ../edlib/include -I ../abpoa/include -I $(CONDA_PREFIX)/include 

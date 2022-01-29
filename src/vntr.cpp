@@ -13,6 +13,32 @@
 #include "abpoa.h"
 #include "option.h"
 
+extern int naive_flag;
+extern int debug_flag;
+extern int hclust_flag;
+extern int consensus_seq_flag;
+
+// AaCcGgTtNn ... ==> 0,1,2,3,4 ...
+// BbDdEeFf   ... ==> 5,6,7,8 ...
+unsigned char _char26_table[256] = {
+     0,  1,  2,  3,   4,  5,  6,  7,   8,  9, 10, 11,  12, 13, 14, 15, 
+    16, 17, 18, 19,  20, 21, 22, 23,  24, 25, 26, 26,  26, 26, 26, 26, 
+    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,
+    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
+    26,  0,  5,  1,   6,  7,  8,  2,   9, 10, 11, 12,  13, 14,  4, 15, 
+    16, 17, 18, 19,   3, 20, 21, 22,  23, 24, 25, 26,  26, 26, 26, 26, 
+    26,  0,  5,  1,   6,  7,  8,  2,   9, 10, 11, 12,  13, 14,  4, 15, 
+    16, 17, 18, 19,   3, 20, 21, 22,  23, 24, 25, 26,  26, 26, 26, 26, 
+    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
+    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
+    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
+    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
+    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
+    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
+    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26, 
+    26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26,  26, 26, 26, 26
+};
+
 void VNTR::motifAnnoForOneVNTR (const OPTION &opt) 
 {
 	if (skip) return;
@@ -26,10 +52,11 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt)
 			input:   string : reads[i].seq; vector<MOTIF> : motifs
 			output:  vector<vector<int>> annos[i]
 		*/
-		if (opt.fasterAnnoAlg)
-			bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
-		else
+
+		if (naive_flag)
 			naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
+        else
+            bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
 
 		if (annos[i].size() == 0) 
 		{
@@ -37,7 +64,7 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt)
 			nullAnno = true;
 			nullAnnos[i] = true;
 		} 
-        else if (opt.debug) {
+        else if (debug_flag) {
             cerr << endl;
             cerr.write(reads[i]->qname, reads[i]->l_qname);
             cerr << endl;
@@ -97,7 +124,7 @@ void VNTR::annoTostring (const OPTION &opt)
 	{
 		annoTostring_helper(motifs.size(), annoStrs[r], annos[r]);
 		assert(annoStrs[r].length() > 0);
-		// if (opt.debug) cerr << "string " << r << ":  " << annoStrs[r] << endl;
+		// if (debug_flag) cerr << "string " << r << ":  " << annoStrs[r] << endl;
 	}
 	return;
 }
@@ -214,7 +241,7 @@ int VNTR::cleanNoiseAnno(const OPTION &opt)
             assert(clean_edist[i].size() == ncleanreads);
 
         if (ncleanreads == 0) skip = true;
-        if (opt.debug) cerr << "ncleanreads: " << ncleanreads << endl;       
+        if (debug_flag) cerr << "ncleanreads: " << ncleanreads << endl;       
     }
     else
     {
@@ -284,7 +311,7 @@ void outputConsensus (vector<uint8_t> &consensus, const OPTION &opt)
 	size_t i = 0;
     for (auto &it : consensus)
     {
-    	if (opt.debug)
+    	if (debug_flag)
     	{
 			if (i < consensus.size() - 1)
 				cerr << to_string(it) << ",";
@@ -293,7 +320,7 @@ void outputConsensus (vector<uint8_t> &consensus, const OPTION &opt)
     	}
 		i += 1;
     }
-	if (opt.debug) cerr << endl;
+	if (debug_flag) cerr << endl;
 	return;
 }
 
@@ -568,14 +595,14 @@ void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 
 	if (het)
 	{
-		if (opt.debug) {cerr << "het! " << endl; cerr << "h1 anno: " << endl;}
+		if (debug_flag) {cerr << "het! " << endl; cerr << "h1 anno: " << endl;}
 		outputConsensus(consensus[0], opt);
-		if (opt.debug) cerr << "h2 anno: " << endl;
+		if (debug_flag) cerr << "h2 anno: " << endl;
 		outputConsensus(consensus[1], opt);
 	}
 	else
 	{
-		if (opt.debug) {cerr << "hom! " << endl; cerr << "h1&h2 anno: " << endl;}
+		if (debug_flag) {cerr << "hom! " << endl; cerr << "h1&h2 anno: " << endl;}
 		outputConsensus(consensus[0], opt);		
 	}
 	return;
@@ -604,12 +631,12 @@ void VNTR::concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt)
            dists[i * ncleanreads + j] = clean_edist[i][j];
     }        
 
-    // collect sequence length
+    // collect sequence length and sequence
     int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
     uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = clean_annos[i].size();
-        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
+        bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * seq_lens[i]);
         for (j = 0; j < seq_lens[i]; ++j) 
         {
         	assert(clean_annos[i][j] < motifs_size); 
@@ -643,11 +670,13 @@ void VNTR::concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt)
 
     // variables to store result
     uint8_t **cons_seq; int **cons_cov, *cons_l, cons_n = 0;
-    uint8_t **msa_seq; int msa_l = 0;
+    // uint8_t **msa_seq; int msa_l = 0;
 
     abpoa_post_set_para(abpt);
-
-    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
+    
+    // perform abpoa-msa
+    // ab->abs->n_seq = 0; // To re-use ab, n_seq needs to be set as 0
+    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, NULL, NULL);
 
     assert(cons_n > 0); // cons_n == 0 means no consensus sequence exists
     if (cons_n > 1) cerr << "het" << endl;
@@ -676,14 +705,14 @@ void VNTR::concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt)
         free(cons_l);
     }
 
-    if (msa_l) 
-    {
-        for (i = 0; i < n_seqs; ++i) 
-        {
-        	free(msa_seq[i]); 
-        	free(msa_seq);
-        }
-    }
+    // if (msa_l) 
+    // {
+    //     for (i = 0; i < n_seqs; ++i) 
+    //     {
+    //     	free(msa_seq[i]); 
+    //     	free(msa_seq);
+    //     }
+    // }
 
     abpoa_free(ab); 
     abpoa_free_para(abpt); 
@@ -694,14 +723,14 @@ void VNTR::concensusMotifAnnoForOneVNTRUsingABpoa (const OPTION &opt)
 
 	if (het)
 	{
-		if (opt.debug) {cerr << "het! " << endl; cerr << "h1 anno: " << endl;}
+		if (debug_flag) {cerr << "het! " << endl; cerr << "h1 anno: " << endl;}
 		outputConsensus(consensus[0], opt);
-		if (opt.debug) cerr << "h2 anno: " << endl;
+		if (debug_flag) cerr << "h2 anno: " << endl;
 		outputConsensus(consensus[1], opt);
 	}
 	else
 	{
-		if (opt.debug) {cerr << "hom! " << endl; cerr << "h1&h2 anno: " << endl;}
+		if (debug_flag) {cerr << "hom! " << endl; cerr << "h1&h2 anno: " << endl;}
 		outputConsensus(consensus[0], opt);		
 	}
 
