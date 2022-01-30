@@ -288,6 +288,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
     uint32_t VNTR_s, VNTR_e;
     unsigned char base;
     vector<READ *> initial_reads;
+    uint32_t total_len;
 
     int i;
     VNTR * vntr = NULL;
@@ -295,7 +296,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
     for (int j = cur_thread; j < sz; j += nproc) 
     {
         vntr = vntrs[j];
-
+        total_len = 0;
         itr = bam_itr_querys(idx, bamHdr, vntr->region.c_str());
         while(bam_itr_next(fp_in, itr, aln) >= 0)
         {
@@ -365,6 +366,8 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 if (!consensus_seq_flag) vntr->reads.push_back(read); 
                 else initial_reads.push_back(read); 
 
+                total_len += read->len;
+
                 if (debug_flag)
                 {
                      cerr << "read_name: " << bam_get_qname(aln) << endl; 
@@ -376,7 +379,11 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 }
             }
         }
-        if (!consensus_seq_flag) vntr->nreads = vntr->reads.size();
+        if (!consensus_seq_flag) 
+        {
+            vntr->nreads = vntr->reads.size();
+            vntr->cur_len = total_len / vntr->nreads;
+        }
         else
         {
             // add code to find consensus sequence from reads
@@ -394,6 +401,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
 
             vntr->reads.push_back(consensus_read);
             vntr->nreads = 1;
+            vntr->cur_len = consensus_read->len;
 
             if (debug_flag)
             {

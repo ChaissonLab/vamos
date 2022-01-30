@@ -47,6 +47,7 @@ void VcfWriter::writeHeader(ofstream &out)
 		<< "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">" << "\n"
 		<< "##INFO=<ID=ALTANNO_H1,Number=1,Type=String,Description=\"\"Motif representation for the h1 alternate allele>" << "\n"
 		<< "##INFO=<ID=ALTANNO_H2,Number=1,Type=String,Description=\"\"Motif representation for the h2 alternate allele>" << "\n"
+		<< "##INFO=<ID=LEN,Number=1,Type=Integer,Description=\"\"Length of the vntr sequence>" << "\n"
 
 		<< "##FILTER=<ID=PASS,Description=\"All filters passed\">" << "\n"
 		<< "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << "\n"
@@ -88,6 +89,7 @@ void writeSingleBody(VNTR * it, ofstream &out)
 	if (GT == "1/2")
 		out << "ALTANNO_H2=" + motif_anno_h2 + ";\t";
 
+	out	<< "LEN=" + to_string(it->cur_len) + ";";
 	out	<< "PASS\t";
 	out	<< "GT\t";
 	out << GT + "\n";

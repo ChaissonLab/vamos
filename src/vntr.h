@@ -44,7 +44,8 @@ class VNTR
 public: 
 	uint32_t ref_start;
 	uint32_t ref_end;
-	int len;
+	int len; // the ref len
+	int cur_len; // the sample seq len
 	string chr;
 	string region;
 	vector<MOTIF> motifs;
