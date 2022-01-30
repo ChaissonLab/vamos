@@ -54,13 +54,13 @@ void consensus_seq_abPoa (vector<READ *> &initial_reads, READ * consensus_read)
 
     // alignment parameters
     abpt->align_mode = 0; // 0:global 1:local, 2:extension
-    abpt->match = 1;      // match score
-    abpt->mismatch = 1;   // mismatch penalty
-    abpt->gap_mode = ABPOA_AFFINE_GAP; // gap penalty mode
-    abpt->gap_open1 = 1;  // gap open penalty #1
-    abpt->gap_ext1 = 1;   // gap extension penalty #1
-    abpt->gap_open2 = 1; // gap open penalty #2
-    abpt->gap_ext2 = 1;   // gap extension penalty #2
+    // abpt->match = 1;      // match score
+    // abpt->mismatch = 1;   // mismatch penalty
+    // abpt->gap_mode = ABPOA_AFFINE_GAP; // gap penalty mode
+    // abpt->gap_open1 = 1;  // gap open penalty #1
+    // abpt->gap_ext1 = 1;   // gap extension penalty #1
+    // abpt->gap_open2 = 1; // gap open penalty #2
+    // abpt->gap_ext2 = 1;   // gap extension penalty #2
 
     abpt->is_diploid = 0;
     abpt->out_msa = 0; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
@@ -384,6 +384,8 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
             string dummy = "consensus_read";
             consensus_read->qname = (char *) malloc(20);
             strcpy(consensus_read->qname, dummy.c_str());
+
+            // consensus_seq_seqan(initial_reads, consensus_read);
 
             if (seqan_flag)
                 consensus_seq_seqan(initial_reads, consensus_read);

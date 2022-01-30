@@ -699,7 +699,7 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
 
     abpt->is_diploid = 0;
     // abpt->min_freq = 0.8; 
-    abpt->out_msa = 1; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
+    abpt->out_msa = 0; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
     abpt->progressive_poa = 1;
     abpt->out_gfa = 0;
