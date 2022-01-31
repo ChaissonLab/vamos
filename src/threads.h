@@ -7,6 +7,9 @@
 #include "vntr.h"
 #include "option.h"
 #include <mutex>   
+#include <sys/time.h>
+
+
 
 class ProcInfo
 {
@@ -19,6 +22,7 @@ public:
 	ofstream * out_nullAnno;
 	mutex *mtx; 
 	int * numOfProcessed;
+	struct timeval start_time, stop_time, elapsed_time;
 
 	ProcInfo () {};
 	~ProcInfo () {};
