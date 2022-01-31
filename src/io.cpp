@@ -382,7 +382,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
         if (!consensus_seq_flag) 
         {
             vntr->nreads = vntr->reads.size();
-            vntr->cur_len = total_len / vntr->nreads;
+            vntr->cur_len = (vntr->nreads == 0) ? 0 : (total_len / vntr->nreads);
         }
         else
         {
