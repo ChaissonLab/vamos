@@ -10,12 +10,51 @@
 #include "threads.h"
 #include "io.h"
 #include <mutex>   
-
-using namespace std;
+#include <unistd.h>
+#include <iomanip>
+#include <errno.h>
 
 struct timeval start_time, stop_time, elapsed_time;
 
 /* vamos -in read.bam -vntr vntrs.bed -motif motifs.csv -o out.vcf */
+
+
+// #define handle_error(msg) \
+//        do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
+// #define handle_error_en(en, msg) \
+//        do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
+
+// static void pclock(char *msg, clockid_t cid)
+// {
+//    struct timespec ts;
+
+//    printf("%s", msg);
+//    if (clock_gettime(cid, &ts) == -1)
+//        handle_error("clock_gettime");
+//    printf("%4jd.%03ld\n", (intmax_t) ts.tv_sec, ts.tv_nsec / 1000000);
+// }
+
+void process_mem_usage(double& vm_usage, double& resident_set)
+{
+    vm_usage     = 0.0;
+    resident_set = 0.0;
+
+    // the two fields we want
+    unsigned long vsize;
+    long rss;
+    {
+        std::string ignore;
+        std::ifstream ifs("/proc/self/stat", std::ios_base::in);
+        ifs >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
+                >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
+                >> ignore >> ignore >> vsize >> rss;
+    }
+
+    long page_size_kb = sysconf(_SC_PAGE_SIZE) / 1024; // in case x86-64 is configured to use 2MB pages
+    vm_usage = vsize / 1024.0;
+    resident_set = (rss * page_size_kb) / (1024.0 * 1024.0);
+}
 
 void printUsage(IO &io) 
 {
@@ -223,7 +262,7 @@ int main (int argc, char **argv)
 
 	vector<VNTR *> vntrs;
 
-	gettimeofday(&start_time,NULL);
+	gettimeofday(&start_time, NULL);
 
 	/* read VNTR bed file */
 	io.readVNTRFromBed(vntrs);
@@ -248,11 +287,6 @@ int main (int argc, char **argv)
 	io.writeVCFHeader(out);
 	cerr << "finishing reading!" << endl;
 
-	gettimeofday(&stop_time,NULL);
-	timersub(&stop_time, &start_time, &elapsed_time); 
-	printf("reading time was %f sec\n",
-	elapsed_time.tv_sec+elapsed_time.tv_usec/1000000.0);
-
 	/* debug code */
 	// ofstream out_nullAnno("/project/mchaisso_100/cmb-16/jingwenr/trfCall/vamos/src/test_pipeline/sub_50000/nullAnno.bed");
 
@@ -261,6 +295,8 @@ int main (int argc, char **argv)
 	if (opt.nproc > 1)
 	{
 		pthread_t *tid = new pthread_t[opt.nproc];
+		// clockid_t cid;
+
 		mutex mtx; 
 		int numOfProcessed = 0;
 		vector<ProcInfo> procInfo(opt.nproc);		
@@ -284,8 +320,9 @@ int main (int argc, char **argv)
 		for (i = 0; i < opt.nproc; i++) {
 			pthread_join(tid[i], NULL);
 		}
-		
 		delete[] tid;
+
+		// pclock("Process total CPU time: ", CLOCK_PROCESS_CPUTIME_ID);
 		// for (i = 1; i < opt.nproc; i++) 
 		// 	procInfo[0].timing.Add(procnfo[i].timing);
 		
@@ -310,7 +347,15 @@ int main (int argc, char **argv)
 		delete vntrs[i];
 	
 	out.close();
-	// out_nullAnno.close();
-	exit(EXIT_SUCCESS);
+
+	gettimeofday(&stop_time, NULL);
+	timersub(&stop_time, &start_time, &elapsed_time); 
+	printf("[CPU time]: %.2f sec\t", elapsed_time.tv_sec + elapsed_time.tv_usec/1000000.0);
+
+	double vm, rss;
+	process_mem_usage(vm, rss);
+	printf("[RSS]: %.2f G\n", rss);
+
+   	exit(EXIT_SUCCESS);
 }
 
