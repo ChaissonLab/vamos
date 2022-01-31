@@ -17,6 +17,7 @@ int debug_flag = false;
 int hclust_flag = false;
 int consensus_seq_flag = false;
 int seqan_flag = false;
+int output_read_anno_flag = false;
 
 struct timeval start_time, stop_time, elapsed_time;
 
@@ -37,6 +38,7 @@ void printUsage(IO &io)
 	printf("       --clust          use hierarchical clustering to judge if a VNTR locus is het or hom\n");
 	printf("       --consensus      get consensus sequence from reads\n");
 	printf("       --seqan          use seqan lib to do MSA (haploid only), DEFAULT: abPoa\n");
+	printf("       --readanno       output read annotation in VCF\n");
 	printf("       -h               print out help message\n");
 } 
 
@@ -101,11 +103,12 @@ int main (int argc, char **argv)
 	const struct option long_options[] =
 	{
 		/* These options set a flag. */
-		{"naive",         no_argument,             &naive_flag,         1},
-		{"debug",         no_argument,             &debug_flag,         1},
-		{"clust",         no_argument,             &hclust_flag,        1},
-		{"consensus",     no_argument,             &consensus_seq_flag, 1},
-		{"seqan",         no_argument,             &seqan_flag,         1},
+		{"naive",         no_argument,             &naive_flag,                    1},
+		{"debug",         no_argument,             &debug_flag,                    1},
+		{"clust",         no_argument,             &hclust_flag,                   1},
+		{"consensus",     no_argument,             &consensus_seq_flag,            1},
+		{"seqan",         no_argument,             &seqan_flag,                    1},
+		{"readanno",      no_argument,             &output_read_anno_flag,         1},
 		/* These options don’t set a flag. We distinguish them by their indices. */
 		{"input",         required_argument,       0, 'i'},
 		{"vntr",          required_argument,       0, 'v'},
@@ -233,6 +236,7 @@ int main (int argc, char **argv)
    	if (hclust_flag) puts ("hclust_flag is set");
   	if (consensus_seq_flag) puts ("consensus_seq_flag is set");
   	if (seqan_flag) puts ("seqan_flag is set");
+   	if (output_read_anno_flag) puts ("output_read_anno_flag is set");
 
 	/* Print any remaining command line arguments (not options). */
 	if (optind < argc)

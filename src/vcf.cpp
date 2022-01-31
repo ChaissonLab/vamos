@@ -8,6 +8,13 @@
 #include "assert.h"
 #include "vcf.h"
 
+extern int naive_flag;
+extern int debug_flag;
+extern int hclust_flag;
+extern int consensus_seq_flag;
+extern int seqan_flag;
+extern int output_read_anno_flag;
+
 void VcfWriter::init (char * input_bam_file, char * Version, char * SampleName)
 {
 	// version = (char *) malloc(strlen(Version) + 1);
@@ -46,9 +53,12 @@ void VcfWriter::writeHeader(ofstream &out)
 		<< "##INFO=<ID=RU,Number=1,Type=String,Description=\"Comma separated motif sequences list in the reference orientation\">" << "\n"
 		<< "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">" << "\n"
 		<< "##INFO=<ID=ALTANNO_H1,Number=1,Type=String,Description=\"\"Motif representation for the h1 alternate allele>" << "\n"
-		<< "##INFO=<ID=ALTANNO_H2,Number=1,Type=String,Description=\"\"Motif representation for the h2 alternate allele>" << "\n"
-		<< "##INFO=<ID=LEN,Number=1,Type=Integer,Description=\"\"Length of the vntr sequence>" << "\n"
+		<< "##INFO=<ID=ALTANNO_H2,Number=1,Type=String,Description=\"\"Motif representation for the h2 alternate allele>" << "\n";
 
+	if (output_read_anno_flag)
+		out << "##INFO=<ID=READANNO,Number=1,Type=String,Description=\"\"Motif representation for the read>" << "\n";
+
+	out << "##INFO=<ID=LEN,Number=1,Type=Integer,Description=\"\"Length of the vntr sequence>" << "\n"
 		<< "##FILTER=<ID=PASS,Description=\"All filters passed\">" << "\n"
 		<< "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << "\n"
 		<< "##ALT=<ID=VNTR,Description=\"Allele comprised of VNTR repeat units\">" << "\n";
@@ -71,6 +81,18 @@ void writeSingleBody(VNTR * it, ofstream &out)
     it->commaSeparatedMotifAnnoForConsensus(1, motif_anno_h1);
     it->commaSeparatedMotifAnnoForConsensus(0, motif_anno_h2);
 
+    vector<string> readAnnos(it->ncleanreads);
+    if (output_read_anno_flag) 
+    {
+		for (int i = 0; i < it->ncleanreads; ++i)
+		{
+			for (auto &s : (it->clean_annos)[i]) {
+				readAnnos[i] += "MOTIF_" + to_string(s) + ",";
+			}
+			if (!readAnnos[i].empty()) readAnnos[i].pop_back();
+		}
+    }
+
     if (motif_anno_h1 == motif_anno_h2) GT = "1/1";
     else GT = "1/2";
 
@@ -87,9 +109,15 @@ void writeSingleBody(VNTR * it, ofstream &out)
 	out	<< "ALTANNO_H1=" + motif_anno_h1 + ";";
 
 	if (GT == "1/2")
-		out << "ALTANNO_H2=" + motif_anno_h2 + ";\t";
+		out << "ALTANNO_H2=" + motif_anno_h2 + ";";
 
-	out	<< "LEN=" + to_string(it->cur_len) + ";";
+	if (output_read_anno_flag)
+	{
+		for (int i = 0; i < it->ncleanreads; ++i)
+			out << "READANNO_" + to_string(i) + "=" + readAnnos[i] + ";";
+	}
+
+	out	<< "LEN=" + to_string(it->cur_len) + ";\t";
 	out	<< "PASS\t";
 	out	<< "GT\t";
 	out << GT + "\n";

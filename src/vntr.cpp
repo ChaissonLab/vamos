@@ -781,6 +781,5 @@ void VNTR::commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_anno)
 		for (auto &it : consensus[0]) { motif_anno += "MOTIF_" + to_string(it) + ",";}
 
 	if (!motif_anno.empty()) motif_anno.pop_back();
-	// assert(!motif_anno.empty());
 	return;
 }
