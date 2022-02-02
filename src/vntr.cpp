@@ -18,8 +18,9 @@
 extern int naive_flag;
 extern int debug_flag;
 extern int hclust_flag;
-extern int consensus_seq_flag;
 extern int seqan_flag;
+extern int anno_flag;
+extern int subseq_flag;
 
 void VNTR::motifAnnoForOneVNTR (const OPTION &opt) 
 {

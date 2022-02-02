@@ -18,9 +18,10 @@
 int naive_flag = false;
 int debug_flag = false;
 int hclust_flag = false;
-int consensus_seq_flag = false;
 int seqan_flag = false;
 int output_read_anno_flag = false;
+int anno_flag = false;
+int subseq_flag = false;
 
 struct timeval pre_start_time, pre_stop_time, pre_elapsed_time;
 struct timeval single_start_time, single_stop_time, single_elapsed_time;
@@ -48,25 +49,32 @@ void process_mem_usage(double &vm_usage, double &resident_set)
 
 void printUsage(IO &io) 
 {
-	printf("Usage: vamos [-h] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-t threads] [options]\n");
+	printf("Usage: vamos [options] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-x subsequence.fa]\n");
 	printf("Version: %s\n", io.version);
 	printf("Options:\n");
-	printf("       -i  FILE         input alignment file (bam format), bam file needs to be indexed \n");
-	printf("       -v  FILE         the tab-delimited coordinate of each VNTR locus - `chrom\tstart\tend`, each row represents a VNTR locus\n");
-	printf("       -m  FILE         the comma-delimited motif sequences list for each VNTR locus, each row represents a VNTR locus\n");
-	printf("       -o  FILE         output vcf file\n");
-	printf("       -s  CHAR         the sample name\n");
-	printf("       -t  INT          number of threads, DEFAULT: 1\n");
-	printf("       -f  double       filter noisy read annotations, DEFAULT: 0.0 (no filter)\n");
-	printf("       -pi double       penalty of indel in dynamic programming (double) DEFAULT: 1.0\n");
-	printf("       -pm double       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0\n");
-	printf("       --naive          specify the naive version of code to do the annotation, DEFAULT: faster implementation\n");
-	printf("       --debug          print out debug information\n");
-	printf("       --clust          use hierarchical clustering to judge if a VNTR locus is het or hom\n");
-	printf("       --consensus      get consensus sequence from reads\n");
-	printf("       --seqan          use seqan lib to do MSA (haploid only), DEFAULT: abPoa\n");
-	printf("       --readanno       output read annotation in VCF\n");
-	printf("       -h               print out help message\n");
+	printf("   Input:\n");
+	printf("       -i   FILE         input alignment file (bam format), bam file needs to be indexed \n");
+	printf("       -v   FILE         the tab-delimited coordinate of each VNTR locus - `chrom\tstart\tend`, each row represents a VNTR locus\n");
+	printf("       -m   FILE         the comma-delimited motif sequences list for each VNTR locus, each row represents a VNTR locus\n");
+	printf("       -o   FILE         output vcf file\n");
+	printf("       -s   CHAR         the sample name\n");
+	printf("   Annotation:\n");
+	printf("       --anno            annotation for the reads in bam\n");
+	printf("   Subsequence:\n");
+	printf("       -x   FILE         output the subsequence from reads overlapping VNTR locus to fa format\n");
+	printf("   Dynamic Programming:\n");
+	printf("       -pi  DOUBLE       penalty of indel in dynamic programming (double) DEFAULT: 1.0\n");
+	printf("       -pm  DOUBLE       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0\n");
+	printf("       --naive           specify the naive version of code to do the annotation, DEFAULT: faster implementation\n");
+	printf("   Aggregate Annotation:\n");
+	printf("       -f   DOUBLE       filter noisy read annotations, DEFAULT: 0.0 (no filter)\n");
+	printf("       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom\n");
+	printf("       --seqan           use seqan lib to do MSA (haploid only), DEFAULT: abPoa\n");
+	printf("       --readanno        output read annotation in VCF\n");
+	printf("   General Setting:\n");
+	printf("       -t   INT          number of threads, DEFAULT: 1\n");
+	printf("       --debug           print out debug information\n");
+	printf("       -h                print out help message\n");
 } 
 
 void ProcVNTR (int s, VNTR * it, const OPTION &opt) 
@@ -85,8 +93,8 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt)
 	it->cleanNoiseAnno(opt);
 	if (hclust_flag)
 		it->concensusMotifAnnoForOneVNTR(opt);
-	// else if (seqan_flag)
-	// 	it->concensusMotifAnnoForOneVNTRBySeqan(opt);
+	else if (seqan_flag)
+		it->concensusMotifAnnoForOneVNTRBySeqan(opt);
 	else
 		it->concensusMotifAnnoForOneVNTRByABpoa(opt);
 	it->clearRead();
@@ -134,14 +142,15 @@ int main (int argc, char **argv)
 		{"naive",         no_argument,             &naive_flag,                    1},
 		{"debug",         no_argument,             &debug_flag,                    1},
 		{"clust",         no_argument,             &hclust_flag,                   1},
-		{"consensus",     no_argument,             &consensus_seq_flag,            1},
 		{"seqan",         no_argument,             &seqan_flag,                    1},
 		{"readanno",      no_argument,             &output_read_anno_flag,         1},
+		{"anno",          no_argument,             &anno_flag,                     1},
 		/* These options don’t set a flag. We distinguish them by their indices. */
 		{"input",           required_argument,       0, 'i'},
 		{"vntr",            required_argument,       0, 'v'},
 		{"motif",           required_argument,       0, 'm'},
 		{"output",          required_argument,       0, 'o'},
+		{"out_fa",          required_argument,       0, 'x'},
 		{"sampleName",      required_argument,       0, 's'},
 		{"numThreads",      required_argument,       0, 't'},
 		{"filterNoisy",     required_argument,       0, 'f'},
@@ -152,7 +161,7 @@ int main (int argc, char **argv)
 	/* getopt_long stores the option index here. */
 	int option_index = 0;
 
-	while ((c = getopt_long (argc, argv, "i:v:m:o:s:t:f:d:c:h", long_options, &option_index)) != -1)
+	while ((c = getopt_long (argc, argv, "i:v:m:o:s:t:f:d:c:x:h", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -187,6 +196,13 @@ int main (int argc, char **argv)
 			printf ("option -output with `%s'\n", optarg);
 			io.out_vcf = (char *) malloc(strlen(optarg) + 1);
 			strcpy(io.out_vcf, optarg);
+			break;
+
+		case 'x':
+			printf ("option -out_fa with `%s'\n", optarg);
+			io.out_fa = (char *) malloc(strlen(optarg) + 1);
+			strcpy(io.out_fa, optarg);
+			subseq_flag = true;
 			break;
 
 		case 's':
@@ -274,9 +290,10 @@ int main (int argc, char **argv)
   	if (naive_flag) puts ("naive_flag is set");
   	if (debug_flag) puts ("debug_flag is set");
    	if (hclust_flag) puts ("hclust_flag is set");
-  	if (consensus_seq_flag) puts ("consensus_seq_flag is set");
   	if (seqan_flag) puts ("seqan_flag is set");
    	if (output_read_anno_flag) puts ("output_read_anno_flag is set");
+  	if (anno_flag) puts ("anno_flag is set");
+  	if (subseq_flag) puts ("subseq_flag is set");
 
 	/* Print any remaining command line arguments (not options). */
 	if (optind < argc)
@@ -379,9 +396,9 @@ int main (int argc, char **argv)
 										 pre_elapsed_time.tv_sec + pre_elapsed_time.tv_usec/1000000.0);
 	}
 
-	double vm, rss;
-	process_mem_usage(vm, rss);
-	printf("RSS: %.2f G]\n", rss);
+	// double vm, rss;
+	// process_mem_usage(vm, rss);
+	// printf("RSS: %.2f G]\n", rss);
 
    	exit(EXIT_SUCCESS);
 }
