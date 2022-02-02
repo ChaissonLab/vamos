@@ -10,6 +10,9 @@
 #include "threads.h"
 #include "io.h"
 #include <mutex>   
+#include <unistd.h>
+#include <iomanip>
+#include <errno.h>
 
 // using namespace std;
 int naive_flag = false;
@@ -19,7 +22,29 @@ int consensus_seq_flag = false;
 int seqan_flag = false;
 int output_read_anno_flag = false;
 
-struct timeval start_time, stop_time, elapsed_time;
+struct timeval pre_start_time, pre_stop_time, pre_elapsed_time;
+struct timeval single_start_time, single_stop_time, single_elapsed_time;
+
+/* vamos -in read.bam -vntr vntrs.bed -motif motifs.csv -o out.vcf */
+
+void process_mem_usage(double &vm_usage, double &resident_set)
+{
+    vm_usage = 0.0;
+    resident_set = 0.0;
+
+    // the two fields we want
+    unsigned long vsize;
+    long rss;
+    string ignore;
+    ifstream ifs("/proc/self/stat", ios_base::in);
+    ifs >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
+        >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
+        >> ignore >> ignore >> vsize >> rss;
+
+    long page_size_kb = sysconf(_SC_PAGE_SIZE) / 1024; // in case x86-64 is configured to use 2MB pages
+    vm_usage = vsize / 1024.0;
+    resident_set = (rss * page_size_kb) / (1024.0 * 1024.0);
+}
 
 void printUsage(IO &io) 
 {
@@ -71,6 +96,7 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt)
 void *ProcVNTRs (void *procInfoValue)
 {
 	ProcInfo *procInfo = (ProcInfo *)procInfoValue;
+	gettimeofday(&(procInfo->start_time), NULL);
 	cerr << "start thread: " << procInfo->thread << endl;
 	int i, s;
 	int sz = (procInfo->vntrs)->size();
@@ -86,13 +112,13 @@ void *ProcVNTRs (void *procInfoValue)
 	}
 
 	procInfo->mtx->lock();
-
 	cerr << "outputing vcf" << endl;
 	(procInfo->io)->writeVCFBody(*(procInfo->out), (*(procInfo->vntrs)), procInfo->thread, (procInfo->opt)->nproc);	
-	// (procInfo->io->vcfWriter).writeNullAnno((*(procInfo->vntrs)), *(procInfo->out_nullAnno), procInfo->thread, (procInfo->opt)->nproc);	
 
 	procInfo->mtx->unlock();
 	cerr << "finish thread: " << procInfo->thread << endl;
+	gettimeofday(&(procInfo->stop_time), NULL);
+	timersub(&(procInfo->stop_time), &(procInfo->start_time), &(procInfo->elapsed_time)); 
 	pthread_exit(NULL);     /* Thread exits (dies) */	
 }
 
@@ -262,7 +288,7 @@ int main (int argc, char **argv)
 
 	vector<VNTR *> vntrs;
 
-	gettimeofday(&start_time,NULL);
+	gettimeofday(&pre_start_time, NULL);
 
 	/* read VNTR bed file */
 	io.readVNTRFromBed(vntrs);
@@ -286,19 +312,16 @@ int main (int argc, char **argv)
     } 	
 	io.writeVCFHeader(out);
 
-	gettimeofday(&stop_time,NULL);
-	timersub(&stop_time, &start_time, &elapsed_time); 
-	printf("reading time was %f sec\n",
-	elapsed_time.tv_sec+elapsed_time.tv_usec/1000000.0);
-
-	/* debug code */
-	// ofstream out_nullAnno("/project/mchaisso_100/cmb-16/jingwenr/trfCall/vamos/src/test_pipeline/sub_50000/nullAnno.bed");
+	gettimeofday(&pre_stop_time, NULL);
+	timersub(&pre_stop_time, &pre_start_time, &pre_elapsed_time); 
+	long threads_elapsed_time = 0; 
 
 	/* Create threads */
 	int i;
 	if (opt.nproc > 1)
 	{
 		pthread_t *tid = new pthread_t[opt.nproc];
+
 		mutex mtx; 
 		int numOfProcessed = 0;
 		vector<ProcInfo> procInfo(opt.nproc);		
@@ -322,17 +345,14 @@ int main (int argc, char **argv)
 		for (i = 0; i < opt.nproc; i++) {
 			pthread_join(tid[i], NULL);
 		}
-		
 		delete[] tid;
-		// for (i = 1; i < opt.nproc; i++) 
-		// 	procInfo[0].timing.Add(procnfo[i].timing);
-		
-		// if (opt.timing != "") 
-		// 	procInfo[0].timing.Summarize(opt.timing);
-		
+
+		for (i = 1; i < opt.nproc; i++) 
+			threads_elapsed_time += procInfo[i].elapsed_time.tv_sec + procInfo[i].elapsed_time.tv_usec/1000000.0;
 	}
 	else 
 	{
+		gettimeofday(&single_start_time, NULL);
 		io.readSeqFromBam (vntrs, 1, 0, vntrs.size());
 		int s = 0;
 		for (auto &it: vntrs) 
@@ -342,13 +362,27 @@ int main (int argc, char **argv)
 		}	
 		cerr << "outputing vcf" << endl;
 		io.writeVCFBody(out, vntrs, -1, 1);
+		gettimeofday(&single_stop_time, NULL);
+		timersub(&single_stop_time, &single_start_time, &single_elapsed_time); 
 	}
 
 	for (size_t i = 0; i < vntrs.size(); ++i) 
 		delete vntrs[i];
 	
 	out.close();
-	// out_nullAnno.close();
-	exit(EXIT_SUCCESS);
+
+	if (opt.nproc > 1) {
+		printf("[CPU time: %.2f sec, ", threads_elapsed_time + pre_elapsed_time.tv_sec + pre_elapsed_time.tv_usec/1000000.0);
+	}
+	else {
+		printf("[CPU time: %.2f sec, ", single_elapsed_time.tv_sec + single_elapsed_time.tv_usec/1000000.0 + 
+										 pre_elapsed_time.tv_sec + pre_elapsed_time.tv_usec/1000000.0);
+	}
+
+	double vm, rss;
+	process_mem_usage(vm, rss);
+	printf("RSS: %.2f G]\n", rss);
+
+   	exit(EXIT_SUCCESS);
 }
 

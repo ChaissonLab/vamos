@@ -31,7 +31,7 @@ endif
 all:$(PROG)
 
 vamos: main.o io.o vcf.o vntr.o
-	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L ../static_lib/ -lalglib -ledlib 
+	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L ../static_lib/ -lalglib -ledlib -lrt 
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include  
