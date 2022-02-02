@@ -17,7 +17,7 @@ static double distance(char a, char b) {
     } else if (a == '-' || b == '-') {
         distance = 1; // distance for indel
     } else {
-        distance = 1; // distance for mismatch
+        distance = 3; // distance for mismatch
     }
     return distance;
 }
@@ -145,6 +145,8 @@ void bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr,
     i = N;
     while (i > 0) {
         optAnno.push_back(traceM[i]);
+        // assert(traceI[i] != i);
+        if (traceI[i] == i) break;
         i = traceI[i];
     }
     reverse(optAnno.begin(), optAnno.end());
