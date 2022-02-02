@@ -118,7 +118,6 @@ void writeSingleBody(VNTR * it, ofstream &out)
 	}
 
 	out	<< "LEN=" + to_string(it->cur_len) + ";\t";
-	out	<< "PASS\t";
 	out	<< "GT\t";
 	out << GT + "\n";
 	return;

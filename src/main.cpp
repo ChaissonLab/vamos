@@ -33,6 +33,8 @@ void printUsage(IO &io)
 	printf("       -s  CHAR         the sample name\n");
 	printf("       -t  INT          number of threads, DEFAULT: 1\n");
 	printf("       -f  double       filter noisy read annotations, DEFAULT: 0.0 (no filter)\n");
+	printf("       -pi double       penalty of indel in dynamic programming (double) DEFAULT: 1.0\n");
+	printf("       -pm double       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0\n");
 	printf("       --naive          specify the naive version of code to do the annotation, DEFAULT: faster implementation\n");
 	printf("       --debug          print out debug information\n");
 	printf("       --clust          use hierarchical clustering to judge if a VNTR locus is het or hom\n");
@@ -58,8 +60,8 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt)
 	it->cleanNoiseAnno(opt);
 	if (hclust_flag)
 		it->concensusMotifAnnoForOneVNTR(opt);
-	else if (seqan_flag)
-		it->concensusMotifAnnoForOneVNTRBySeqan(opt);
+	// else if (seqan_flag)
+	// 	it->concensusMotifAnnoForOneVNTRBySeqan(opt);
 	else
 		it->concensusMotifAnnoForOneVNTRByABpoa(opt);
 	it->clearRead();
@@ -110,19 +112,21 @@ int main (int argc, char **argv)
 		{"seqan",         no_argument,             &seqan_flag,                    1},
 		{"readanno",      no_argument,             &output_read_anno_flag,         1},
 		/* These options don’t set a flag. We distinguish them by their indices. */
-		{"input",         required_argument,       0, 'i'},
-		{"vntr",          required_argument,       0, 'v'},
-		{"motif",         required_argument,       0, 'm'},
-		{"output",        required_argument,       0, 'o'},
-		{"sampleName",    required_argument,       0, 's'},
-		{"numThreads",    required_argument,       0, 't'},
-		{"filterNoisy",   required_argument,       0, 'f'},
+		{"input",           required_argument,       0, 'i'},
+		{"vntr",            required_argument,       0, 'v'},
+		{"motif",           required_argument,       0, 'm'},
+		{"output",          required_argument,       0, 'o'},
+		{"sampleName",      required_argument,       0, 's'},
+		{"numThreads",      required_argument,       0, 't'},
+		{"filterNoisy",     required_argument,       0, 'f'},
+		{"penlaty_indel",   required_argument,       0, 'd'},
+		{"penlaty_mismatch",required_argument,       0, 'c'},
 		{NULL, 0, 0, '\0'}
 	};
 	/* getopt_long stores the option index here. */
 	int option_index = 0;
 
-	while ((c = getopt_long (argc, argv, "i:v:m:o:s:t:f:h", long_options, &option_index)) != -1)
+	while ((c = getopt_long (argc, argv, "i:v:m:o:s:t:f:d:c:h", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -168,6 +172,16 @@ int main (int argc, char **argv)
 		case 't':
 			printf ("option -numThreads with `%s'\n", optarg);
 			opt.nproc = atoi(optarg);
+			break;
+
+		case 'd':
+			opt.penalty_indel = stod(optarg);
+			printf ("option -penlaty_indel with `%f'\n", opt.penalty_indel);
+			break;
+
+		case 'c':
+			opt.penalty_mismatch = stod(optarg);
+			printf ("option -penlaty_mismatch with `%f'\n", opt.penalty_mismatch);
 			break;
 
 		case 'f':

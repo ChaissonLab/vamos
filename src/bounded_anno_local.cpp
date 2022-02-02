@@ -5,19 +5,20 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "option.h"
 
 using namespace std;
 
 // function to compute the distance of given pair of characters
-static double distance(char a, char b) {
+static double distance(char a, char b, const OPTION &opt) {
 
     double distance;
     if (a == b) {
         distance = 0; // distance for match
     } else if (a == '-' || b == '-') {
-        distance = 1; // distance for indel
+        distance = opt.penalty_indel; // distance for indel
     } else {
-        distance = 3; // distance for mismatch
+        distance = opt.penalty_mismatch; // distance for mismatch
     }
     return distance;
 }
@@ -40,7 +41,7 @@ static uint8_t compare(vector<double> &update, uint8_t l) {
 
 // function to compute the variant N-W alignment (linear space, only computes opt distance and traces starting position)
 // (leading gaps cost 0)
-void global(const string &motif, char *vntr, vector<vector<double>> &dists, vector<vector<int>> &starts, uint8_t m, int N) { 
+void global(const string &motif, char *vntr, vector<vector<double>> &dists, vector<vector<int>> &starts, uint8_t m, int N, const OPTION &opt) { 
 
     int i, j, oldStart, tempStart; // i as row (string A) index, j as column (string B) index, k as distance index for "compare" function
     int M = motif.length();
@@ -64,9 +65,9 @@ void global(const string &motif, char *vntr, vector<vector<double>> &dists, vect
         for (j=1; j<=N; j++) {
 
             // dynamic programming
-            update[0] = dists[m][j-1] + distance(vntr[j-1], '-'); // use current value: dist[j-1] after update
-            update[1] = dists[m][j] + distance('-', motif[i-1]); // use old value: dist[j] before update
-            update[2] = oldDist + distance(vntr[j-1], motif[i-1]); // use old value: dist[j-1] before update
+            update[0] = dists[m][j-1] + distance(vntr[j-1], '-', opt); // use current value: dist[j-1] after update
+            update[1] = dists[m][j] + distance('-', motif[i-1], opt); // use old value: dist[j] before update
+            update[2] = oldDist + distance(vntr[j-1], motif[i-1], opt); // use old value: dist[j-1] before update
 
             k = compare(update, 3);
 
@@ -89,7 +90,7 @@ void global(const string &motif, char *vntr, vector<vector<double>> &dists, vect
 }
 
 // function to compute the S_i distances (the naive occurrence)
-void bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr, int N) 
+void bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr, int N, const OPTION &opt) 
 {
     vector<uint8_t> optAnno;
     optAnno.clear();
@@ -111,7 +112,7 @@ void bounded_anno(vector<uint8_t> &optMotifs, vector<MOTIF> &motifs, char *vntr,
     for (i = 0; i < M; ++i) {starts[i].resize(N + 1, 0);}
 
     for (m = 0; m < M; m++) {
-        global(motifs[m].seq, vntr, dists, starts, m, N);
+        global(motifs[m].seq, vntr, dists, starts, m, N, opt);
     }
 
     // calculate S_i distances

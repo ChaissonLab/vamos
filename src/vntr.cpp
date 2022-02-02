@@ -38,7 +38,7 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt)
 		if (naive_flag)
 			naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
         else
-            bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
+            bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len, opt);
 
 		if (annos[i].size() == 0) 
 		{
@@ -629,6 +629,7 @@ void VNTR::concensusMotifAnnoForOneVNTRBySeqan (const OPTION &opt)
     {
         for (i = 0; i < alnSz; ++i) {
             num = seqan::getValue(seqan::row(align, r), i);
+            assert(num >= 0);
             // decode_num = decode(num);
             profile[i].count[num] += 1;
         }

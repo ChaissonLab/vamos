@@ -72,6 +72,7 @@ void consensus_seq_abPoa (vector<READ *> &initial_reads, READ * consensus_read)
 
     abpoa_post_set_para(abpt);
     abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, NULL, NULL);
+    cerr << "finish msa!" << endl;
 
     consensus_read->len = cons_l[0]; // read length
     consensus_read->seq = (char *) malloc(consensus_read->len + 1); // read sequence array
@@ -142,7 +143,6 @@ void consensus_seq_seqan (vector<READ *> &initial_reads, READ * consensus_read)
             j += 1;
         }
     }
-       
     return;
 }
 
@@ -398,6 +398,8 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 consensus_seq_seqan(initial_reads, consensus_read);
             else
                 consensus_seq_abPoa(initial_reads, consensus_read);
+
+            if (debug_flag) cerr << "finish the consensus step" << endl;
 
             vntr->reads.push_back(consensus_read);
             vntr->nreads = 1;
