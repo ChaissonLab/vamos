@@ -113,8 +113,12 @@ void writeSingleBody(VNTR * it, ofstream &out)
 
 	if (output_read_anno_flag)
 	{
-		for (int i = 0; i < it->ncleanreads; ++i)
-			out << "READANNO_" + to_string(i) + "=" + readAnnos[i] + ";";
+		for (int i = 0; i < it->ncleanreads; ++i) 
+		{
+			out << "READANNO_";
+			out.write((it->clean_reads[i])->qname, (it->clean_reads[i])->l_qname);
+			out << "=" + readAnnos[i] + ";";
+		}
 	}
 
 	out	<< "LEN=" + to_string(it->cur_len) + ";\t";

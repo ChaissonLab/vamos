@@ -14,8 +14,6 @@
 #include "vcf.h"
 using namespace std;
 
-extern int subseq_flag;
-
 class IO
 {
 public:
@@ -23,7 +21,6 @@ public:
 	char * vntr_bed;
 	char * motif_csv;
 	char * out_vcf;
-	char * out_fa;
 	char * sampleName;
 	char * version;
 	VcfWriter vcfWriter;
@@ -36,7 +33,6 @@ public:
 		vntr_bed = NULL;
 		motif_csv = NULL;
 		out_vcf = NULL;
-		out_fa = NULL;
 		sampleName = NULL;
 	};
 
@@ -48,8 +44,6 @@ public:
 		free(motif_csv);
 		free(out_vcf);
 		free(sampleName);
-		if (subseq_flag)
-			free(out_fa);
 	};
 
 	int readMotifsFromCsv (vector<VNTR *> &vntrs);
@@ -69,6 +63,10 @@ public:
 	int writeVCFHeader(ofstream& out);
 
 	int writeVCFBody(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc);
+
+	void writeFa(ofstream& out, vector<VNTR *> &vntrs);
+
+	void readSeqFromFasta(vector<VNTR *> &vntrs);
 };
 
 #endif

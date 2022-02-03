@@ -20,8 +20,9 @@ int debug_flag = false;
 int hclust_flag = false;
 int seqan_flag = false;
 int output_read_anno_flag = false;
-int anno_flag = false;
-int subseq_flag = false;
+int conseq_flag = false;
+int conseq_anno_flag = false;
+int raw_anno_flag = false;
 
 struct timeval pre_start_time, pre_stop_time, pre_elapsed_time;
 struct timeval single_start_time, single_stop_time, single_elapsed_time;
@@ -47,36 +48,6 @@ void process_mem_usage(double &vm_usage, double &resident_set)
     resident_set = (rss * page_size_kb) / (1024.0 * 1024.0);
 }
 
-void printUsage(IO &io) 
-{
-	printf("Usage: vamos [options] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-x subsequence.fa]\n");
-	printf("Version: %s\n", io.version);
-	printf("Options:\n");
-	printf("   Input:\n");
-	printf("       -i   FILE         input alignment file (bam format), bam file needs to be indexed \n");
-	printf("       -v   FILE         the tab-delimited coordinate of each VNTR locus - `chrom\tstart\tend`, each row represents a VNTR locus\n");
-	printf("       -m   FILE         the comma-delimited motif sequences list for each VNTR locus, each row represents a VNTR locus\n");
-	printf("       -o   FILE         output vcf file\n");
-	printf("       -s   CHAR         the sample name\n");
-	printf("   Annotation:\n");
-	printf("       --anno            annotation for the reads in bam\n");
-	printf("   Subsequence:\n");
-	printf("       -x   FILE         output the subsequence from reads overlapping VNTR locus to fa format\n");
-	printf("   Dynamic Programming:\n");
-	printf("       -pi  DOUBLE       penalty of indel in dynamic programming (double) DEFAULT: 1.0\n");
-	printf("       -pm  DOUBLE       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0\n");
-	printf("       --naive           specify the naive version of code to do the annotation, DEFAULT: faster implementation\n");
-	printf("   Aggregate Annotation:\n");
-	printf("       -f   DOUBLE       filter noisy read annotations, DEFAULT: 0.0 (no filter)\n");
-	printf("       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom\n");
-	printf("       --seqan           use seqan lib to do MSA (haploid only), DEFAULT: abPoa\n");
-	printf("       --readanno        output read annotation in VCF\n");
-	printf("   General Setting:\n");
-	printf("       -t   INT          number of threads, DEFAULT: 1\n");
-	printf("       --debug           print out debug information\n");
-	printf("       -h                print out help message\n");
-} 
-
 void ProcVNTR (int s, VNTR * it, const OPTION &opt) 
 {
 	if (it->nreads == 0 or it->motifs.size() > 255) 
@@ -97,7 +68,6 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt)
 		it->concensusMotifAnnoForOneVNTRBySeqan(opt);
 	else
 		it->concensusMotifAnnoForOneVNTRByABpoa(opt);
-	it->clearRead();
 	return;
 }
 
@@ -130,6 +100,35 @@ void *ProcVNTRs (void *procInfoValue)
 	pthread_exit(NULL);     /* Thread exits (dies) */	
 }
 
+void printUsage(IO &io) 
+{
+	printf("Usage: vamos [subcommand] [options] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-x subsequence.fa]\n");
+	printf("Version: %s\n", io.version);
+	printf("subcommand:\n");
+	printf("vamos --conseq      [-i in.bam] [-v vntrs.bed] [-o output.fa] ");
+	printf("vamos --conseq_anno [-i in.fa]  [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!)");
+	printf("vamos --raw_anno    [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name]");
+	printf("   Input:\n");
+	printf("       -i   FILE         input alignment/read file (bam/fa), bam file needs to be indexed \n");
+	printf("       -v   FILE         the tab-delimited coordinate of each VNTR locus - `chrom\tstart\tend`, each row represents a VNTR locus\n");
+	printf("       -m   FILE         the comma-delimited motif sequences list for each VNTR locus, each row represents a VNTR locus\n");
+	printf("       -o   FILE         output vcf/fa file\n");
+	printf("       -s   CHAR         the sample name\n");
+	printf("   Dynamic Programming:\n");
+	printf("       -pi  DOUBLE       penalty of indel in dynamic programming (double) DEFAULT: 1.0\n");
+	printf("       -pm  DOUBLE       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0\n");
+	printf("       --naive           specify the naive version of code to do the annotation, DEFAULT: faster implementation\n");
+	printf("   Aggregate Annotation:\n");
+	printf("       -f   DOUBLE       filter noisy read annotations, DEFAULT: 0.0 (no filter)\n");
+	printf("       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom\n");
+	printf("       --seqan           use seqan lib to do MSA (haploid only), DEFAULT: abPoa\n");
+	printf("       --readanno        output read annotation in VCF and output vntr sequences to stdin\n");
+	printf("   General Setting:\n");
+	printf("       -t   INT          number of threads, DEFAULT: 1\n");
+	printf("       --debug           print out debug information\n");
+	printf("       -h                print out help message\n");
+} 
+
 int main (int argc, char **argv)
 {
 	int c;
@@ -144,7 +143,10 @@ int main (int argc, char **argv)
 		{"clust",         no_argument,             &hclust_flag,                   1},
 		{"seqan",         no_argument,             &seqan_flag,                    1},
 		{"readanno",      no_argument,             &output_read_anno_flag,         1},
-		{"anno",          no_argument,             &anno_flag,                     1},
+		{"raw_anno",      no_argument,             &raw_anno_flag,                 1},
+		{"conseq_anno",   no_argument,             &conseq_anno_flag,              1},
+		{"conseq",        no_argument,             &conseq_flag,                   1},
+
 		/* These options don’t set a flag. We distinguish them by their indices. */
 		{"input",           required_argument,       0, 'i'},
 		{"vntr",            required_argument,       0, 'v'},
@@ -160,7 +162,6 @@ int main (int argc, char **argv)
 	};
 	/* getopt_long stores the option index here. */
 	int option_index = 0;
-
 	while ((c = getopt_long (argc, argv, "i:v:m:o:s:t:f:d:c:x:h", long_options, &option_index)) != -1)
 	{
 		switch (c)
@@ -169,65 +170,57 @@ int main (int argc, char **argv)
         case 0:
           /* If this option set a flag, do nothing else now. */
           if (long_options[option_index].flag != 0) break;
-          printf ("option %s", long_options[option_index].name);
-          if (optarg) printf (" with arg %s", optarg);
-          printf ("\n");
+          fprintf (stderr, "option %s", long_options[option_index].name);
+          if (optarg) fprintf (stderr, " with arg %s", optarg);
           break;
 
 		case 'i':
-			printf ("option -input with `%s'\n", optarg);
+			fprintf (stderr, "option -input with `%s'\n", optarg);
 			io.input_bam = (char *) malloc(strlen(optarg) + 1);
 			strcpy(io.input_bam, optarg);
 			break;
 
 		case 'v':
-			printf ("option -vntr with `%s'\n", optarg);
+			fprintf (stderr, "option -vntr with `%s'\n", optarg);
 			io.vntr_bed = (char *) malloc(strlen(optarg) + 1);
 			strcpy(io.vntr_bed, optarg);
 			break;
 
 		case 'm':
-			printf ("option -motif with `%s'\n", optarg);
+			fprintf (stderr, "option -motif with `%s'\n", optarg);
 			io.motif_csv = (char *) malloc(strlen(optarg) + 1);
 			strcpy(io.motif_csv, optarg);
 			break;
 
 		case 'o':
-			printf ("option -output with `%s'\n", optarg);
+			fprintf (stderr, "option -output with `%s'\n", optarg);
 			io.out_vcf = (char *) malloc(strlen(optarg) + 1);
 			strcpy(io.out_vcf, optarg);
 			break;
 
-		case 'x':
-			printf ("option -out_fa with `%s'\n", optarg);
-			io.out_fa = (char *) malloc(strlen(optarg) + 1);
-			strcpy(io.out_fa, optarg);
-			subseq_flag = true;
-			break;
-
 		case 's':
-			printf ("option -sampleName with `%s'\n", optarg);
+			fprintf (stderr, "option -sampleName with `%s'\n", optarg);
 			io.sampleName = (char *) malloc(strlen(optarg) + 1);
 			strcpy(io.sampleName, optarg);
 			break;
 
 		case 't':
-			printf ("option -numThreads with `%s'\n", optarg);
+			fprintf (stderr, "option -numThreads with `%s'\n", optarg);
 			opt.nproc = atoi(optarg);
 			break;
 
 		case 'd':
 			opt.penalty_indel = stod(optarg);
-			printf ("option -penlaty_indel with `%f'\n", opt.penalty_indel);
+			fprintf (stderr, "option -penlaty_indel with `%f'\n", opt.penalty_indel);
 			break;
 
 		case 'c':
 			opt.penalty_mismatch = stod(optarg);
-			printf ("option -penlaty_mismatch with `%f'\n", opt.penalty_mismatch);
+			fprintf (stderr, "option -penlaty_mismatch with `%f'\n", opt.penalty_mismatch);
 			break;
 
 		case 'f':
-			printf ("option -filterNoisy\n");
+			fprintf (stderr, "option -filterNoisy\n");
 			opt.filterStrength = stod(optarg);
 			opt.filterNoisy = true;
 			break;
@@ -237,7 +230,7 @@ int main (int argc, char **argv)
 			exit(EXIT_SUCCESS);
 
 		case '?':
-			printf("Unknown option: %c\n", optopt);
+			fprintf(stderr, "Unknown option: %c\n", optopt);
 			exit(EXIT_FAILURE);
 
 		case ':':
@@ -254,27 +247,27 @@ int main (int argc, char **argv)
 	bool missingArg = false;
 	if (io.input_bam == NULL) 
 	{
-		printf("-i is mandatory!\n");
+		fprintf(stderr, "-i is mandatory!\n");
 		missingArg = true;
 	}
 	if (io.vntr_bed == NULL)
 	{
-		printf("-v is mandatory!\n");
+		fprintf(stderr, "-v is mandatory!\n");
 		missingArg = true;
 	}
-	if (io.motif_csv == NULL)
+	if (io.motif_csv == NULL and (conseq_anno_flag or raw_anno_flag))
 	{
-		printf("-m is mandatory!\n");
-		missingArg = true;
-	}
-	if (io.out_vcf == NULL)
-	{
-		printf("-o is mandatory!\n");
+		fprintf(stderr, "-m is mandatory!\n");
 		missingArg = true;
 	}
 	if (io.sampleName == NULL)
 	{
-		printf("-s is mandatory!\n");
+		fprintf(stderr, "-s is mandatory!\n");
+		missingArg = true;
+	}
+	if (io.out_vcf == NULL)
+	{
+		fprintf(stderr, "-o is mandatory!\n");
 		missingArg = true;
 	}
 
@@ -287,19 +280,20 @@ int main (int argc, char **argv)
   	/* Instead of reporting ‘--verbose’
      and ‘--brief’ as they are encountered,
      we report the final status resulting from them. */
-  	if (naive_flag) puts ("naive_flag is set");
-  	if (debug_flag) puts ("debug_flag is set");
-   	if (hclust_flag) puts ("hclust_flag is set");
-  	if (seqan_flag) puts ("seqan_flag is set");
-   	if (output_read_anno_flag) puts ("output_read_anno_flag is set");
-  	if (anno_flag) puts ("anno_flag is set");
-  	if (subseq_flag) puts ("subseq_flag is set");
+  	if (naive_flag) fprintf(stderr, "naive_flag is set");
+  	if (debug_flag) fprintf(stderr, "debug_flag is set");
+   	if (hclust_flag) fprintf(stderr, "hclust_flag is set");
+  	if (seqan_flag) fprintf(stderr, "seqan_flag is set");
+   	if (output_read_anno_flag) fprintf(stderr, "output_read_anno_flag is set");
+  	if (conseq_flag) fprintf(stderr, "conseq_flag is set");
+  	if (conseq_anno_flag) fprintf(stderr, "conseq_anno_flag is set");
+  	if (raw_anno_flag) fprintf(stderr, "raw_anno_flag is set");
 
 	/* Print any remaining command line arguments (not options). */
 	if (optind < argc)
 	{
-		printf ("non-option ARGV-elements: ");
-		while (optind < argc) printf ("%s ", argv[optind++]);
+		fprintf (stderr, "non-option ARGV-elements: ");
+		while (optind < argc) fprintf (stderr, "%s ", argv[optind++]);
 		putchar ('\n');
 	}
 
@@ -309,25 +303,26 @@ int main (int argc, char **argv)
 
 	/* read VNTR bed file */
 	io.readVNTRFromBed(vntrs);
-
 	cerr << "finish reading vntrs.bed" << endl;
 
 	/* read motif csv file */
-	io.readMotifsFromCsv(vntrs);
+	if (!conseq_flag)
+	{
+		io.readMotifsFromCsv(vntrs);
+		cerr << "finish reading motifs.csv" << endl;		
+	}
 
-	cerr << "finish reading motifs.csv" << endl;
 
-	/* process each VNTR */
-	// io.readSeqFromBam(vntrs); 
-
-	/* set up out stream and write VCF header */
-    ofstream out(io.out_vcf);
-    if (out.fail()) 
-    {
-        cerr << "ERROR: Unable to open file " << io.out_vcf << endl;
-        exit(EXIT_FAILURE);
-    } 	
-	io.writeVCFHeader(out);
+	ofstream out;
+	/* set up out stream and write fa/VCF header */
+	out.open(io.out_vcf, ofstream::out);
+	if (out.fail()) 
+	{
+	    cerr << "ERROR: Unable to open file " << io.out_vcf << endl;
+	    exit(EXIT_FAILURE);
+	} 	
+	if (!conseq_flag)
+		io.writeVCFHeader(out);
 
 	gettimeofday(&pre_stop_time, NULL);
 	timersub(&pre_stop_time, &pre_start_time, &pre_elapsed_time); 
@@ -370,24 +365,53 @@ int main (int argc, char **argv)
 	else 
 	{
 		gettimeofday(&single_start_time, NULL);
-		io.readSeqFromBam (vntrs, 1, 0, vntrs.size());
-		int s = 0;
-		for (auto &it: vntrs) 
+
+		if (conseq_anno_flag)
+			io.readSeqFromFasta(vntrs);
+		
+		if (conseq_flag or raw_anno_flag)
+			io.readSeqFromBam (vntrs, 1, 0, vntrs.size());
+
+		if (conseq_flag)
+			io.writeFa(out, vntrs);
+		else 
 		{
-			ProcVNTR (s, it, opt);
-			s += 1;
-		}	
-		cerr << "outputing vcf" << endl;
-		io.writeVCFBody(out, vntrs, -1, 1);
+			int s = 0;
+			for (auto &it: vntrs) 
+			{
+				ProcVNTR (s, it, opt);
+				s += 1;
+			}	
+			cerr << "outputing vcf" << endl;
+			io.writeVCFBody(out, vntrs, -1, 1);			
+		}
+
 		gettimeofday(&single_stop_time, NULL);
 		timersub(&single_stop_time, &single_start_time, &single_elapsed_time); 
 	}
-
-	for (size_t i = 0; i < vntrs.size(); ++i) 
-		delete vntrs[i];
-	
 	out.close();
 
+	/* output vntr sequences to stdin */
+	if (output_read_anno_flag)
+	{
+	    for (auto &vntr : vntrs)
+	    {
+	        for (auto &read : vntr->reads)
+	        {
+	            cout << ">"; 
+	            cout.write(read->qname, read->l_qname);
+	            cout << "\n";
+	            cout.write(read->seq, read->len);
+	            cout << "\n";
+	        }
+	    }
+	}
+	for (size_t i = 0; i < vntrs.size(); ++i) 
+	{
+		vntrs[i]->clearRead();
+		delete vntrs[i];
+	}
+	
 	if (opt.nproc > 1) {
 		printf("[CPU time: %.2f sec, ", threads_elapsed_time + pre_elapsed_time.tv_sec + pre_elapsed_time.tv_usec/1000000.0);
 	}
@@ -396,9 +420,9 @@ int main (int argc, char **argv)
 										 pre_elapsed_time.tv_sec + pre_elapsed_time.tv_usec/1000000.0);
 	}
 
-	// double vm, rss;
-	// process_mem_usage(vm, rss);
-	// printf("RSS: %.2f G]\n", rss);
+	double vm, rss;
+	process_mem_usage(vm, rss);
+	printf("RSS: %.2f G]\n", rss);
 
    	exit(EXIT_SUCCESS);
 }
