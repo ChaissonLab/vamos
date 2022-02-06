@@ -53,7 +53,9 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt)
 	if (it->nreads == 0 or it->motifs.size() > 255) 
 	{
 		it->skip = true;
-		if (debug_flag) cerr << "skip one vntr due to > 255 motifs" << endl;
+		if (debug_flag and it->nreads == 0) cerr << "no reads" << endl;
+		if (debug_flag and it->motifs.size() > 255) cerr << "skip one vntr due to > 255 motifs" << endl;
+
 		return;
 	}
 

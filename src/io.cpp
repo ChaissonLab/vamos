@@ -129,9 +129,12 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGA
         else if (ref_aln_start == target_crd)
             return make_pair(read_aln_start, 1);
 
+        else if (!(type & 1) and !(type & 2)) // Hard clip
+            continue;
+
         else if (target_crd < ref_aln_start + len)
         {
-            if (op == BAM_CMATCH) 
+            if (op == BAM_CMATCH or op == BAM_CEQUAL) 
                 return make_pair(read_aln_start + target_crd - ref_aln_start, 1);
             else
                 return make_pair(read_aln_start, 1);
@@ -196,7 +199,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
             if (aln->core.flag & BAM_FSECONDARY or aln->core.flag & BAM_FUNMAP) 
                 continue; // skip secondary alignment / unmapped reads
 
-            if (aln->core.qual < 40) 
+            if (aln->core.qual < 20) 
                 continue; // skip alignment with mapping qual < 20
 
             isize = aln->core.isize;
