@@ -104,7 +104,7 @@ void *ProcVNTRs (void *procInfoValue)
 
 void printUsage(IO &io) 
 {
-	printf("Usage: vamos [subcommand] [options] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-x subsequence.fa]\n");
+	printf("Usage: vamos [subcommand] [options]\n");
 	printf("Version: %s\n", io.version);
 	printf("subcommand:\n");
 	printf("vamos --conseq      [-i in.bam] [-v vntrs.bed] [-o output.fa] \n");
@@ -262,11 +262,11 @@ int main (int argc, char **argv)
 		fprintf(stderr, "-m is mandatory!\n");
 		missingArg = true;
 	}
-	if (io.sampleName == NULL)
-	{
-		fprintf(stderr, "-s is mandatory!\n");
-		missingArg = true;
-	}
+	// if (io.sampleName == NULL)
+	// {
+	// 	fprintf(stderr, "-s is mandatory!\n");
+	// 	missingArg = true;
+	// }
 	if (io.out_vcf == NULL)
 	{
 		fprintf(stderr, "-o is mandatory!\n");
