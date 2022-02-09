@@ -109,7 +109,7 @@ void printUsage(IO &io)
     printf("subcommand:\n");
     printf("    vamos --conseq      [-i in.bam] [-v vntrs.bed] [-o output.fa] (ONLY FOR SINGLE LOCUS and SINGLE THREAD!!) \n");
     printf("    vamos --conseq_anno [-i in.fa]  [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS and SINGLE THREAD!!)\n");
-    printf("    vamos --raw_anno    [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-t threads](SUPPORT MULTIPLE LOCI and MULTI-THREAD!!)\n");
+    printf("    vamos --raw_anno    [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-t threads] (SUPPORT MULTIPLE LOCI and MULTI-THREAD!!)\n");
     printf("options:\n");
     printf("    Input:\n");
     printf("       -i      FILE         input alignment/read file (bam/fa), bam file needs to be indexed \n");
@@ -120,7 +120,7 @@ void printUsage(IO &io)
     printf("    Dynamic Programming:\n");
     printf("       -pi     DOUBLE       penalty of indel in dynamic programming (double) DEFAULT: 1.0\n");
     printf("       -pm     DOUBLE       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0\n");
-    printf("       --naive           specify the naive version of code to do the annotation, DEFAULT: faster implementation\n");
+    printf("       --naive              specify the naive version of code to do the annotation, DEFAULT: faster implementation\n");
     printf("    Aggregate Annotation:\n");
     printf("       -f      DOUBLE       filter noisy read annotations, DEFAULT: 0.0 (no filter)\n");
     printf("       --clust              use hierarchical clustering to judge if a VNTR locus is het or hom\n");
@@ -263,11 +263,11 @@ int main (int argc, char **argv)
         fprintf(stderr, "-m is mandatory!\n");
         missingArg = true;
     }
-    // if (io.sampleName == NULL)
-    // {
-    //  fprintf(stderr, "-s is mandatory!\n");
-    //  missingArg = true;
-    // }
+    if (io.sampleName == NULL and (conseq_anno_flag or raw_anno_flag))
+    {
+     fprintf(stderr, "-s is mandatory!\n");
+     missingArg = true;
+    }
     if (io.out_vcf == NULL)
     {
         fprintf(stderr, "-o is mandatory!\n");
