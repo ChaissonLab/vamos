@@ -107,9 +107,9 @@ void printUsage(IO &io)
 	printf("Usage: vamos [subcommand] [options] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-x subsequence.fa]\n");
 	printf("Version: %s\n", io.version);
 	printf("subcommand:\n");
-	printf("vamos --conseq      [-i in.bam] [-v vntrs.bed] [-o output.fa] ");
-	printf("vamos --conseq_anno [-i in.fa]  [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!)");
-	printf("vamos --raw_anno    [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name]");
+	printf("vamos --conseq      [-i in.bam] [-v vntrs.bed] [-o output.fa] \n");
+	printf("vamos --conseq_anno [-i in.fa]  [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!)\n");
+	printf("vamos --raw_anno    [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] \n");
 	printf("   Input:\n");
 	printf("       -i   FILE         input alignment/read file (bam/fa), bam file needs to be indexed \n");
 	printf("       -v   FILE         the tab-delimited coordinate of each VNTR locus - `chrom\tstart\tend`, each row represents a VNTR locus\n");
