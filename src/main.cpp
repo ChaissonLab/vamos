@@ -416,16 +416,16 @@ int main (int argc, char **argv)
     }
     
     if (opt.nproc > 1) {
-        printf("[CPU time: %.2f sec, ", threads_elapsed_time + pre_elapsed_time.tv_sec + pre_elapsed_time.tv_usec/1000000.0);
+        printf("[vamos] CPU time: %.2f sec, ", threads_elapsed_time + pre_elapsed_time.tv_sec + pre_elapsed_time.tv_usec/1000000.0);
     }
     else {
-        printf("[CPU time: %.2f sec, ", single_elapsed_time.tv_sec + single_elapsed_time.tv_usec/1000000.0 + 
+        printf("[vamos] CPU time: %.2f sec, ", single_elapsed_time.tv_sec + single_elapsed_time.tv_usec/1000000.0 + 
                                          pre_elapsed_time.tv_sec + pre_elapsed_time.tv_usec/1000000.0);
     }
 
     double vm, rss;
     process_mem_usage(vm, rss);
-    printf("RSS: %.2f G]\n", rss);
+    printf("RSS: %.2f G \n", rss);
 
     exit(EXIT_SUCCESS);
 }
