@@ -1,31 +1,40 @@
 # Vamos: VNTR Annotation tool using efficient MOtifs Sets
 ## Getting Started
+
+##### Install vamos (g++, htslib, abpoa, edlib, alglib and seqan required)
+##### htslib and abpoa are installed by bioconda
+##### libalglib.a and libedlib.a are distributed along with vamos)
+
+### Download source code
 ```sh
-# Install vamos (g++, htslib, abpoa, edlib, alglib and seqan required)
-# htslib and abpoa are installed by bioconda
-# libalglib.a and libedlib.a are distributed along with vamos)
 git clone https://github.com/ChaissonLab/vamos.git
 conda create --name vamos
 conda activate vamos
+```
 
-# Install requirement libraries
+### Install requirement libraries
+```
 conda install -c bioconda --file requirements.txt
-
-# Compile vamos
+```
+### Compile vamos
+```
 cd vamos/src && make
-
-# Help page
+```
+### Help page
+```
 vamos -h
-
-# Run Vamos
-
-# Lift-over the VNTR sequences from alignment file
+```
+### Run Vamos
+#### Lift-over the VNTR sequences from alignment file
+```
 vamos --conseq      [-i in.bam] [-v vntrs.bed] [-o output.fa] (ONLY FOR SINGLE LOCUS and SINGLE THREAD!!) 
-
-# Annotate the consensus sequence from reads with motifs
+```
+#### Annotate the consensus sequence from reads with motifs
+```
 vamos --conseq_anno [-i in.fa]  [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS and SINGLE THREAD!!)
-
-# Lift-over the VNTR sequences from alignment file + Annotate every VNTR sequence + Aggregate the annotations per VNTR locus
+```
+#### Lift-over the VNTR sequences from alignment file + Annotate every VNTR sequence + Aggregate the annotations per VNTR locus
+```
 vamos --raw_anno    [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-t threads] (SUPPORT MULTIPLE LOCI and MULTI-THREAD!!)
 ```
 
