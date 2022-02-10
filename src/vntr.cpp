@@ -45,7 +45,7 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
 		  vector<int> starts, ends, sdAnnos, sdQV;
 		  vector<vector<int > > motifNMatch;
 		  string_decomposer(annos[i], sdQV, starts, ends, motifNMatch, motifs, reads[i]->seq,  reads[i]->len, opt, sdTables, mismatchCI);
-		 
+
 		  // cout << "heuristic: " << annos[i].size() << " sd " << sdAnnos.size() << endl;
 		  // for (auto j=0; j< annos[i].size(); j++) {
 		  //   cout << std::setw(3) << (int)annos[i][j] << ",";
@@ -348,7 +348,7 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
     abpt->gap_open2 = 1; // gap open penalty #2
     abpt->gap_ext2 = 1;   // gap extension penalty #2
                     	  // gap_penalty = min{gap_open1 + gap_len * gap_ext1, gap_open2 + gap_len * gap_ext2}
-
+    // abpt->wb = 1;
     abpt->is_diploid = 0;
 	// abpt->min_freq = 0.8; 
     abpt->out_msa = 1; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
@@ -436,7 +436,7 @@ void MSA (int motifs_size, const vector<int> &gp, const vector<vector<uint8_t>> 
     int i, j;
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = annos[gp[i]].size();
-        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i] + 1);
+        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * (seq_lens[i]));
         for (j = 0; j < seq_lens[i]; ++j)
         {
         	assert(annos[gp[i]][j] < motifs_size);
@@ -451,7 +451,7 @@ void MSA (int motifs_size, const vector<int> &gp, const vector<vector<uint8_t>> 
         	// 	bseqs[i][j] = annos[gp[i]][j] + 34;
         	// }
         }
-        bseqs[i][seq_lens[i]] = '\0';
+        // bseqs[i][seq_lens[i]] = '\0';
     }
 
 	MSA_helper (motifs_size, n_seqs, consensus, seq_lens, bseqs);
@@ -477,12 +477,13 @@ void MSA (int motifs_size, const vector<vector<uint8_t>> &annos, vector<uint8_t>
     int i, j;
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = annos[i].size();
-        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
+        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * (seq_lens[i]));
         for (j = 0; j < seq_lens[i]; ++j) 
         {
         	assert(annos[i][j] < motifs_size); 
         	bseqs[i][j] = annos[i][j];
         }
+        // bseqs[i][seq_lens[i]] = '\0';
     }
 
 	MSA_helper (motifs_size, n_seqs, consensus, seq_lens, bseqs);
@@ -699,13 +700,14 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = clean_annos[i].size();
-        bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * seq_lens[i] + 1);
+        assert(clean_annos[i].size() > 0);
+        bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * (seq_lens[i]));
         for (j = 0; j < seq_lens[i]; ++j) 
         {
             assert(clean_annos[i][j] < motifs_size); 
             bseqs[i][j] = clean_annos[i][j];
         }
-        bseqs[i][seq_lens[i]] = '\0';
+        // bseqs[i][seq_lens[i]] = '\0';
     }
 
     // initialize variables
@@ -722,9 +724,9 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     abpt->gap_open2 = 1;   // gap open penalty #2
     abpt->gap_ext2 = 1;    // gap extension penalty #2
                            // gap_penalty = min{gap_open1 + gap_len * gap_ext1, gap_open2 + gap_len * gap_ext2}
-
+    // abpt->wb = 1;        // extra band used in adaptive banded DP
     abpt->is_diploid = 0;
-    // abpt->min_freq = 0.8; 
+
     abpt->out_msa = 0; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
     abpt->progressive_poa = 1;
