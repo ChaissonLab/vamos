@@ -1,7 +1,7 @@
 # Vamos: VNTR Annotation tool using efficient MOtifs Sets
 ## Getting Started
 
-Install vamos (g++, htslib, abpoa, edlib, alglib and seqan required)
+Install vamos (g++, htslib, abpoa, edlib and alglib required)
 htslib and abpoa are installed by bioconda
 libalglib.a and libedlib.a are distributed along with vamos)
 
