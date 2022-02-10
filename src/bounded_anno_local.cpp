@@ -190,7 +190,15 @@ void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<
 	  else {
 	    sdTables.nMatchMat[m][s+1][mi] = 1;
 	  }
-	  sdTables.nDelMat[m][s+1][mi] = sdTables.nDelMat[m][s][mi-1];
+
+    assert(0 <= m and  m < sdTables.nDelMat.size());
+    assert(0 <= s + 1 and s + 1 < sdTables.nDelMat[m].size());
+    assert(0 <= mi and mi < sdTables.nDelMat[m][s+1].size());
+
+    assert(0 <= s and s < sdTables.nDelMat[m].size());
+    assert(0 <= mi and mi < sdTables.nDelMat[m][s].size());
+    sdTables.nDelMat[m][s+1][mi] = sdTables.nDelMat[m][s][mi];
+	  // sdTables.nDelMat[m][s+1][mi] = sdTables.nDelMat[m][s][mi-1];
 //	  cout << "nm " << m << " " << s+1<< " " << mi << " " <<  sdTables.nMatchMat[m][s+1][mi] << endl;
 	}
 	else if (optScore == insScore) {

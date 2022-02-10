@@ -259,7 +259,9 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                     assert(0 < base < 16);
                     read->seq[i] = seq_nt16_str[base]; //gets nucleotide id and converts them into IUPAC id.
                 } 
+                read->seq[read->len] = '\0';
                 vntr->reads.push_back(read); 
+
                 // if (!consensus_seq_flag) vntr->reads.push_back(read); 
                 // else initial_reads.push_back(read); 
 

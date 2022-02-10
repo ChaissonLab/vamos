@@ -44,18 +44,17 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
 		  //		  bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len, opt);
 		  vector<int> starts, ends, sdAnnos, sdQV;
 		  vector<vector<int > > motifNMatch;
-		  string_decomposer(annos[i], sdQV, starts, ends, motifNMatch,
-				    motifs, reads[i]->seq,  reads[i]->len, opt, sdTables, mismatchCI);
+		  string_decomposer(annos[i], sdQV, starts, ends, motifNMatch, motifs, reads[i]->seq,  reads[i]->len, opt, sdTables, mismatchCI);
 		 
-		  cout << "heuristic: " << annos[i].size() << " sd " << sdAnnos.size() << endl;
-		  for (auto j=0; j< annos[i].size(); j++) {
-		    cout << std::setw(3) << (int)annos[i][j] << ",";
-		  }
-		  cout << endl;
-		  for (auto j=0; j < sdQV.size(); j++) {
-		    cout << std::setw(3) << sdQV[j] << ",";
-		  }
-		  cout << endl;
+		  // cout << "heuristic: " << annos[i].size() << " sd " << sdAnnos.size() << endl;
+		  // for (auto j=0; j< annos[i].size(); j++) {
+		  //   cout << std::setw(3) << (int)annos[i][j] << ",";
+		  // }
+		  // cout << endl;
+		  // for (auto j=0; j < sdQV.size(); j++) {
+		  //   cout << std::setw(3) << sdQV[j] << ",";
+		  // }
+		  // cout << endl;
 
 		/*for (auto j=0; j < sdAnnos.size(); j++) {
 		    cout << std::setw(3) << sdAnnos[j] << ",";
@@ -437,7 +436,7 @@ void MSA (int motifs_size, const vector<int> &gp, const vector<vector<uint8_t>> 
     int i, j;
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = annos[gp[i]].size();
-        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
+        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i] + 1);
         for (j = 0; j < seq_lens[i]; ++j)
         {
         	assert(annos[gp[i]][j] < motifs_size);
@@ -451,8 +450,8 @@ void MSA (int motifs_size, const vector<int> &gp, const vector<vector<uint8_t>> 
         	// {
         	// 	bseqs[i][j] = annos[gp[i]][j] + 34;
         	// }
-            
         }
+        bseqs[i][seq_lens[i]] = '\0';
     }
 
 	MSA_helper (motifs_size, n_seqs, consensus, seq_lens, bseqs);
@@ -700,12 +699,13 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = clean_annos[i].size();
-        bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * seq_lens[i]);
+        bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * seq_lens[i] + 1);
         for (j = 0; j < seq_lens[i]; ++j) 
         {
             assert(clean_annos[i][j] < motifs_size); 
             bseqs[i][j] = clean_annos[i][j];
         }
+        bseqs[i][seq_lens[i]] = '\0';
     }
 
     // initialize variables

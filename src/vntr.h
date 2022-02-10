@@ -40,27 +40,31 @@ public:
   vector<int> scoreRow0;
   vector<vector<int > > nMatchOnOptPath;
   vector<vector<int > > nDelOnOptPath;  
-  void Init(vector<MOTIF> &motifs, string &seq) {
-    pathMat.resize(motifs.size());
-    nMatchMat.resize(motifs.size());
-    nDelMat.resize(motifs.size());    
-    scoreMat.resize(motifs.size());
-    for (auto m=0; m < motifs.size(); m++) {
-      pathMat[m].resize(seq.size()+1);
-      nMatchMat[m].resize(seq.size()+1);
-      nDelMat[m].resize(seq.size()+1);      
-      scoreMat[m].resize(seq.size()+1);
-      for (auto s=0; s < seq.size() + 1; s++ ) {
-	pathMat[m][s].resize(motifs[m].len);
-	nMatchMat[m][s].resize(motifs[m].len);
-	nDelMat[m][s].resize(motifs[m].len);	
-	scoreMat[m][s].resize(motifs[m].len);
-	fill(pathMat[m][s].begin(), pathMat[m][s].end(), 0);
-	fill(nMatchMat[m][s].begin(), nMatchMat[m][s].end(), 0);
-	fill(nDelMat[m][s].begin(), nDelMat[m][s].end(), 0);	
-	fill(scoreMat[m][s].begin(), scoreMat[m][s].end(), 0);	
-      }
-    }
+  void Init(vector<MOTIF> &motifs, string &seq) 
+  {
+	pathMat.resize(motifs.size());
+	nMatchMat.resize(motifs.size());
+	nDelMat.resize(motifs.size());    
+	scoreMat.resize(motifs.size());
+
+	for (auto m=0; m < motifs.size(); m++) 
+	{
+		pathMat[m].resize(seq.size()+1);
+		nMatchMat[m].resize(seq.size()+1);
+		nDelMat[m].resize(seq.size()+1);      
+		scoreMat[m].resize(seq.size()+1);
+		for (auto s=0; s < seq.size() + 1; s++ ) 
+		{
+			pathMat[m][s].resize(motifs[m].len);
+			nMatchMat[m][s].resize(motifs[m].len);
+			nDelMat[m][s].resize(motifs[m].len);	
+			scoreMat[m][s].resize(motifs[m].len);
+			fill(pathMat[m][s].begin(), pathMat[m][s].end(), 0);
+			fill(nMatchMat[m][s].begin(), nMatchMat[m][s].end(), 0);
+			fill(nDelMat[m][s].begin(), nDelMat[m][s].end(), 0);	
+			fill(scoreMat[m][s].begin(), scoreMat[m][s].end(), 0);	
+		}
+	}
     pathRow0.resize(seq.size() + 1);
     scoreRow0.resize(seq.size() + 1);    
   }
