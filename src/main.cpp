@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include "threads.h"
 #include "io.h"
+#include "acc_lookup_table.h"
 #include <mutex>   
 #include <unistd.h>
 #include <iomanip>
@@ -48,7 +49,7 @@ void process_mem_usage(double &vm_usage, double &resident_set)
     resident_set = (rss * page_size_kb) / (1024.0 * 1024.0);
 }
 
-void ProcVNTR (int s, VNTR * it, const OPTION &opt) 
+void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< int > &mismatchCI) 
 {
 	if (it->nreads == 0 or it->motifs.size() > 255) 
 	{
@@ -61,7 +62,7 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt)
 
 	if (debug_flag) cerr << "start to do the annotation: " << s << endl;
 
-	it->motifAnnoForOneVNTR(opt); 
+	it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI); 
 	it->annoTostring(opt);
 	it->cleanNoiseAnno(opt);
 	if (hclust_flag)
@@ -80,7 +81,7 @@ void *ProcVNTRs (void *procInfoValue)
 	cerr << "start thread: " << procInfo->thread << endl;
 	int i, s;
 	int sz = (procInfo->vntrs)->size();
-
+	SDTables sdTables;
 	// read bam 
 	(procInfo->io)->readSeqFromBam ((*(procInfo->vntrs)), (procInfo->opt)->nproc, procInfo->thread, sz);
 
@@ -88,7 +89,7 @@ void *ProcVNTRs (void *procInfoValue)
 	{
 		if (debug_flag) cerr << "processing vntr: " << i << endl;
 		// procInfo->numOfProcessed += ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt));
-		ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt));
+		ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt), sdTables, *(procInfo->mismatchCI));
 	}
 
 	procInfo->mtx->lock();
@@ -117,8 +118,9 @@ void printUsage(IO &io)
 	printf("       -o   FILE         output vcf/fa file\n");
 	printf("       -s   CHAR         the sample name\n");
 	printf("   Dynamic Programming:\n");
-	printf("       -pi  DOUBLE       penalty of indel in dynamic programming (double) DEFAULT: 1.0\n");
-	printf("       -pm  DOUBLE       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0\n");
+	printf("       -d   DOUBLE       penalty of indel in dynamic programming (double) DEFAULT: 1.0\n");
+	printf("       -c   DOUBLE       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0\n");
+	printf("       -a   DOUBLE       Global accuracy of the reads. DEFAULT: 0.98\n");	
 	printf("       --naive           specify the naive version of code to do the annotation, DEFAULT: faster implementation\n");
 	printf("   Aggregate Annotation:\n");
 	printf("       -f   DOUBLE       filter noisy read annotations, DEFAULT: 0.0 (no filter)\n");
@@ -160,11 +162,12 @@ int main (int argc, char **argv)
 		{"filterNoisy",     required_argument,       0, 'f'},
 		{"penlaty_indel",   required_argument,       0, 'd'},
 		{"penlaty_mismatch",required_argument,       0, 'c'},
+		{"accuracy"        ,required_argument,       0, 'a'},		
 		{NULL, 0, 0, '\0'}
 	};
 	/* getopt_long stores the option index here. */
 	int option_index = 0;
-	while ((c = getopt_long (argc, argv, "i:v:m:o:s:t:f:d:c:x:h", long_options, &option_index)) != -1)
+	while ((c = getopt_long (argc, argv, "i:v:m:a:o:s:t:f:d:c:x:h", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -238,7 +241,10 @@ int main (int argc, char **argv)
 		case ':':
 			cerr << "[ERROR] missing option argument" << endl;
 			exit(EXIT_FAILURE);
-
+		case 'a':
+ 		        opt.accuracy = stod(optarg);
+			fprintf (stderr, "option -accuracy with `%f'\n", opt.accuracy);
+			break;
 		default:
 			printUsage(io);
 			exit(EXIT_FAILURE);
@@ -300,7 +306,7 @@ int main (int argc, char **argv)
 	}
 
 	vector<VNTR *> vntrs;
-
+	
 	gettimeofday(&pre_start_time, NULL);
 
 	/* read VNTR bed file */
@@ -308,23 +314,26 @@ int main (int argc, char **argv)
 	cerr << "finish reading vntrs.bed" << endl;
 
 	/* read motif csv file */
+	vector< int> mismatchCI;
 	if (!conseq_flag)
 	{
 		io.readMotifsFromCsv(vntrs);
+		CreateAccLookupTable(vntrs, opt.accuracy, mismatchCI, 0.999);
 		cerr << "finish reading motifs.csv" << endl;		
 	}
 
-
+	
 	ofstream out;
 	/* set up out stream and write fa/VCF header */
+	
 	out.open(io.out_vcf, ofstream::out);
 	if (out.fail()) 
-	{
+	  {
 	    cerr << "ERROR: Unable to open file " << io.out_vcf << endl;
 	    exit(EXIT_FAILURE);
-	} 	
-	if (!conseq_flag)
-		io.writeVCFHeader(out);
+	  } 	
+	//	if (!conseq_flag)
+	    //io.writeVCFHeader(out);
 
 	gettimeofday(&pre_stop_time, NULL);
 	timersub(&pre_stop_time, &pre_start_time, &pre_elapsed_time); 
@@ -332,6 +341,7 @@ int main (int argc, char **argv)
 
 	/* Create threads */
 	int i;
+
 	if (opt.nproc > 1)
 	{
 		pthread_t *tid = new pthread_t[opt.nproc];
@@ -345,6 +355,7 @@ int main (int argc, char **argv)
 			procInfo[i].opt = &opt;
 			procInfo[i].io = &io;
 			procInfo[i].mtx = &mtx;
+			procInfo[i].mismatchCI = &mismatchCI;
 			procInfo[i].numOfProcessed = &numOfProcessed;
 			procInfo[i].out = &out;
 			// procInfo[i].out_nullAnno = &out_nullAnno;
@@ -374,18 +385,19 @@ int main (int argc, char **argv)
 		if (conseq_flag or raw_anno_flag)
 			io.readSeqFromBam (vntrs, 1, 0, vntrs.size());
 
-		if (conseq_flag)
+		if (conseq_flag )
 			io.writeFa(out, vntrs);
 		else 
 		{
 			int s = 0;
+			SDTables sdTables;
 			for (auto &it: vntrs) 
 			{
-				ProcVNTR (s, it, opt);
+			  ProcVNTR (s, it, opt, sdTables, mismatchCI);
 				s += 1;
 			}	
-			cerr << "outputing vcf" << endl;
-			io.writeVCFBody(out, vntrs, -1, 1);			
+			io.writeVCFBody(out, vntrs, -1, 1);
+
 		}
 
 		gettimeofday(&single_stop_time, NULL);

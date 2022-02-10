@@ -22,7 +22,9 @@ extern int seqan_flag;
 extern int anno_flag;
 extern int subseq_flag;
 
-void VNTR::motifAnnoForOneVNTR (const OPTION &opt) 
+
+
+void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<int > &mismatchCI) 
 {
 	if (skip) return;
 
@@ -37,10 +39,31 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt)
 		*/
 
 		if (naive_flag)
-			naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
-        else
-            bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len, opt);
-
+		  naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
+		else {
+		  //		  bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len, opt);
+		  vector<int> starts, ends, sdAnnos, sdQV;
+		  vector<vector<int > > motifNMatch;
+		  string_decomposer(annos[i], sdQV, starts, ends, motifNMatch,
+				    motifs, reads[i]->seq,  reads[i]->len, opt, sdTables, mismatchCI);
+		  /*
+		  cout << "heuristic: " << annos[i].size() << " sd " << sdAnnos.size() << endl;
+		  for (auto j=0; j< annos[i].size(); j++) {
+		    cout << std::setw(3) << (int)annos[i][j] << ",";
+		  }
+		  cout << endl;
+		  for (auto j=0; j < sdAnnos.size(); j++) {
+		    cout << std::setw(3) << sdAnnos[j] << ",";
+		  }
+		  cout << endl;
+		  for (auto j=0; j < sdAnnos.size(); j++) {
+		    cout << std::setw(3) << sdQV[j] << ",";
+		  }
+		  cout << endl;
+		}
+		  */
+		}
+		
 		if (annos[i].size() == 0) 
 		{
 			skip = true;

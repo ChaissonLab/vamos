@@ -23,7 +23,7 @@ public:
 	mutex *mtx; 
 	int * numOfProcessed;
 	struct timeval start_time, stop_time, elapsed_time;
-
+        vector< int > *mismatchCI;
 	ProcInfo () {};
 	~ProcInfo () {};
 };
