@@ -46,21 +46,22 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
 		  vector<vector<int > > motifNMatch;
 		  string_decomposer(annos[i], sdQV, starts, ends, motifNMatch,
 				    motifs, reads[i]->seq,  reads[i]->len, opt, sdTables, mismatchCI);
-		  /*
+		 
 		  cout << "heuristic: " << annos[i].size() << " sd " << sdAnnos.size() << endl;
 		  for (auto j=0; j< annos[i].size(); j++) {
 		    cout << std::setw(3) << (int)annos[i][j] << ",";
 		  }
 		  cout << endl;
-		  for (auto j=0; j < sdAnnos.size(); j++) {
-		    cout << std::setw(3) << sdAnnos[j] << ",";
-		  }
-		  cout << endl;
-		  for (auto j=0; j < sdAnnos.size(); j++) {
+		  for (auto j=0; j < sdQV.size(); j++) {
 		    cout << std::setw(3) << sdQV[j] << ",";
 		  }
 		  cout << endl;
-		}
+
+		/*for (auto j=0; j < sdAnnos.size(); j++) {
+		    cout << std::setw(3) << sdAnnos[j] << ",";
+		  }
+		  cout << endl;
+		 
 		  */
 		}
 		
