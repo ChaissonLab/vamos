@@ -51,6 +51,7 @@ void process_mem_usage(double &vm_usage, double &resident_set)
 
 void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< int > &mismatchCI) 
 {
+
 	if (it->nreads == 0 or it->motifs.size() > 255) 
 	{
 		it->skip = true;
@@ -78,6 +79,7 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< 
 
 void *ProcVNTRs (void *procInfoValue)
 {
+
 	ProcInfo *procInfo = (ProcInfo *)procInfoValue;
 	gettimeofday(&(procInfo->start_time), NULL);
 	cerr << "start thread: " << procInfo->thread << endl;
@@ -107,6 +109,7 @@ void *ProcVNTRs (void *procInfoValue)
 
 void printUsage(IO &io) 
 {
+
 	printf("Usage: vamos [subcommand] [options] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-x subsequence.fa]\n");
 	printf("Version: %s\n", io.version);
 	printf("subcommand:\n");
@@ -137,6 +140,7 @@ void printUsage(IO &io)
 
 int main (int argc, char **argv)
 {
+
 	int c;
 	IO io;
 	OPTION opt;
@@ -180,6 +184,7 @@ int main (int argc, char **argv)
           fprintf (stderr, "option %s", long_options[option_index].name);
           if (optarg) fprintf (stderr, " with arg %s", optarg);
           break;
+
 
 		case 'i':
 			fprintf (stderr, "option -input with `%s'\n", optarg);
