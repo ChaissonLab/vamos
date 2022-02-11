@@ -24,7 +24,7 @@ extern int subseq_flag;
 
 
 
-void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<int > &mismatchCI) 
+void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<int> &mismatchCI) 
 {
 	if (skip) return;
 
@@ -37,14 +37,17 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
 			input:   string : reads[i].seq; vector<MOTIF> : motifs
 			output:  vector<vector<int>> annos[i]
 		*/
-
+        if (reads[i]->len > 2 * len) {
+            skip = true;
+            return;
+        }
 		if (naive_flag)
-		  naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
+            naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
 		else {
-		  //		  bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len, opt);
-		  vector<int> starts, ends, sdAnnos, sdQV;
-		  vector<vector<int > > motifNMatch;
-		  string_decomposer(annos[i], sdQV, starts, ends, motifNMatch, motifs, reads[i]->seq,  reads[i]->len, opt, sdTables, mismatchCI);
+            //		  bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len, opt);
+            vector<int> starts, ends, sdAnnos, sdQV;
+            vector<vector<int >> motifNMatch;
+            string_decomposer(annos[i], sdQV, starts, ends, motifNMatch, motifs, reads[i]->seq, reads[i]->len, opt, sdTables, mismatchCI);
 
 		  // cout << "heuristic: " << annos[i].size() << " sd " << sdAnnos.size() << endl;
 		  // for (auto j=0; j< annos[i].size(); j++) {

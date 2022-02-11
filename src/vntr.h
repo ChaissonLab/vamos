@@ -40,6 +40,7 @@ public:
   vector<int> scoreRow0;
   vector<vector<int > > nMatchOnOptPath;
   vector<vector<int > > nDelOnOptPath;  
+
   void Init(vector<MOTIF> &motifs, string &seq) 
   {
 	pathMat.resize(motifs.size());
@@ -53,7 +54,7 @@ public:
 		nMatchMat[m].resize(seq.size()+1);
 		nDelMat[m].resize(seq.size()+1);      
 		scoreMat[m].resize(seq.size()+1);
-		for (auto s=0; s < seq.size() + 1; s++ ) 
+		for (auto s=0; s < seq.size() + 1; s++) 
 		{
 			pathMat[m][s].resize(motifs[m].len);
 			nMatchMat[m][s].resize(motifs[m].len);

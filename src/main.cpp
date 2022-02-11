@@ -49,7 +49,7 @@ void process_mem_usage(double &vm_usage, double &resident_set)
     resident_set = (rss * page_size_kb) / (1024.0 * 1024.0);
 }
 
-void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< int > &mismatchCI) 
+void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector<int> &mismatchCI) 
 {
 	if (it->nreads == 0 or it->motifs.size() > 255) 
 	{
@@ -314,7 +314,7 @@ int main (int argc, char **argv)
 	cerr << "finish reading vntrs.bed" << endl;
 
 	/* read motif csv file */
-	vector< int> mismatchCI;
+	vector<int> mismatchCI;
 	if (!conseq_flag)
 	{
 		io.readMotifsFromCsv(vntrs);
