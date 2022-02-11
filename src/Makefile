@@ -9,7 +9,7 @@ asan?=""
 tsan?=""
 
 ifneq ($(DEBUG), "")
-CFLAGS=-g -O0 #-Wall -Wextra
+CFLAGS=-g -O0 #-fsanitize=address #-Wall -Wextra
 else
 CFLAGS=-O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
 endif

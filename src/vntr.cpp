@@ -37,7 +37,10 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
 			input:   string : reads[i].seq; vector<MOTIF> : motifs
 			output:  vector<vector<int>> annos[i]
 		*/
-
+	  if (reads[i]->len > 1.5 * len) {
+	    skip = true;
+	    return;
+	  }
 		if (naive_flag)
 		  naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
 		else {
@@ -46,7 +49,7 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
 		  vector<vector<int > > motifNMatch;
 		  string_decomposer(annos[i], sdQV, starts, ends, motifNMatch,
 				    motifs, reads[i]->seq,  reads[i]->len, opt, sdTables, mismatchCI);
-		 
+		  /*
 		  cout << "heuristic: " << annos[i].size() << " sd " << sdAnnos.size() << endl;
 		  for (auto j=0; j< annos[i].size(); j++) {
 		    cout << std::setw(3) << (int)annos[i][j] << ",";
@@ -56,6 +59,7 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
 		    cout << std::setw(3) << sdQV[j] << ",";
 		  }
 		  cout << endl;
+		  */
 
 		/*for (auto j=0; j < sdAnnos.size(); j++) {
 		    cout << std::setw(3) << sdAnnos[j] << ",";
@@ -370,6 +374,7 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
 
     // ab->abs->n_seq = 0; // To re-use ab, n_seq needs to be set as 0
     abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
+    
 
     // assert(cons_n > 0); // cons_n == 0 means no consensus sequence exists
     for (j = 0; j < cons_l[0]; ++j)
@@ -736,7 +741,22 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     uint8_t **msa_seq; int msa_l = 0;
 
     // perform abpoa-msa
+    if (n_seqs == 2 ) {
+      skip=true;
+      return;
+    }
+    skip=true;
+    for (auto i =0; i <n_seqs; i++ ) {
+      if (seq_lens[i] != 2) {
+	skip=false;
+      }
+    }
+    if (skip) {
+      return;
+    }
+
     abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
+
     
     assert(cons_n > 0); // cons_n == 0 means no consensus sequence exists
     if (cons_n > 1) cerr << "het" << endl;

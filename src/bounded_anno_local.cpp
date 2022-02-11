@@ -125,7 +125,8 @@ void global(const string &motif, char *vntr, vector<vector<double>> &dists, vect
 
 void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<int> &starts, vector<int> &ends, vector<vector<int> > &motifNMatches,
 		       vector<MOTIF> &motifs, char *vntr, int N, const OPTION &opt, SDTables &sdTables, vector<int > &mismatchCI) {
-  string vntrS(vntr);
+  
+  string vntrS(vntr, N);
   sdTables.Init(motifs, vntrS);
   int left=0;
   int down=1;
@@ -190,14 +191,13 @@ void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<
 	  else {
 	    sdTables.nMatchMat[m][s+1][mi] = 1;
 	  }
-	  sdTables.nDelMat[m][s+1][mi] = sdTables.nDelMat[m][s][mi-1];
+	  sdTables.nDelMat[m][s+1][mi] = sdTables.nDelMat[m][s][mi];
 //	  cout << "nm " << m << " " << s+1<< " " << mi << " " <<  sdTables.nMatchMat[m][s+1][mi] << endl;
 	}
 	else if (optScore == insScore) {
 	  if (mi > 0) {
 	    sdTables.nMatchMat[m][s+1][mi] = sdTables.nMatchMat[m][s+1][mi-1];
 	    sdTables.nDelMat[m][s+1][mi] = sdTables.nDelMat[m][s+1][mi-1];
-
 	  }
 	}
 	else {
@@ -243,6 +243,7 @@ void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<
     motifNMatches[motifNMatches.size()-1].push_back(max(0, sdTables.nMatchMat[tm][cs][motifs[tm].len-1] - sdTables.nDelMat[tm][cs][motifs[tm].len-1] ) );
   }
   while (cs > 0) {
+    assert(optMotifs.size() < 100000);
     int arrow=sdTables.pathMat[cm][cs][cmi];
     //
     // At the beginning of a motif, may need to wrap around

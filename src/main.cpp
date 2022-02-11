@@ -65,12 +65,14 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< 
 	it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI); 
 	it->annoTostring(opt);
 	it->cleanNoiseAnno(opt);
+
 	if (hclust_flag)
 		it->concensusMotifAnnoForOneVNTR(opt);
 	else if (seqan_flag)
 		it->concensusMotifAnnoForOneVNTRBySeqan(opt);
 	else
 		it->concensusMotifAnnoForOneVNTRByABpoa(opt);
+	
 	return;
 }
 
