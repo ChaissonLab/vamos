@@ -24,7 +24,7 @@ extern int naive_flag;
 extern int debug_flag;
 extern int hclust_flag;
 extern int seqan_flag;
-extern int conseq_flag;
+extern int liftover_flag;
 extern int conseq_anno_flag;
 extern int raw_anno_flag;
 //0123456789ABCDEF

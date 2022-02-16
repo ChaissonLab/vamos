@@ -27,7 +27,7 @@ vamos -h
 ### Run Vamos
 #### Lift-over the VNTR sequences from alignment file
 ```
-vamos --conseq      [-i in.bam] [-v vntrs.bed] [-o output.fa] (ONLY FOR SINGLE LOCUS and SINGLE THREAD!!) 
+vamos --liftover      [-i in.bam] [-v vntrs.bed] [-o output.fa] (ONLY FOR SINGLE LOCUS and SINGLE THREAD!!) 
 ```
 #### Annotate the consensus sequence from reads with motifs
 ```

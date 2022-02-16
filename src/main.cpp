@@ -21,7 +21,7 @@ int debug_flag = false;
 int hclust_flag = false;
 int seqan_flag = false;
 int output_read_anno_flag = false;
-int conseq_flag = false;
+int liftover_flag = false;
 int conseq_anno_flag = false;
 int raw_anno_flag = false;
 
@@ -113,7 +113,7 @@ void printUsage(IO &io)
 	printf("Usage: vamos [subcommand] [options] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-x subsequence.fa]\n");
 	printf("Version: %s\n", io.version);
 	printf("subcommand:\n");
-	printf("vamos --conseq      [-i in.bam] [-v vntrs.bed] [-o output.fa] ");
+	printf("vamos --liftover    [-i in.bam] [-v vntrs.bed] [-o output.fa] ");
 	printf("vamos --conseq_anno [-i in.fa]  [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!)");
 	printf("vamos --raw_anno    [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name]");
 	printf("   Input:\n");
@@ -155,7 +155,7 @@ int main (int argc, char **argv)
 		{"readanno",      no_argument,             &output_read_anno_flag,         1},
 		{"raw_anno",      no_argument,             &raw_anno_flag,                 1},
 		{"conseq_anno",   no_argument,             &conseq_anno_flag,              1},
-		{"conseq",        no_argument,             &conseq_flag,                   1},
+		{"liftover",      no_argument,             &liftover_flag,                   1},
 
 		/* These options don’t set a flag. We distinguish them by their indices. */
 		{"input",           required_argument,       0, 'i'},
@@ -300,7 +300,7 @@ int main (int argc, char **argv)
    	if (hclust_flag) fprintf(stderr, "hclust_flag is set");
   	if (seqan_flag) fprintf(stderr, "seqan_flag is set");
    	if (output_read_anno_flag) fprintf(stderr, "output_read_anno_flag is set");
-  	if (conseq_flag) fprintf(stderr, "conseq_flag is set");
+  	if (liftover_flag) fprintf(stderr, "liftover_flag is set");
   	if (conseq_anno_flag) fprintf(stderr, "conseq_anno_flag is set");
   	if (raw_anno_flag) fprintf(stderr, "raw_anno_flag is set");
 
@@ -322,7 +322,7 @@ int main (int argc, char **argv)
 
 	/* read motif csv file */
 	vector< int> mismatchCI;
-	if (!conseq_flag)
+	if (!liftover_flag)
 	{
 		io.readMotifsFromCsv(vntrs);
 		CreateAccLookupTable(vntrs, opt.accuracy, mismatchCI, 0.999);
@@ -339,7 +339,7 @@ int main (int argc, char **argv)
 	    cerr << "ERROR: Unable to open file " << io.out_vcf << endl;
 	    exit(EXIT_FAILURE);
 	  } 	
-	//	if (!conseq_flag)
+	//	if (!liftover_flag)
 	    //io.writeVCFHeader(out);
 
 	gettimeofday(&pre_stop_time, NULL);
@@ -389,10 +389,10 @@ int main (int argc, char **argv)
 		if (conseq_anno_flag)
 			io.readSeqFromFasta(vntrs);
 		
-		if (conseq_flag or raw_anno_flag)
+		if (liftover_flag or raw_anno_flag)
 			io.readSeqFromBam (vntrs, 1, 0, vntrs.size());
 
-		if (conseq_flag )
+		if (liftover_flag )
 			io.writeFa(out, vntrs);
 		else 
 		{
