@@ -132,12 +132,16 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGA
         else if (!(type & 1) and !(type & 2)) // Hard clip
             continue;
 
-        else if (target_crd < ref_aln_start + len)
+        if (type & 2 or op == BAM_CMATCH or op == BAM_CEQUAL or op == BAM_CDIFF) 
         {
-            if (op == BAM_CMATCH or op == BAM_CEQUAL) 
-                return make_pair(read_aln_start + target_crd - ref_aln_start, 1);
-            else
-                return make_pair(read_aln_start, 1);
+            if (target_crd < ref_aln_start + len) 
+            {
+                 if (op == BAM_CMATCH or op == BAM_CEQUAL) 
+                    return make_pair(read_aln_start + target_crd - ref_aln_start, 1);
+                else
+                    return make_pair(read_aln_start, 1);                
+            }
+              
         }
 
         CIGAR_start = k + 1;

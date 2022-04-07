@@ -113,7 +113,7 @@ void printUsage(IO &io)
 	printf("Usage: vamos [subcommand] [options] [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] [-x subsequence.fa]\n");
 	printf("Version: %s\n", io.version);
 	printf("subcommand:\n");
-	printf("vamos --liftover    [-i in.bam] [-v vntrs.bed] [-o output.fa] \n");
+	printf("vamos --liftover    [-i in.bam] [-v vntrs.bed] [-o output.fa] [-s sample_name] \n");
 	printf("vamos --conseq_anno [-i in.fa]  [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!)\n");
 	printf("vamos --raw_anno    [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name]\n");
 	printf("   Input:\n");
