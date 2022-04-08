@@ -339,8 +339,9 @@ int main (int argc, char **argv)
 	    cerr << "ERROR: Unable to open file " << io.out_vcf << endl;
 	    exit(EXIT_FAILURE);
 	  } 	
-	//	if (!liftover_flag)
-	    //io.writeVCFHeader(out);
+	  
+	if (!liftover_flag)
+	io.writeVCFHeader(out);
 
 	gettimeofday(&pre_stop_time, NULL);
 	timersub(&pre_stop_time, &pre_start_time, &pre_elapsed_time); 
