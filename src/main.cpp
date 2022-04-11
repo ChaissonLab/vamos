@@ -295,14 +295,14 @@ int main (int argc, char **argv)
   	/* Instead of reporting ‘--verbose’
      and ‘--brief’ as they are encountered,
      we report the final status resulting from them. */
-  	if (naive_flag) fprintf(stderr, "naive_flag is set");
-  	if (debug_flag) fprintf(stderr, "debug_flag is set");
-   	if (hclust_flag) fprintf(stderr, "hclust_flag is set");
-  	if (seqan_flag) fprintf(stderr, "seqan_flag is set");
-   	if (output_read_anno_flag) fprintf(stderr, "output_read_anno_flag is set");
-  	if (liftover_flag) fprintf(stderr, "liftover_flag is set");
-  	if (conseq_anno_flag) fprintf(stderr, "conseq_anno_flag is set");
-  	if (raw_anno_flag) fprintf(stderr, "raw_anno_flag is set");
+  	if (naive_flag) fprintf(stderr, "naive_flag is set\n");
+  	if (debug_flag) fprintf(stderr, "debug_flag is set\n");
+   	if (hclust_flag) fprintf(stderr, "hclust_flag is set\n");
+  	if (seqan_flag) fprintf(stderr, "seqan_flag is set\n");
+   	if (output_read_anno_flag) fprintf(stderr, "output_read_anno_flag is set\n");
+  	if (liftover_flag) fprintf(stderr, "liftover_flag is set\n");
+  	if (conseq_anno_flag) fprintf(stderr, "conseq_anno_flag is set\n");
+  	if (raw_anno_flag) fprintf(stderr, "raw_anno_flag is set\n");
 
 	/* Print any remaining command line arguments (not options). */
 	if (optind < argc)
@@ -393,7 +393,7 @@ int main (int argc, char **argv)
 		if (liftover_flag or raw_anno_flag)
 			io.readSeqFromBam (vntrs, 1, 0, vntrs.size());
 
-		if (liftover_flag )
+		if (liftover_flag)
 			io.writeFa(out, vntrs);
 		else 
 		{

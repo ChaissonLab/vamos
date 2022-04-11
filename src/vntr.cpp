@@ -37,10 +37,10 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
 			input:   string : reads[i].seq; vector<MOTIF> : motifs
 			output:  vector<vector<int>> annos[i]
 		*/
-	  if (reads[i]->len > 1.5 * len) {
-	    skip = true;
-	    return;
-	  }
+        // if (reads[i]->len > 1.5 * len) {
+        //     skip = true;
+        //     return;
+        // }
 		if (naive_flag)
 		  naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
 		else {
