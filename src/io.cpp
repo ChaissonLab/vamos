@@ -108,6 +108,9 @@ void IO::readVNTRFromBed (vector<VNTR*> &vntrs)
     return;
 }
 
+int FRONT=0;
+int BACK=1;
+
 pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGAR_start, uint32_t target_crd, uint32_t &ref_aln_start, uint32_t &read_aln_start)
 {
     assert(read_aln_start <= (uint32_t) aln->core.l_qseq);
@@ -154,7 +157,11 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGA
     }
 
     assert(read_aln_start <= (uint32_t) aln->core.l_qseq);
-    return make_pair(read_aln_start, 1);
+    //
+    // Reached the end of the cigar but did not find a match overlapping
+    // the target_crd. Return a pair that flags invalid search.
+    //
+    return make_pair(read_aln_start, 0);
 }
 
 
