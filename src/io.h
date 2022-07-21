@@ -17,6 +17,8 @@ using namespace std;
 class IO
 {
 public:
+        char * region_and_motifs;
+        char * input_fasta;
 	char * input_bam;
 	char * vntr_bed;
 	char * motif_csv;
@@ -29,6 +31,7 @@ public:
 	{
 		version = (char *) malloc(7);
 		strcpy(version, "V1.0.0");
+		region_and_motifs = NULL;
 		input_bam = NULL;
 		vntr_bed = NULL;
 		motif_csv = NULL;
@@ -38,14 +41,17 @@ public:
 
 	~IO() 
 	{
-		free(version);
-		free(input_bam);
+	        free(region_and_motifs);
+	        free(version);
+	        free(input_bam);
 		free(vntr_bed);
 		free(motif_csv);
 		free(out_vcf);
 		free(sampleName);
 	};
 
+        int readRegionAndMotifs (vector<VNTR*> &vntrs);
+  
 	int readMotifsFromCsv (vector<VNTR *> &vntrs);
 
 	int read_tsv(vector<vector<string>> &items);

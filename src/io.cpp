@@ -91,6 +91,40 @@ int IO::read_tsv(vector<vector<string>> &items)
     return 0;
 }
 
+int IO::readRegionAndMotifs (vector<VNTR*> &vntrs) 
+{
+    ifstream ifs(region_and_motifs);
+    if (ifs.fail()) 
+    {
+        cerr << "Unable to open file " << motif_csv << endl;
+        return 1;
+    }    
+
+    string line;
+    size_t numOfLine = 0;
+    while (getline(ifs, line)) 
+    {
+        stringstream ss(line);
+        string tmp;
+	string chrom;
+	int start;
+	int end;
+	ss >> chrom >> start >> end;
+        VNTR * vntr = new VNTR(chrom, start, end, end-start);
+	vntrs.push_back(vntr);
+        while(getline(ss, tmp, ',')) 
+        {
+            vntrs[numOfLine]->motifs.push_back(MOTIF(tmp));
+            // cerr << vntrs[numOfLine]->motifs.back().seq << endl;
+        }
+        numOfLine += 1; // 0-indexed
+    }
+    assert(vntrs.size() == numOfLine);
+    return 0;
+}
+
+
+
 /* read vntrs coordinates from file `vntr_bed`*/
 void IO::readVNTRFromBed (vector<VNTR*> &vntrs)
 {
@@ -164,6 +198,17 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGA
     return make_pair(read_aln_start, 0);
 }
 
+int GetHap(char *s, int l) {
+  int si=0, nc=0;
+  for (; si < l; si++) {
+    if (s[si] == ':') { nc+=1;}
+    if (nc == 2) { si++; break; }
+  }
+  if (nc == 2) {
+    return atoi(&s[si]);
+  }
+  return -1;
+}
 
 /*
  read alignment from bam
@@ -227,11 +272,14 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
 
             read_aln_start = 0;
             read_len = aln->core.l_qseq;
-
+	    s=bam_get_seq(aln);
             uint32_t tmp;
             VNTR_s = vntr->ref_start;
             VNTR_e = vntr->ref_end;
-
+	    //	    kstring_t s;
+	    kstring_t auxStr = KS_INITIALIZE;
+	    int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
+	    int hap = GetHap(auxStr.s, auxStr.l);
             if (VNTR_s < ref_aln_start or VNTR_e > ref_aln_end) // the alignment doesn't fully cover the VNTR locus
                 continue;
 
@@ -261,8 +309,20 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 read->len = liftover_read_e - liftover_read_s + 1; // read length
                 read->seq = (char *) malloc(read->len + 1); // read sequence array
                 read->rev = rev;
-                s = bam_get_seq(aln); 
+		if (hap >= 0) {
+		  read->haplotype=hap;
+		}
 
+		kstring_t auxStr = KS_INITIALIZE;
+		int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
+		if (auxStat ) {
+		  
+		  int si=0, nc=0;
+		  int hap=GetHap(auxStr.s, auxStr.l);
+		  if (hap >= 0 ) {
+		    read->haplotype=hap;
+		  }
+		}
                 for(i = 0; i < read->len; i++)
                 {
                     assert(i + liftover_read_s < read_len);

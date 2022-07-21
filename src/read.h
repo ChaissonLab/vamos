@@ -18,6 +18,7 @@ public:
 	uint32_t len;
 	char * seq;
 	bool rev;
+        int haplotype;
 	READ () 
 	{
 		qname = NULL;
@@ -25,6 +26,7 @@ public:
 		chr = NULL;
 		seq = NULL;
 		rev = false;
+		haplotype=0;
 	};
 	READ (char * Qname, char * Chr, uint32_t Len) : qname(Qname), chr(Chr), len(Len) { seq = NULL;};
 	~READ () 

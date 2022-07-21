@@ -20,11 +20,14 @@ int naive_flag = false;
 int debug_flag = false;
 int hclust_flag = false;
 int seqan_flag = false;
+int abpoa_flag = false;
 int output_read_anno_flag = false;
+int per_read_anno_flag = false;
+int output_read_flag = false;
 int liftover_flag = false;
 int conseq_anno_flag = false;
 int raw_anno_flag = false;
-
+int num_processed = 0;
 struct timeval pre_start_time, pre_stop_time, pre_elapsed_time;
 struct timeval single_start_time, single_stop_time, single_elapsed_time;
 
@@ -71,7 +74,7 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< 
 		it->concensusMotifAnnoForOneVNTR(opt);
 	else if (seqan_flag)
 		it->concensusMotifAnnoForOneVNTRBySeqan(opt);
-	else
+	else if (abpoa_flag) 
 		it->concensusMotifAnnoForOneVNTRByABpoa(opt);
 	
 	return;
@@ -96,11 +99,13 @@ void *ProcVNTRs (void *procInfoValue)
 		ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt), sdTables, *(procInfo->mismatchCI));
 	}
 
-	procInfo->mtx->lock();
-	cerr << "outputing vcf" << endl;
-	(procInfo->io)->writeVCFBody(*(procInfo->out), (*(procInfo->vntrs)), procInfo->thread, (procInfo->opt)->nproc);	
+	if (liftover_flag == false and per_read_anno_flag == false) { 
+	  procInfo->mtx->lock();
+	  cerr << "outputing vcf" << endl;	  
+	  (procInfo->io)->writeVCFBody(*(procInfo->out), (*(procInfo->vntrs)), procInfo->thread, (procInfo->opt)->nproc);	
 
-	procInfo->mtx->unlock();
+	  procInfo->mtx->unlock();
+	}
 	cerr << "finish thread: " << procInfo->thread << endl;
 	gettimeofday(&(procInfo->stop_time), NULL);
 	timersub(&(procInfo->stop_time), &(procInfo->start_time), &(procInfo->elapsed_time)); 
@@ -115,8 +120,10 @@ void printUsage(IO &io)
 	printf("subcommand:\n");
 	printf("vamos --liftover    [-i in.bam] [-v vntrs.bed] [-o output.fa] [-s sample_name] \n");
 	printf("vamos --conseq_anno [-i in.fa]  [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!)\n");
+	printf("vamos --per_read [--output_seq]   [-b in.bam]  [-r vntrs.bed] [-o output.vcf] [-s sample_name] \n");	
 	printf("vamos --raw_anno    [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name]\n");
 	printf("   Input:\n");
+	printf("       -b   FILE         input indexed bam file. \n");	
 	printf("       -i   FILE         input alignment/read file (bam/fa), bam file needs to be indexed \n");
 	printf("       -v   FILE         the tab-delimited coordinate of each VNTR locus - `chrom\tstart\tend`, each row represents a VNTR locus\n");
 	printf("       -m   FILE         the comma-delimited motif sequences list for each VNTR locus, each row represents a VNTR locus\n");
@@ -155,9 +162,13 @@ int main (int argc, char **argv)
 		{"readanno",      no_argument,             &output_read_anno_flag,         1},
 		{"raw_anno",      no_argument,             &raw_anno_flag,                 1},
 		{"conseq_anno",   no_argument,             &conseq_anno_flag,              1},
-		{"liftover",      no_argument,             &liftover_flag,                   1},
+		{"per_read",      no_argument,             &per_read_anno_flag,            1},
+		{"output_read",    no_argument,             &output_read_flag,              1},		
+		{"abpoa",         no_argument,             &abpoa_flag,                    1},
+		{"liftover",      no_argument,             &liftover_flag,                 1},
 
 		/* These options don’t set a flag. We distinguish them by their indices. */
+		{"bam",             required_argument,       0, 'b'},		
 		{"input",           required_argument,       0, 'i'},
 		{"vntr",            required_argument,       0, 'v'},
 		{"motif",           required_argument,       0, 'm'},
@@ -168,12 +179,13 @@ int main (int argc, char **argv)
 		{"filterNoisy",     required_argument,       0, 'f'},
 		{"penlaty_indel",   required_argument,       0, 'd'},
 		{"penlaty_mismatch",required_argument,       0, 'c'},
-		{"accuracy"        ,required_argument,       0, 'a'},		
+		{"accuracy"        ,required_argument,       0, 'a'},
+		{"region",          required_argument,       0, 'r'},				
 		{NULL, 0, 0, '\0'}
 	};
 	/* getopt_long stores the option index here. */
 	int option_index = 0;
-	while ((c = getopt_long (argc, argv, "i:v:m:a:o:s:t:f:d:c:x:h", long_options, &option_index)) != -1)
+	while ((c = getopt_long (argc, argv, "i:v:m:a:o:s:t:b:r:f:d:c:x:h", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -185,11 +197,15 @@ int main (int argc, char **argv)
           if (optarg) fprintf (stderr, " with arg %s", optarg);
           break;
 
-
-		case 'i':
+		case 'b':
 			fprintf (stderr, "option -input with `%s'\n", optarg);
 			io.input_bam = (char *) malloc(strlen(optarg) + 1);
 			strcpy(io.input_bam, optarg);
+			break;
+		case 'i':
+			fprintf (stderr, "option -input with `%s'\n", optarg);
+			io.input_bam = (char *) malloc(strlen(optarg) + 1);
+			strcpy(io.input_fasta, optarg);
 			break;
 
 		case 'v':
@@ -197,7 +213,12 @@ int main (int argc, char **argv)
 			io.vntr_bed = (char *) malloc(strlen(optarg) + 1);
 			strcpy(io.vntr_bed, optarg);
 			break;
-
+		case 'r':
+			fprintf (stderr, "option -region with `%s'\n", optarg);
+			io.region_and_motifs = (char *) malloc(strlen(optarg) + 1);
+			strcpy(io.region_and_motifs, optarg);
+			break;
+		  
 		case 'm':
 			fprintf (stderr, "option -motif with `%s'\n", optarg);
 			io.motif_csv = (char *) malloc(strlen(optarg) + 1);
@@ -262,17 +283,17 @@ int main (int argc, char **argv)
 	bool missingArg = false;
 	if (io.input_bam == NULL) 
 	{
-		fprintf(stderr, "-i is mandatory!\n");
+		fprintf(stderr, "ERROR. -i or -b must be specified.\n");
 		missingArg = true;
 	}
-	if (io.vntr_bed == NULL)
+	if (io.vntr_bed == NULL and io.region_and_motifs == NULL)
 	{
-		fprintf(stderr, "-v is mandatory!\n");
+		fprintf(stderr, "ERROR Either -v or -r must be specified.\n");
 		missingArg = true;
 	}
 	if (io.motif_csv == NULL and (conseq_anno_flag or raw_anno_flag))
 	{
-		fprintf(stderr, "-m is mandatory!\n");
+		fprintf(stderr, "-m is mandatory with conseq and raw_anno!\n");
 		missingArg = true;
 	}
 	if (io.sampleName == NULL)
@@ -313,16 +334,33 @@ int main (int argc, char **argv)
 	}
 
 	vector<VNTR *> vntrs;
-	
+	if (per_read_anno_flag == true) {
+	  if (io.input_bam == NULL) {
+	    cerr << "ERROR. Input bam must be specified if annotating per read." << endl;
+	    exit(1);
+	  }
+	  if (io.region_and_motifs == NULL) {
+	    cerr << "ERROR. Input file with region and motif must be specified if annotating per read.\n"
+	      "The format of this file is 4 columns: chrom, start, end, motifs. Motifs are a comma-separated\n"
+	      "(no spaces) list of motifs for this VNTR" << endl;
+	    exit(1);
+	  }
+	}
 	gettimeofday(&pre_start_time, NULL);
-
-	/* read VNTR bed file */
-	io.readVNTRFromBed(vntrs);
-	cerr << "finish reading vntrs.bed" << endl;
+	vector< int> mismatchCI;	
+	if (io.region_and_motifs != NULL) {
+	  io.readRegionAndMotifs(vntrs);
+	  CreateAccLookupTable(vntrs, opt.accuracy, mismatchCI, 0.999);	  
+	}
+	else {
+	  /* read VNTR bed file */
+	  io.readVNTRFromBed(vntrs);
+	}
+	cerr << "finish reading " << vntrs.size() << " vntrs" << endl;
 
 	/* read motif csv file */
-	vector< int> mismatchCI;
-	if (!liftover_flag)
+
+	if (!liftover_flag and !per_read_anno_flag)
 	{
 		io.readMotifsFromCsv(vntrs);
 		CreateAccLookupTable(vntrs, opt.accuracy, mismatchCI, 0.999);
@@ -340,7 +378,7 @@ int main (int argc, char **argv)
 	    exit(EXIT_FAILURE);
 	  } 	
 	  
-	if (!liftover_flag)
+	if (!liftover_flag and !per_read_anno_flag)
 	io.writeVCFHeader(out);
 
 	gettimeofday(&pre_stop_time, NULL);
@@ -390,13 +428,21 @@ int main (int argc, char **argv)
 		if (conseq_anno_flag)
 			io.readSeqFromFasta(vntrs);
 		
-		if (liftover_flag or raw_anno_flag)
+		if (per_read_anno_flag) {
 			io.readSeqFromBam (vntrs, 1, 0, vntrs.size());
-
-		if (liftover_flag)
+			if (per_read_anno_flag) {
+			  int s=0;
+			  SDTables sdTables;
+			  for (auto &it: vntrs) 
+			    {
+			      ProcVNTR (s, it, opt, sdTables, mismatchCI);
+			      s += 1;
+			    }			  
+			}
+		}
+		else if (liftover_flag)
 			io.writeFa(out, vntrs);
-		else 
-		{
+		else {
 			int s = 0;
 			SDTables sdTables;
 			for (auto &it: vntrs) 
@@ -410,6 +456,36 @@ int main (int argc, char **argv)
 
 		gettimeofday(&single_stop_time, NULL);
 		timersub(&single_stop_time, &single_start_time, &single_elapsed_time); 
+	}
+
+	if (per_read_anno_flag) {
+	  for (auto &it: vntrs) {
+	    out << it->chr << "\t" << it->ref_start << "\t" << it->ref_end << "\t";
+	    for (int i=0; i < it->motifs.size(); i++) {	      
+	      out << it->motifs[i].seq ;
+	      if (i + 1 < it->motifs.size()) {
+		out << ",";
+	      }
+	    }
+	    out << "\t";
+	    for (int i=0; i < it->reads.size(); i++) {
+	      out << it->reads[i]->qname << ":";
+	      out << it->reads[i]->haplotype << ":";
+	      out << (int)  it->annos[i].size() << ":";
+	      for (int j=0; j < it->annos[i].size(); j++) {
+		out << (int)it->annos[i][j];
+		if (j+1 < it->annos[i].size()) {
+		  out << ",";
+		}
+	      }
+	      if (output_read_flag) {
+		string readSeq(it->reads[i]->seq, it->reads[i]->len);
+		out << ":" << readSeq;
+	      }
+	      out << ";";
+	    }
+	  out << endl;	    
+	  }	  
 	}
 	out.close();
 
