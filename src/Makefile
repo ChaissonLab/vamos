@@ -8,7 +8,7 @@ CFLAGS=
 asan?=""
 tsan?=""
 
-ifneq ($(DEBUG), "")
+ifeq ("$(DEBUG)", "TRUE")
 CFLAGS=-g -O0 #-fsanitize=address #-Wall -Wextra
 else
 CFLAGS=-O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt

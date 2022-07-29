@@ -47,6 +47,7 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
 		  //		  bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len, opt);
 		  vector<int> starts, ends, sdAnnos, sdQV;
 		  vector<vector<int > > motifNMatch;
+		  cerr << "Anno " << region << " " << i << " " << reads[i]->qname << " " << reads[i]->len << endl;
 		  string_decomposer(annos[i], sdQV, starts, ends, motifNMatch,
 				    motifs, reads[i]->seq,  reads[i]->len, opt, sdTables, mismatchCI);
 		  /*
