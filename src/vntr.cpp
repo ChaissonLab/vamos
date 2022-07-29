@@ -30,6 +30,10 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
 
 	annos.resize(nreads);
 	nullAnnos.resize(nreads, false);
+	if (nreads > 200) {
+	  cerr << "WARNING, skipping locus " << region << " because it may be a centromeric tandem repeat" << endl;
+	  return;
+	}
 	for (int i = 0; i < nreads; ++i)
 	{
 		/* 
@@ -47,7 +51,7 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
 		  //		  bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len, opt);
 		  vector<int> starts, ends, sdAnnos, sdQV;
 		  vector<vector<int > > motifNMatch;
-		  cerr << "Anno " << region << " " << i << " " << reads[i]->qname << " " << reads[i]->len << endl;
+		  //		  cout << "decomposing " << region << " " << i << " " << reads[i]->len << " " << motifs.size() << endl;
 		  string_decomposer(annos[i], sdQV, starts, ends, motifNMatch,
 				    motifs, reads[i]->seq,  reads[i]->len, opt, sdTables, mismatchCI);
 		  /*
