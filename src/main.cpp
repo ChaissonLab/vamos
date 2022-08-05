@@ -20,7 +20,6 @@ int naive_flag = false;
 int debug_flag = false;
 int hclust_flag = false;
 int seqan_flag = false;
-int abpoa_flag = false;
 int output_read_anno_flag = false;
 int per_read_anno_flag = false;
 int output_read_flag = false;
@@ -74,7 +73,7 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< 
 		it->concensusMotifAnnoForOneVNTR(opt);
 	else if (seqan_flag)
 		it->concensusMotifAnnoForOneVNTRBySeqan(opt);
-	else if (abpoa_flag) 
+	else if (!per_read_anno_flag) 
 		it->concensusMotifAnnoForOneVNTRByABpoa(opt);
 	
 	return;
@@ -163,8 +162,7 @@ int main (int argc, char **argv)
 		{"raw_anno",      no_argument,             &raw_anno_flag,                 1},
 		{"conseq_anno",   no_argument,             &conseq_anno_flag,              1},
 		{"per_read",      no_argument,             &per_read_anno_flag,            1},
-		{"output_read",    no_argument,             &output_read_flag,              1},		
-		{"abpoa",         no_argument,             &abpoa_flag,                    1},
+		{"output_read",   no_argument,             &output_read_flag,              1},		
 		{"liftover",      no_argument,             &liftover_flag,                 1},
 
 		/* These options don’t set a flag. We distinguish them by their indices. */
@@ -205,7 +203,7 @@ int main (int argc, char **argv)
 		case 'i':
 			fprintf (stderr, "option -input with `%s'\n", optarg);
 			io.input_bam = (char *) malloc(strlen(optarg) + 1);
-			strcpy(io.input_fasta, optarg);
+			strcpy(io.input_bam, optarg);
 			break;
 
 		case 'v':
