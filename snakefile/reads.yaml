@@ -1,0 +1,28 @@
+databases:
+    GRCh38: /project/mchaisso_100/cmb-16/bidagu/databases/references/GRCh38/fasta/hg38.fasta
+    omotif: /project/mchaisso_100/cmb-16/bidagu/pipelines/vamos/github/snakefile/configs/motifs.o.csv
+    ovntr: /project/mchaisso_100/cmb-16/bidagu/pipelines/vamos/github/snakefile/configs/vntrs.o.bed
+    emotif: /project/mchaisso_100/cmb-16/bidagu/pipelines/vamos/github/snakefile/configs/motifs.e.csv
+    evntr: /project/mchaisso_100/cmb-16/bidagu/pipelines/vamos/github/snakefile/configs/vntrs.e.bed
+
+softwares:
+    python: /home1/bidagu/miniconda3/bin/python
+    lra: /project/mchaisso_100/cmb-16/bidagu/softwares/LRA/lra
+    mm2: /project/mchaisso_100/cmb-16/jingwenr/software/minimap2
+    samtools: /home1/bidagu/miniconda3/bin/samtools
+    longshot: /home1/bidagu/miniconda3/bin/longshot
+    vamos: /project/mchaisso_100/cmb-16/bidagu/pipelines/vamos/github/src/vamos
+
+tools:
+    split: /project/mchaisso_100/cmb-16/bidagu/pipelines/vamos/github/snakefile/pyscript/split.py
+    phase: /project/mchaisso_100/cmb-16/bidagu/pipelines/vamos/github/snakefile/pyscript/phase.py
+    anno: /project/mchaisso_100/cmb-16/bidagu/pipelines/vamos/github/snakefile/pyscript/anno.py
+
+cluster:
+    split: sbatch --partition=qcb --time=99:00:00 --cpus-per-task=1 --mem=10G
+    phase: sbatch --partition=qcb --time=99:00:00 --cpus-per-task=16 --mem=160G
+    anno: sbatch --partition=qcb --time=99:00:00 --cpus-per-task=16 --mem=120G --constraint=xeon-4116
+
+parameters:
+    winSize: 10000000
+    filter: 5,0.2
