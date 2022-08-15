@@ -1,3 +1,6 @@
+input:
+    manifest: /project/mchaisso_100/cmb-16/bidagu/working/vamos/demo/reads/sample.csv
+
 databases:
     GRCh38: /project/mchaisso_100/cmb-16/bidagu/databases/references/GRCh38/fasta/hg38.fasta
     omotif: /project/mchaisso_100/cmb-16/bidagu/pipelines/vamos/github/snakefile/configs/motifs.o.csv

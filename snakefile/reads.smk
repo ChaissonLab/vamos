@@ -7,8 +7,9 @@ if not os.path.exists('analysis'): os.makedirs('analysis')
 if not os.path.exists('log'): os.makedirs('log')
 if not os.path.exists('status'): os.makedirs('status')
 
+manifest = config['input']['manifest']
 # config input manifest
-with open('input/sample.csv') as f:
+with open(manifest) as f:
     for line in f:
 
         sample, seqFile = line.strip().split(',')
@@ -104,7 +105,7 @@ rule anno:
         done = 'analysis/{sample}/anno/{sample}.anno.done'
     params:
         python = config['softwares']['python'],
-        anno = config['tools']['anno_cons_first'],
+        anno = config['tools']['anno'],
         sample = lambda wildcards: wildcards.sample,
         vamos = config['softwares']['vamos'],
         filter = config['parameters']['filter'],
