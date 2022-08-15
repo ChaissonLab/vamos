@@ -1,4 +1,3 @@
-htslib=1.14
-abpoa=1.3.0
-boost
-seqan
+htslib>=1.13
+abpoa>=1.2.5
+boost>=1.73.0

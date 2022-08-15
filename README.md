@@ -1,24 +1,25 @@
 # Vamos: VNTR Annotation tool using efficient MOtifs Sets
 ## Getting Started
 
-Install vamos (g++, htslib, abpoa, edlib and alglib required)
-htslib and abpoa are installed by bioconda
-libalglib.a and libedlib.a are distributed along with vamos)
+To install vamos, g++ (>= 8.3.0), htslib, abpoa, edlib and alglib are required.
+htslib and abpoa can be installed by bioconda.
+libalglib.a and libedlib.a are distributed along with vamos
 
 ### Download source code
 ```sh
 git clone https://github.com/ChaissonLab/vamos.git
-conda create --name vamos
+conda create --name vamos python=3.10
 conda activate vamos
 ```
 
 ### Install requirement libraries
 ```
+cd vamos/
 conda install -c bioconda --file requirements.txt
 ```
 ### Compile vamos
 ```
-cd vamos/src && make
+cd src/ && make
 ```
 ### Help page
 ```

@@ -19,7 +19,7 @@
 int naive_flag = false;
 int debug_flag = false;
 int hclust_flag = false;
-int seqan_flag = false;
+// int seqan_flag = false;
 int output_read_anno_flag = false;
 int per_read_anno_flag = false;
 int output_read_flag = false;
@@ -71,8 +71,8 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< 
 
 	if (hclust_flag)
 		it->concensusMotifAnnoForOneVNTR(opt);
-	else if (seqan_flag)
-		it->concensusMotifAnnoForOneVNTRBySeqan(opt);
+	// else if (seqan_flag)
+	// 	it->concensusMotifAnnoForOneVNTRBySeqan(opt);
 	else if (!per_read_anno_flag) 
 		it->concensusMotifAnnoForOneVNTRByABpoa(opt);
 	
@@ -136,7 +136,7 @@ void printUsage(IO &io)
 	printf("   Aggregate Annotation:\n");
 	printf("       -f   DOUBLE       filter noisy read annotations, DEFAULT: 0.0 (no filter)\n");
 	printf("       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom\n");
-	printf("       --seqan           use seqan lib to do MSA (haploid only), DEFAULT: abPoa\n");
+	// printf("       --seqan           use seqan lib to do MSA (haploid only), DEFAULT: abPoa\n");
 	printf("       --readanno        output read annotation in VCF and output vntr sequences to stdin\n");
 	printf("   General Setting:\n");
 	printf("       -t   INT          number of threads, DEFAULT: 1\n");
@@ -157,7 +157,7 @@ int main (int argc, char **argv)
 		{"naive",         no_argument,             &naive_flag,                    1},
 		{"debug",         no_argument,             &debug_flag,                    1},
 		{"clust",         no_argument,             &hclust_flag,                   1},
-		{"seqan",         no_argument,             &seqan_flag,                    1},
+		// {"seqan",         no_argument,             &seqan_flag,                    1},
 		{"readanno",      no_argument,             &output_read_anno_flag,         1},
 		{"raw_anno",      no_argument,             &raw_anno_flag,                 1},
 		{"conseq_anno",   no_argument,             &conseq_anno_flag,              1},
@@ -317,7 +317,7 @@ int main (int argc, char **argv)
   	if (naive_flag) fprintf(stderr, "naive_flag is set\n");
   	if (debug_flag) fprintf(stderr, "debug_flag is set\n");
    	if (hclust_flag) fprintf(stderr, "hclust_flag is set\n");
-  	if (seqan_flag) fprintf(stderr, "seqan_flag is set\n");
+  	// if (seqan_flag) fprintf(stderr, "seqan_flag is set\n");
    	if (output_read_anno_flag) fprintf(stderr, "output_read_anno_flag is set\n");
   	if (liftover_flag) fprintf(stderr, "liftover_flag is set\n");
   	if (conseq_anno_flag) fprintf(stderr, "conseq_anno_flag is set\n");

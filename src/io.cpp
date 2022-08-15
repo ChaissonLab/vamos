@@ -13,8 +13,8 @@
 #include "vntr.h"
 #include "vcf.h"
 #include "abpoa.h"
-#include <seqan/align.h>
-#include <seqan/graph_msa.h>
+// #include <seqan/align.h>
+// #include <seqan/graph_msa.h>
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 #include <zlib.h>  

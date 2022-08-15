@@ -12,13 +12,13 @@
 #include "dataanalysis.h"
 #include "abpoa.h"
 #include "option.h"
-#include <seqan/align.h>
-#include <seqan/graph_msa.h>
+// #include <seqan/align.h>
+// #include <seqan/graph_msa.h>
 
 extern int naive_flag;
 extern int debug_flag;
 extern int hclust_flag;
-extern int seqan_flag;
+// extern int seqan_flag;
 extern int anno_flag;
 extern int subseq_flag;
 
@@ -622,65 +622,68 @@ void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 	return;
 }
 
-void VNTR::concensusMotifAnnoForOneVNTRBySeqan (const OPTION &opt)
-{
-	if (skip) return;
-    int n_seqs = clean_annos.size();
-    int motifs_size = motifs.size();
-    if (n_seqs == 0) return;
+/*
+Comment out the code of using seqan library to get the concensus sequence
+*/
+// void VNTR::concensusMotifAnnoForOneVNTRBySeqan (const OPTION &opt)
+// {
+// 	if (skip) return;
+//     int n_seqs = clean_annos.size();
+//     int motifs_size = motifs.size();
+//     if (n_seqs == 0) return;
 
-	if (n_seqs == 1)
-	{
-		consensus.resize(1);
-		consensus[0] = clean_annos[0];
-		return;
-	}
+// 	if (n_seqs == 1)
+// 	{
+// 		consensus.resize(1);
+// 		consensus[0] = clean_annos[0];
+// 		return;
+// 	}
 
-    // change from clean_edist to dists
-    int i, j;
-    double dists [ncleanreads * ncleanreads];
-    for (i = 0; i < ncleanreads; ++i)
-    {
-        for (j = 0; j < ncleanreads; ++j)
-           dists[i * ncleanreads + j] = clean_edist[i][j];
-    }        
+//     // change from clean_edist to dists
+//     int i, j;
+//     double dists [ncleanreads * ncleanreads];
+//     for (i = 0; i < ncleanreads; ++i)
+//     {
+//         for (j = 0; j < ncleanreads; ++j)
+//            dists[i * ncleanreads + j] = clean_edist[i][j];
+//     }        
 
-    // collect sequence length and sequence
-    seqan::StringSet<seqan::String<char>> annoSet;
-    for (int r = 0; r < n_seqs; ++r)
-        seqan::appendValue(annoSet, clean_annoStrs[r]);
+//     // collect sequence length and sequence
+//     seqan::StringSet<seqan::String<char>> annoSet;
+//     for (int r = 0; r < n_seqs; ++r)
+//         seqan::appendValue(annoSet, clean_annoStrs[r]);
 
-    seqan::Score<int> scoreScheme(1, -1, -1, -1); 
-    seqan::Align <seqan::String <char> > align(annoSet);
+//     seqan::Score<int> scoreScheme(1, -1, -1, -1); 
+//     seqan::Align <seqan::String <char> > align(annoSet);
 
-    int score = seqan::globalAlignment(align, scoreScheme);  // Compute a global alingment using the Align object.
+//     int score = seqan::globalAlignment(align, scoreScheme);  // Compute a global alingment using the Align object.
 
-    int r, num, decode_num; uint32_t l;
-    int idx;
-    int alnSz = seqan::length(seqan::row(align, 0));
-    seqan::String<seqan::ProfileChar<char>> profile; 
-    seqan::resize(profile, alnSz); 
-    for (int r = 0; r < n_seqs; ++r) 
-    {
-        for (i = 0; i < alnSz; ++i) {
-            num = seqan::getValue(seqan::row(align, r), i);
-            assert(num >= 0);
-            // decode_num = decode(num);
-            profile[i].count[num] += 1;
-        }
-    }
-    consensus.resize(1);
-    for (l = 0; l < alnSz; ++l)
-    {
-        idx = seqan::getMaxIndex(profile[l]);
-        consensus[0].push_back((uint8_t) idx);
-    }
+//     int r, num, decode_num; uint32_t l;
+//     int idx;
+//     int alnSz = seqan::length(seqan::row(align, 0));
+//     seqan::String<seqan::ProfileChar<char>> profile; 
+//     seqan::resize(profile, alnSz); 
+//     for (int r = 0; r < n_seqs; ++r) 
+//     {
+//         for (i = 0; i < alnSz; ++i) {
+//             num = seqan::getValue(seqan::row(align, r), i);
+//             assert(num >= 0);
+//             // decode_num = decode(num);
+//             profile[i].count[num] += 1;
+//         }
+//     }
+//     consensus.resize(1);
+//     for (l = 0; l < alnSz; ++l)
+//     {
+//         idx = seqan::getMaxIndex(profile[l]);
+//         consensus[0].push_back((uint8_t) idx);
+//     }
 
-	if (debug_flag) {cerr << "hom! " << endl; cerr << "h1&h2 anno: " << endl;}
-	outputConsensus(consensus[0], opt);		
+// 	if (debug_flag) {cerr << "hom! " << endl; cerr << "h1&h2 anno: " << endl;}
+// 	outputConsensus(consensus[0], opt);		
 
-	return;
-}
+// 	return;
+// }
 
 void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
 {

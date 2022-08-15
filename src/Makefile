@@ -1,5 +1,5 @@
 PROG=vamos
-LIBS=-lhts -labpoa -lz -lpthread -ledit
+LIBS=-lhts -labpoa -lz -lpthread 
 PROF=/home1/jingwenr/.conda/envs/trf/lib
 DEBUG?="-g "
 OPT?=""

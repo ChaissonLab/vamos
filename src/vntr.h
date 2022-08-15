@@ -150,7 +150,7 @@ public:
 
 	void concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt);
 
-	void concensusMotifAnnoForOneVNTRBySeqan (const OPTION &opt);
+	// void concensusMotifAnnoForOneVNTRBySeqan (const OPTION &opt);
 
 	int hClust (vector<int> &gp1, vector<int> &gp2, double dists []);
 

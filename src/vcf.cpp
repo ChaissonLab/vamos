@@ -7,6 +7,7 @@
 #include <ostream>
 #include "assert.h"
 #include "vcf.h"
+#include "htslib/sam.h"
 
 extern int naive_flag;
 extern int debug_flag;
