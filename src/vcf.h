@@ -12,7 +12,7 @@
 
 using namespace std;
 
-class VcfWriter
+class OutWriter
 {
 public:
 	char * sampleName;
@@ -22,14 +22,14 @@ public:
 	int32_t ncontigs;
 	bool set;
 
-	VcfWriter () {
+	OutWriter () {
 		sampleName = NULL;
 		version = NULL;
 		set = 0;
 		ncontigs = 0;
 	};
 
-	~VcfWriter () 
+	~OutWriter () 
 	{
 		// free(version);
 		// free(sampleName);
@@ -37,9 +37,13 @@ public:
 
 	void init (char * input_bam_file, char * Version, char * SampleName);
 
-    void writeHeader(ofstream &out);
+    void writeHeader_locuswise(ofstream &out);
 
-    void writeBody(vector<VNTR *> &vntrs, ofstream &out, int tid, int nproc);
+    void writeBody_locuswise(vector<VNTR *> &vntrs, ofstream &out, int tid, int nproc);
+
+    void writeHeader_readwise(ofstream &out);
+
+    void writeBody_readwise(vector<VNTR *> &vntrs, ofstream &out, int tid, int nproc);
 
 	void writeNullAnno(vector<VNTR *> &vntrs, ofstream &out_nullAnno, int tid, int nproc);
 };

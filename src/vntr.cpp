@@ -270,7 +270,7 @@ int VNTR::cleanNoiseAnno(const OPTION &opt)
 
         clean_annos.resize(ncleanreads);
         for (i = 0; i < nreads; ++i)
-            clean_annos[i] = annos[i];  
+            clean_annos[i] = annos[i];
 
         clean_edist.resize(ncleanreads);
         for (i = 0; i < nreads; ++i)
@@ -349,7 +349,7 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
     abpoa_para_t *abpt = abpoa_init_para();
 
     // alignment parameters
-    abpt->align_mode = 0; // 0:global 1:local, 2:extension
+    abpt->align_mode = 1; // 0:global 1:local, 2:extension
     abpt->match = 1;      // match score
     abpt->mismatch = 1;   // mismatch penalty
     abpt->gap_mode = ABPOA_AFFINE_GAP; // gap penalty mode
@@ -713,7 +713,7 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = clean_annos[i].size();
-        bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * seq_lens[i]);
+        bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * (seq_lens[i]));
         for (j = 0; j < seq_lens[i]; ++j) 
         {
             assert(clean_annos[i][j] < motifs_size); 
@@ -726,7 +726,7 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     abpoa_para_t *abpt = abpoa_init_para();
 
     // alignment parameters
-    abpt->align_mode = 0;  // 0:global 1:local, 2:extension
+    abpt->align_mode = 1;  // 0:global 1:local, 2:extension
     abpt->match = 1;       // match score
     abpt->mismatch = 1;    // mismatch penalty
     abpt->gap_mode = ABPOA_AFFINE_GAP; // gap penalty mode
@@ -749,14 +749,14 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     uint8_t **msa_seq; int msa_l = 0;
 
     // perform abpoa-msa
-    if (n_seqs == 2 ) {
-      skip=true;
+    if (n_seqs == 2) {
+      skip = true;
       return;
     }
-    skip=true;
-    for (auto i =0; i <n_seqs; i++ ) {
+    skip = true;
+    for (auto i = 0; i < n_seqs; i++) {
       if (seq_lens[i] != 2) {
-	skip=false;
+        skip = false;
       }
     }
     if (skip) {
@@ -827,12 +827,24 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
 
 void VNTR::commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_anno)
 {
-	if (h1)
-		for (auto &it : consensus[0]) { motif_anno += "MOTIF_" + to_string(it) + ",";}
-	else if (het)
-		for (auto &it : consensus[1]) { motif_anno += "MOTIF_" + to_string(it) + ",";}	
-	else 
-		for (auto &it : consensus[0]) { motif_anno += "MOTIF_" + to_string(it) + ",";}
+	if (h1) {
+        for (auto &it : consensus[0]) { 
+            motif_anno += to_string(it) + ",";
+            len_h1 += 1;
+        }        
+    }
+	else if (het) {
+        for (auto &it : consensus[1]) { 
+            motif_anno += to_string(it) + ",";
+            len_h2 += 1;
+        }       
+    }
+	else {
+        for (auto &it : consensus[0]) { 
+            motif_anno += to_string(it) + ",";
+            len_h2 += 1;
+        }        
+    }
 
 	if (!motif_anno.empty()) motif_anno.pop_back();
 	return;

@@ -111,6 +111,9 @@ public:
 	bool skip;
 	bool nullAnno;
 	vector<bool> nullAnnos;
+
+	int len_h1;
+	int len_h2;
    
 	VNTR () { het = false; nreads = 0; skip = false; nullAnno = false;};
 
@@ -123,6 +126,8 @@ public:
 		nreads = 0;
 		skip = false;
 		nullAnno = false;
+		len_h1 = 0;
+		len_h2 =0;
 	};
 
 	~VNTR () {};
