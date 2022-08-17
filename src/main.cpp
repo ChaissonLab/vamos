@@ -22,7 +22,7 @@ int hclust_flag = false;
 // int seqan_flag = false;
 int output_read_anno_flag = false;
 int readwise_anno_flag = false;
-int output_read_flag = false;
+// int output_read_flag = false;
 int liftover_flag = false;
 int single_seq_flag = false;
 int locuswise_flag = false;
@@ -115,29 +115,32 @@ void *ProcVNTRs (void *procInfoValue)
 void printUsage(IO &io) 
 {
 
-	printf("Usage: vamos [subcommand] [options] [-b in.bam] [-v vntrs_region_motifs.bed] [-o output.vcf/bed] [-s sample_name] [-t threads]\n");
+	printf("Usage: vamos [subcommand] [options] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf/bed] [-s sample_name] [-t threads] \n");
 	printf("Version: %s\n", io.version);
 	printf("subcommand:\n");
 	// printf("vamos --liftover   [-i in.bam] [-v vntrs.bed] [-o output.fa] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
 	printf("vamos --readwise   [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.bed] [-s sample_name] [-t threads] \n");	
 	printf("vamos --locuswise  [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
-	printf("vamos --single_seq [-i in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
-	printf("   Input:\n");
+	printf("vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
+	printf("   Input: \n");
 	printf("       -b   FILE         input indexed bam file. \n");	
-	printf("       -r   FILE         file containing region coordinate and motifs of each VNTR locus. The file format: `chrom\tstart\tend\tmotifs` and column `motifs` are a comma-separated (no spaces) list of motifs for this VNTR. \n");
-	printf("       -o   FILE         output bed/vcf file. \n");
+	printf("       -r   FILE         file containing region coordinate and motifs of each VNTR locus. \n");
+	printf("                         The file format: columns `chrom,start,end,motifs` are tab-delimited. \n");
+	printf("                         Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR. \n");
 	printf("       -s   CHAR         sample name. \n");
-	printf("   Dynamic Programming:\n");
+	printf("   Output: \n");
+	printf("       -o   FILE         output bed/vcf file. \n");
+	printf("   Dynamic Programming: \n");
 	printf("       -d   DOUBLE       penalty of indel in dynamic programming (double) DEFAULT: 1.0. \n");
 	printf("       -c   DOUBLE       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. \n");
 	printf("       -a   DOUBLE       Global accuracy of the reads. DEFAULT: 0.98. \n");	
 	printf("       --naive           specify the naive version of code to do the annotation, DEFAULT: faster implementation. \n");
-	printf("   Aggregate Annotation:\n");
+	printf("   Aggregate Annotation: \n");
 	printf("       -f   DOUBLE       filter noisy read annotations, DEFAULT: 0.0 (no filter). \n");
 	printf("       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom. \n");
 	// printf("       --seqan           use seqan lib to do MSA (haploid only), DEFAULT: abPoa\n");
-	printf("       --readanno        output read annotation in VCF and output vntr sequences to stdout. \n");
-	printf("   General Setting:\n");
+	// printf("       --readanno        output read annotation in VCF and output vntr sequences to stdout. \n");
+	printf("   Others: \n");
 	printf("       -t   INT          number of threads, DEFAULT: 1. \n");
 	printf("       --debug           print out debug information. \n");
 	printf("       -h                print out help message. \n");
@@ -161,7 +164,7 @@ int main (int argc, char **argv)
 		{"locuswise",     no_argument,             &locuswise_flag,                 1},
 		{"single_seq",    no_argument,             &single_seq_flag,              1},
 		{"readwise",      no_argument,             &readwise_anno_flag,            1},
-		{"output_read",   no_argument,             &output_read_flag,              1},		
+		// {"output_read",   no_argument,             &output_read_flag,              1},		
 		{"liftover",      no_argument,             &liftover_flag,                 1},
 
 		/* These options don’t set a flag. We distinguish them by their indices. */
@@ -282,12 +285,12 @@ int main (int argc, char **argv)
 	bool missingArg = false;
 	if (io.input_bam == NULL) 
 	{
-		fprintf(stderr, "ERROR: -b must be specified.\n");
+		fprintf(stderr, "ERROR: -b must be specified!\n");
 		missingArg = true;
 	}
 	if (!liftover_flag and io.region_and_motifs == NULL)
 	{
-		fprintf(stderr, "ERROR:-r must be specified.\n");
+		fprintf(stderr, "ERROR:-r must be specified!\n");
 		missingArg = true;
 	}
 	// if (io.motif_csv == NULL and (conseq_anno_flag or locuswise_flag))

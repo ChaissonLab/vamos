@@ -5,13 +5,20 @@
 ## Getting Started
 
 To install vamos, g++ (>= 8.3.0), htslib, abpoa, edlib and alglib are required.
-htslib and abpoa can be installed by bioconda.
+htslib and abpoa can be installed through bioconda.
 Static libraries libalglib.a and libedlib.a are distributed along with vamos.
 
-Download the [latest release] (https://github.com/ChaissonLab/vamos/XXX)
+Install required libraries through conda
 ```
-wget https://github.com/ChaissonLab/vamos.git/releases/download/XXXX
-tar -zxvf xxxx.tar.gz && cd xxxx
+conda create --name vamos python=3.10
+conda activate vamos
+conda install -c bioconda --file requirements.txt
+```
+
+Download the [latest release](https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.0.0.tar.gz)
+```
+wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.0.0.tar.gz
+tar -zxvf vamos-v1.0.0.tar.gz && cd vamos-v1.0.0
 ```
 
 Or download the latest code from github
@@ -19,24 +26,18 @@ Or download the latest code from github
 git clone https://github.com/ChaissonLab/vamos.git
 ```
 
-Install required libraries
-```
-conda create --name vamos python=3.10
-conda activate vamos
-conda install -c bioconda --file requirements.txt
-```
-
 Make from source and run with test data:
 ```
-cd vamos/src/ && make
+cd vamos*/src/ && make
 vamos --readwise -b ../example/toy.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/readwise.bed -t 16
 vamos --locuswise -b ../example/toy.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/locuswise.bed -t 16
-vamos --single_seq -b ../example/one_read.fasta -r ../example/one_region_motif.bed -s NA24385_CCS_h1 -o ../example/single_seq.vcf 
+vamos --single_seq -b ../example/one_read.fasta -r ../example/one_region_motif.bed -s NA24385_CCS_h1 -o ../example/single_seq.vcf (ONLY SUPPORT SINGLE THREAD!)
 ```
 
 ## Table of Contents
 
 - [Introduction](#introduction)
+  - [Efficient motif set](#emotif)
 - [Installation](#install)
   - [Building vamos from source files](#build)
   - [Pre-built binary executable file for Linux/Unix](#binary)
@@ -52,12 +53,17 @@ vamos --single_seq -b ../example/one_read.fasta -r ../example/one_region_motif.b
 
 ## <a name="introduction"></a>Introduction
 Vamos is a tool to perform run-length encoding of VNTR sequences using a set of selected motifs from all motifs observed at that locus.
-Vamos gauranttes that the encoded sequence (annotation) is winthin a bounded edit distance of the original sequence. 
-For example, a VNTR sequence `ACGGTACTGTACGT` may be encoded to a more compact representation `ACGGT, AC\textcolor{red}{G}GT, ACGT` using motif set `[ACGGT, ACGT]`
+Vamos guarantees that the encoding sequence is winthin a bounded edit distance of the original sequence. 
+For example, a VNTR sequence ACGGTACTGTACGT may be encoded to a more compact representation - ACGGT|AC\textcolor{red}{G}GT|ACGT using motif set [ACGGT, ACGT].
 
-Vamos can generate annotation for each read at a VNTR locus, given a set of motifs at that locus. (`--readwise` mode)
+Vamos can generate annotation for each read, given a set of motifs for each VNTR locus. (`--readwise` mode)
 Vamos can generate annotation for each VNTR locus by aggragating annotations of reads. (`--locuswise` mode)
-Vamos can generate annotation for subsequence of a read lifted from a VNTR locus. (`--single_seq` mode)
+Vamos can generate annotation for subsequence of a read lifted from a particular VNTR locus. (`--single_seq` mode)
+
+### <a name="emotif"></a>Efficient motif set
+We generate a set of efficient VNTR motifs from 32 haplotype-resolved LRS genomes sequenced for population references and diversity panels.
+XXXX (some statistics)
+XXXX (path)
 
 ## <a name="install"></a>Installation
 ### <a name="build"></a>Building vamos from source files
@@ -71,11 +77,11 @@ conda activate vamos
 conda install -c bioconda --file requirements.txt
 ```
 
-Download the [latest release] (https://github.com/ChaissonLab/vamos/XXX)
+Download the [latest release](https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.0.0.tar.gz)
 ```
 wget https://github.com/xxxx
-tar -zxvf vamos-xxx.tar.gz
-cd vamos/src; make
+tar -zxvf vamos-v1.0.0.tar.gz
+cd vamos-v1.0.0/src; make
 
 ```
 Or, you can use `git clone` command to download the source code.

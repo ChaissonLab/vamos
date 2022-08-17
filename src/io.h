@@ -30,7 +30,7 @@ public:
 	IO () 
 	{
 		version = (char *) malloc(7);
-		strcpy(version, "V1.0.0");
+		strcpy(version, "v1.0.0");
 		region_and_motifs = NULL;
 		input_bam = NULL;
 		vntr_bed = NULL;

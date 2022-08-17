@@ -14,7 +14,7 @@ extern int debug_flag;
 extern int hclust_flag;
 extern int seqan_flag;
 extern int output_read_anno_flag;
-extern int output_read_flag;
+extern int readwise_anno_flag;
 extern int single_seq_flag;
 
 void OutWriter::init (char * input_bam_file, char * Version, char * SampleName)
@@ -84,7 +84,7 @@ void writeSingleBody_locuswise(VNTR * it, ofstream &out)
     it->commaSeparatedMotifAnnoForConsensus(0, motif_anno_h2);
 
     vector<string> readAnnos(it->ncleanreads);
-    if (output_read_anno_flag) 
+    if (readwise_anno_flag) 
     {
 		for (int i = 0; i < it->ncleanreads; ++i)
 		{
@@ -185,7 +185,7 @@ void writeSingleBody_readwise(VNTR * it, ofstream &out)
 			if (j + 1 < it->clean_annos[i].size()) 
 				out << ",";
 		}
-		if (output_read_flag) {
+		if (readwise_anno_flag) {
 			string readSeq(it->reads[i]->seq, it->reads[i]->len);
 			out << ":" << readSeq;
 		}
