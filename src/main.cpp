@@ -123,13 +123,13 @@ void printUsage(IO &io)
 	printf("vamos --locuswise  [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
 	printf("vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
 	printf("   Input: \n");
-	printf("       -b   FILE         input indexed bam file. \n");	
+	printf("       -b   FILE         input indexed bam file (when using --readwise and --locuswise) or fasta file (when using --single_seq). \n");	
 	printf("       -r   FILE         file containing region coordinate and motifs of each VNTR locus. \n");
 	printf("                         The file format: columns `chrom,start,end,motifs` are tab-delimited. \n");
 	printf("                         Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR. \n");
 	printf("       -s   CHAR         sample name. \n");
 	printf("   Output: \n");
-	printf("       -o   FILE         output bed/vcf file. \n");
+	printf("       -o   FILE         output bed (when using --readwise) or vcf (when using --locuswise and --single_seq) file. \n");
 	printf("   Dynamic Programming: \n");
 	printf("       -d   DOUBLE       penalty of indel in dynamic programming (double) DEFAULT: 1.0. \n");
 	printf("       -c   DOUBLE       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. \n");

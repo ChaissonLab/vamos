@@ -54,7 +54,7 @@ vamos --single_seq -b ../example/one_read.fasta -r ../example/one_region_motif.b
 ## <a name="introduction"></a>Introduction
 Vamos is a tool to perform run-length encoding of VNTR sequences using a set of selected motifs from all motifs observed at that locus.
 Vamos guarantees that the encoding sequence is winthin a bounded edit distance of the original sequence. 
-For example, a VNTR sequence ACGGTACTGTACGT may be encoded to a more compact representation - ACGGT|AC\textcolor{red}{G}GT|ACGT using motif set [ACGGT, ACGT].
+For example, a VNTR sequence ACGGTACTGTACGT may be encoded to a more compact representation - ACGGT|AC**G**GT|ACGT using motif set [ACGGT, ACGT].
 
 Vamos can generate annotation for each read, given a set of motifs for each VNTR locus. (`--readwise` mode)
 Vamos can generate annotation for each VNTR locus by aggragating annotations of reads. (`--locuswise` mode)
@@ -62,7 +62,7 @@ Vamos can generate annotation for subsequence of a read lifted from a particular
 
 ### <a name="emotif"></a>Efficient motif set
 We generate a set of efficient VNTR motifs from 32 haplotype-resolved LRS genomes sequenced for population references and diversity panels.
-XXXX (some statistics)
+XXXX (some statistics about # of VNTRs)
 XXXX (path)
 
 ## <a name="install"></a>Installation
@@ -79,10 +79,9 @@ conda install -c bioconda --file requirements.txt
 
 Download the [latest release](https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.0.0.tar.gz)
 ```
-wget https://github.com/xxxx
+wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.0.0.tar.gz
 tar -zxvf vamos-v1.0.0.tar.gz
 cd vamos-v1.0.0/src; make
-
 ```
 Or, you can use `git clone` command to download the source code.
 This gives you the latest version of vamos, which might be still under development.
@@ -114,7 +113,34 @@ vamos --single_seq -b ../example/one_read.fasta -r ../example/one_region_motif.b
 ```
 
 ## <a name="cmd"></a>Commands and options
-XXXX(TODO) put up the help page
+```
+Usage: vamos [subcommand] [options] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf/bed] [-s sample_name] [-t threads] 
+Version: v1.0.0
+subcommand:
+vamos --readwise   [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.bed] [-s sample_name] [-t threads] 
+vamos --locuswise  [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] 
+vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) 
+   Input: 
+       -b   FILE         input indexed bam file. 
+       -r   FILE         file containing region coordinate and motifs of each VNTR locus. 
+                         The file format: columns `chrom,start,end,motifs` are tab-delimited. 
+                         Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR. 
+       -s   CHAR         sample name. 
+   Output: 
+       -o   FILE         output bed/vcf file. 
+   Dynamic Programming: 
+       -d   DOUBLE       penalty of indel in dynamic programming (double) DEFAULT: 1.0. 
+       -c   DOUBLE       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. 
+       -a   DOUBLE       Global accuracy of the reads. DEFAULT: 0.98. 
+       --naive           specify the naive version of code to do the annotation, DEFAULT: faster implementation. 
+   Aggregate Annotation: 
+       -f   DOUBLE       filter noisy read annotations, DEFAULT: 0.0 (no filter). 
+       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom. 
+   Others: 
+       -t   INT          number of threads, DEFAULT: 1. 
+       --debug           print out debug information. 
+       -h                print out help message. 
+```
 
 ## <a name="input"></a>Input
 
