@@ -43,7 +43,7 @@ vamos --single_seq -b ../example/one_read.fasta -r ../example/one_region_motif.b
 - [General usage](#usage)
   - [To generate the annotation for each read](#readwise)
   - [To generate the consensus annotation for each VNTR locus](#locuswise)
-  - [To generate annotation for one single read] (#single_seq)
+  - [To generate annotation for one single read](#single_seq)
 - [Commands and options](#cmd)
 - [Input](#input)
 - [Output](#output)
