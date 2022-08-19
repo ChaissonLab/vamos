@@ -62,8 +62,9 @@ Vamos can generate annotation for each VNTR locus by aggragating annotations of 
 Vamos can generate annotation for subsequence of a read lifted from a particular VNTR locus. (`--single_seq` mode)
 
 ### <a name="emotif"></a>Efficient motif set
-We define VNTR loci and motifs using a collection of 32 haplotype-resolved LRS genomes constructed by Human Genome Structural Variation Consortium.
-For each assembly, VNTR sequences are lifted-over and decomposed into motifs by Tandem Repeats Finder (TRF). Post-filtering step leaves 467104 well-resolved VNTR loci. 
+We defined VNTR loci and motifs using a collection of 32 haplotype-resolved LRS genomes constructed by Human Genome Structural Variation Consortium.
+XXXX(TOADD) loci of simple repeating sequences on the GRCh38 assembly were obtained from the table browser tool of the UCSC Genome Browser.
+For each assembly, VNTR sequences were lifted-over and decomposed into motifs by Tandem Repeats Finder (TRF). Post-filtering step leaves 467104 well-resolved VNTR loci. 
 We propose efficient motif set as a smallest set of motifs, such that the string decompositions of the assembly alleles are bounded by a given edit distance. 
 [snakefile/configs/vntr_region_motifs.e.bed](https://github.com/ChaissonLab/vamos/blob/master/snakefile/configs/vntr_region_motifs.e.bed) provides efficent motifs for 467104 VNTR loci.
 [snakefile/configs/vntr_region_motifs.o.bed](https://github.com/ChaissonLab/vamos/blob/master/snakefile/configs/vntr_region_motifs.o.bed) provides original motifs for 467104 VNTR loci.
