@@ -741,7 +741,7 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
     abpt->progressive_poa = 1;
     abpt->out_gfa = 0;
-    abpt->ret_cigar = 0 // turn off the cigar string. Otherwise, cg_backtrack step crashes! 
+    abpt->ret_cigar = 0; // turn off the cigar string. Otherwise, cg_backtrack step crashes! 
     abpoa_post_set_para(abpt);
 
     // variables to store result
