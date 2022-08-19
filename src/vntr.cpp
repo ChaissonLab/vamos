@@ -735,13 +735,13 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     abpt->gap_open2 = 1;   // gap open penalty #2
     abpt->gap_ext2 = 1;    // gap extension penalty #2
                            // gap_penalty = min{gap_open1 + gap_len * gap_ext1, gap_open2 + gap_len * gap_ext2}
-
     abpt->is_diploid = 0;
     // abpt->min_freq = 0.8; 
     abpt->out_msa = 0; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
     abpt->progressive_poa = 1;
     abpt->out_gfa = 0;
+    abpt->ret_cigar = 0 // turn off the cigar string. Otherwise, cg_backtrack step crashes! 
     abpoa_post_set_para(abpt);
 
     // variables to store result
@@ -765,7 +765,6 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
 
     abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
 
-    
     assert(cons_n > 0); // cons_n == 0 means no consensus sequence exists
     if (cons_n > 1) cerr << "het" << endl;
 

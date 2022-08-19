@@ -153,7 +153,8 @@ void OutWriter::writeHeader_readwise(ofstream &out)
 {
 	out << "##fileformat=BED\n";
 	out << "##source=vamos_" << version << '\n';
-	out	<< "##INFO=<Read_name:Haplotype:Annotation_length:Annotation(tab-separated, no spaces):Read_lifted_seq;,Description=\"read annotation information per read\">" << "\n";
+	out << "##MOTIFS=<Description=\"comma-separated motif list.\">" << "\n";
+	out	<< "##INFO=<Read_name:Haplotype(0 - not determined, 1/2 - haplotype):Annotation_length:Annotation(comma-separated, no spaces):Read_lifted_seq;,Description=\"read annotation information per read\">" << "\n";
     out << "#CHROM\tSTART\tEND\tMOTIFS\tINFO" << "\n";
     cerr << "finish writing the header" << endl;
     return;
