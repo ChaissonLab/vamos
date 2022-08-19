@@ -138,7 +138,7 @@ void printUsage(IO &io)
 	printf("       -f   DOUBLE       filter noisy read annotations, DEFAULT: 0.0 (no filter)\n");
 	printf("       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom\n");
 	printf("       --seqan           use seqan lib to do MSA (haploid only), DEFAULT: abPoa\n");
-	printf("       --readanno        output read annotation in VCF and output vntr sequences to stdin\n");
+	printf("       --readanno        output read annotation in VCF and output vntr sequences to stdout\n");
 	printf("   General Setting:\n");
 	printf("       -t   INT          number of threads, DEFAULT: 1\n");
 	printf("       --debug           print out debug information\n");
