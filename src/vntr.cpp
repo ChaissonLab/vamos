@@ -12,13 +12,13 @@
 #include "dataanalysis.h"
 #include "abpoa.h"
 #include "option.h"
-#include <seqan/align.h>
-#include <seqan/graph_msa.h>
+// #include <seqan/align.h>
+// #include <seqan/graph_msa.h>
 
 extern int naive_flag;
 extern int debug_flag;
 extern int hclust_flag;
-extern int seqan_flag;
+// extern int seqan_flag;
 extern int anno_flag;
 extern int subseq_flag;
 
@@ -270,7 +270,7 @@ int VNTR::cleanNoiseAnno(const OPTION &opt)
 
         clean_annos.resize(ncleanreads);
         for (i = 0; i < nreads; ++i)
-            clean_annos[i] = annos[i];  
+            clean_annos[i] = annos[i];
 
         clean_edist.resize(ncleanreads);
         for (i = 0; i < nreads; ++i)
@@ -349,7 +349,7 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
     abpoa_para_t *abpt = abpoa_init_para();
 
     // alignment parameters
-    abpt->align_mode = 0; // 0:global 1:local, 2:extension
+    abpt->align_mode = 1; // 0:global 1:local, 2:extension
     abpt->match = 1;      // match score
     abpt->mismatch = 1;   // mismatch penalty
     abpt->gap_mode = ABPOA_AFFINE_GAP; // gap penalty mode
@@ -622,65 +622,68 @@ void VNTR::concensusMotifAnnoForOneVNTR (const OPTION &opt)
 	return;
 }
 
-void VNTR::concensusMotifAnnoForOneVNTRBySeqan (const OPTION &opt)
-{
-	if (skip) return;
-    int n_seqs = clean_annos.size();
-    int motifs_size = motifs.size();
-    if (n_seqs == 0) return;
+/*
+Comment out the code of using seqan library to get the concensus sequence
+*/
+// void VNTR::concensusMotifAnnoForOneVNTRBySeqan (const OPTION &opt)
+// {
+// 	if (skip) return;
+//     int n_seqs = clean_annos.size();
+//     int motifs_size = motifs.size();
+//     if (n_seqs == 0) return;
 
-	if (n_seqs == 1)
-	{
-		consensus.resize(1);
-		consensus[0] = clean_annos[0];
-		return;
-	}
+// 	if (n_seqs == 1)
+// 	{
+// 		consensus.resize(1);
+// 		consensus[0] = clean_annos[0];
+// 		return;
+// 	}
 
-    // change from clean_edist to dists
-    int i, j;
-    double dists [ncleanreads * ncleanreads];
-    for (i = 0; i < ncleanreads; ++i)
-    {
-        for (j = 0; j < ncleanreads; ++j)
-           dists[i * ncleanreads + j] = clean_edist[i][j];
-    }        
+//     // change from clean_edist to dists
+//     int i, j;
+//     double dists [ncleanreads * ncleanreads];
+//     for (i = 0; i < ncleanreads; ++i)
+//     {
+//         for (j = 0; j < ncleanreads; ++j)
+//            dists[i * ncleanreads + j] = clean_edist[i][j];
+//     }        
 
-    // collect sequence length and sequence
-    seqan::StringSet<seqan::String<char>> annoSet;
-    for (int r = 0; r < n_seqs; ++r)
-        seqan::appendValue(annoSet, clean_annoStrs[r]);
+//     // collect sequence length and sequence
+//     seqan::StringSet<seqan::String<char>> annoSet;
+//     for (int r = 0; r < n_seqs; ++r)
+//         seqan::appendValue(annoSet, clean_annoStrs[r]);
 
-    seqan::Score<int> scoreScheme(1, -1, -1, -1); 
-    seqan::Align <seqan::String <char> > align(annoSet);
+//     seqan::Score<int> scoreScheme(1, -1, -1, -1); 
+//     seqan::Align <seqan::String <char> > align(annoSet);
 
-    int score = seqan::globalAlignment(align, scoreScheme);  // Compute a global alingment using the Align object.
+//     int score = seqan::globalAlignment(align, scoreScheme);  // Compute a global alingment using the Align object.
 
-    int r, num, decode_num; uint32_t l;
-    int idx;
-    int alnSz = seqan::length(seqan::row(align, 0));
-    seqan::String<seqan::ProfileChar<char>> profile; 
-    seqan::resize(profile, alnSz); 
-    for (int r = 0; r < n_seqs; ++r) 
-    {
-        for (i = 0; i < alnSz; ++i) {
-            num = seqan::getValue(seqan::row(align, r), i);
-            assert(num >= 0);
-            // decode_num = decode(num);
-            profile[i].count[num] += 1;
-        }
-    }
-    consensus.resize(1);
-    for (l = 0; l < alnSz; ++l)
-    {
-        idx = seqan::getMaxIndex(profile[l]);
-        consensus[0].push_back((uint8_t) idx);
-    }
+//     int r, num, decode_num; uint32_t l;
+//     int idx;
+//     int alnSz = seqan::length(seqan::row(align, 0));
+//     seqan::String<seqan::ProfileChar<char>> profile; 
+//     seqan::resize(profile, alnSz); 
+//     for (int r = 0; r < n_seqs; ++r) 
+//     {
+//         for (i = 0; i < alnSz; ++i) {
+//             num = seqan::getValue(seqan::row(align, r), i);
+//             assert(num >= 0);
+//             // decode_num = decode(num);
+//             profile[i].count[num] += 1;
+//         }
+//     }
+//     consensus.resize(1);
+//     for (l = 0; l < alnSz; ++l)
+//     {
+//         idx = seqan::getMaxIndex(profile[l]);
+//         consensus[0].push_back((uint8_t) idx);
+//     }
 
-	if (debug_flag) {cerr << "hom! " << endl; cerr << "h1&h2 anno: " << endl;}
-	outputConsensus(consensus[0], opt);		
+// 	if (debug_flag) {cerr << "hom! " << endl; cerr << "h1&h2 anno: " << endl;}
+// 	outputConsensus(consensus[0], opt);		
 
-	return;
-}
+// 	return;
+// }
 
 void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
 {
@@ -710,7 +713,7 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = clean_annos[i].size();
-        bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * seq_lens[i]);
+        bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * (seq_lens[i]));
         for (j = 0; j < seq_lens[i]; ++j) 
         {
             assert(clean_annos[i][j] < motifs_size); 
@@ -723,7 +726,7 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     abpoa_para_t *abpt = abpoa_init_para();
 
     // alignment parameters
-    abpt->align_mode = 0;  // 0:global 1:local, 2:extension
+    abpt->align_mode = 1;  // 0:global 1:local, 2:extension
     abpt->match = 1;       // match score
     abpt->mismatch = 1;    // mismatch penalty
     abpt->gap_mode = ABPOA_AFFINE_GAP; // gap penalty mode
@@ -746,14 +749,14 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     uint8_t **msa_seq; int msa_l = 0;
 
     // perform abpoa-msa
-    if (n_seqs == 2 ) {
-      skip=true;
+    if (n_seqs == 2) {
+      skip = true;
       return;
     }
-    skip=true;
-    for (auto i =0; i <n_seqs; i++ ) {
+    skip = true;
+    for (auto i = 0; i < n_seqs; i++) {
       if (seq_lens[i] != 2) {
-	skip=false;
+        skip = false;
       }
     }
     if (skip) {
@@ -824,12 +827,24 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
 
 void VNTR::commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_anno)
 {
-	if (h1)
-		for (auto &it : consensus[0]) { motif_anno += "MOTIF_" + to_string(it) + ",";}
-	else if (het)
-		for (auto &it : consensus[1]) { motif_anno += "MOTIF_" + to_string(it) + ",";}	
-	else 
-		for (auto &it : consensus[0]) { motif_anno += "MOTIF_" + to_string(it) + ",";}
+	if (h1) {
+        for (auto &it : consensus[0]) { 
+            motif_anno += to_string(it) + ",";
+            len_h1 += 1;
+        }        
+    }
+	else if (het) {
+        for (auto &it : consensus[1]) { 
+            motif_anno += to_string(it) + ",";
+            len_h2 += 1;
+        }       
+    }
+	else {
+        for (auto &it : consensus[0]) { 
+            motif_anno += to_string(it) + ",";
+            len_h2 += 1;
+        }        
+    }
 
 	if (!motif_anno.empty()) motif_anno.pop_back();
 	return;

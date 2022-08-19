@@ -8,13 +8,14 @@
 #include <algorithm>
 #include <tuple> 
 #include <vector>
+#include <regex>
 #include "io.h"
 #include "read.h"
 #include "vntr.h"
 #include "vcf.h"
 #include "abpoa.h"
-#include <seqan/align.h>
-#include <seqan/graph_msa.h>
+// #include <seqan/align.h>
+// #include <seqan/graph_msa.h>
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 #include <zlib.h>  
@@ -26,7 +27,7 @@ extern int hclust_flag;
 extern int seqan_flag;
 extern int liftover_flag;
 extern int conseq_anno_flag;
-extern int raw_anno_flag;
+extern int locuswise_flag;
 //0123456789ABCDEF
 //=ACMGRSVTWYHKDBN  aka seq_nt16_str[]
 //=TGKCYSBAWRDMHVN  comp1ement of seq_nt16_str
@@ -106,15 +107,17 @@ int IO::readRegionAndMotifs (vector<VNTR*> &vntrs)
     {
         stringstream ss(line);
         string tmp;
-	string chrom;
-	int start;
-	int end;
-	ss >> chrom >> start >> end;
+        string tmp_r;
+        string chrom;
+        int start;
+        int end;
+        ss >> chrom >> start >> end;
         VNTR * vntr = new VNTR(chrom, start, end, end-start);
-	vntrs.push_back(vntr);
+        vntrs.push_back(vntr);
         while(getline(ss, tmp, ',')) 
         {
-            vntrs[numOfLine]->motifs.push_back(MOTIF(tmp));
+            tmp_r = regex_replace(tmp, std::regex("^\\t+"), std::string(""));
+            vntrs[numOfLine]->motifs.push_back(MOTIF(tmp_r));
             // cerr << vntrs[numOfLine]->motifs.back().seq << endl;
         }
         numOfLine += 1; // 0-indexed
@@ -331,8 +334,6 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                     read->seq[i] = seq_nt16_str[base]; //gets nucleotide id and converts them into IUPAC id.
                 } 
                 vntr->reads.push_back(read); 
-                // if (!consensus_seq_flag) vntr->reads.push_back(read); 
-                // else initial_reads.push_back(read); 
 
                 total_len += read->len;
 
@@ -398,16 +399,30 @@ void IO::readSeqFromFasta(vector<VNTR *> &vntrs)
     return;
 }
 
-int IO::writeVCFHeader(ofstream &out)
+int IO::writeVCFHeader_locuswise(ofstream &out)
 {
-    vcfWriter.init(input_bam, version, sampleName);
-    vcfWriter.writeHeader(out);
+    outWriter.init(input_bam, version, sampleName);
+    outWriter.writeHeader_locuswise(out);
     return 0;
 }
 
-int IO::writeVCFBody(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc)
+int IO::writeVCFBody_locuswise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc)
 {
-    vcfWriter.writeBody(vntrs, out, tid, nproc);
+    outWriter.writeBody_locuswise(vntrs, out, tid, nproc);
+    return 0;
+}
+
+
+int IO::writeBEDHeader_readwise(ofstream &out)
+{
+    outWriter.init(input_bam, version, sampleName);
+    outWriter.writeHeader_readwise(out);
+    return 0;
+}
+
+int IO::writeBEDBody_readwise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc)
+{
+    outWriter.writeBody_readwise(vntrs, out, tid, nproc);
     return 0;
 }
 

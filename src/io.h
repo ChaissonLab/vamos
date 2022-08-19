@@ -25,12 +25,12 @@ public:
 	char * out_vcf;
 	char * sampleName;
 	char * version;
-	VcfWriter vcfWriter;
+	OutWriter outWriter;
 
 	IO () 
 	{
 		version = (char *) malloc(7);
-		strcpy(version, "V1.0.0");
+		strcpy(version, "v1.0.0");
 		region_and_motifs = NULL;
 		input_bam = NULL;
 		vntr_bed = NULL;
@@ -66,9 +66,13 @@ public:
 	
 	// int outputVCF (vector<VNTR *> &vntrs);
 
-	int writeVCFHeader(ofstream& out);
+	int writeVCFHeader_locuswise(ofstream& out);
 
-	int writeVCFBody(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc);
+	int writeVCFBody_locuswise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc);
+
+	int writeBEDHeader_readwise(ofstream& out);
+
+	int writeBEDBody_readwise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc);
 
 	void writeFa(ofstream& out, vector<VNTR *> &vntrs);
 
