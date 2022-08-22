@@ -364,6 +364,7 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
     abpt->out_msa = 1; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
     abpt->progressive_poa = 1;
+    abpt->out_pog = 0;
 
     // variables to store result
     uint8_t **cons_seq; int **cons_cov, *cons_l, cons_n = 0;
@@ -742,6 +743,7 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     abpt->progressive_poa = 1;
     abpt->out_gfa = 0;
     abpt->ret_cigar = 0; // turn off the cigar string. Otherwise, cg_backtrack step crashes! 
+    abpt->out_pog = 0;
     abpoa_post_set_para(abpt);
 
     // variables to store result
@@ -800,7 +802,7 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
             free(msa_seq);
         }
     }
-
+    
     abpoa_free(ab); 
     abpoa_free_para(abpt); 
 
