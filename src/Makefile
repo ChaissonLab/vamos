@@ -9,7 +9,7 @@ asan?=""
 tsan?=""
 
 ifeq ("$(DEBUG)", "TRUE")
-CFLAGS=-g -O0 #-fsanitize=address #-Wall -Wextra
+CFLAGS=-g  #-fsanitize=address #-Wall -Wextra
 else
 CFLAGS=-O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
 endif
@@ -30,7 +30,7 @@ endif
 
 all:$(PROG)
 
-vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o
+vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L ../static_lib/ -lalglib -ledlib -lrt 
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
@@ -41,6 +41,9 @@ io.o: io.cpp io.h vcf.h vntr.h read.h
 
 vcf.o: vcf.cpp vcf.h 
 	$(CXX) $(CFLAGS) -c $<  -I $(CONDA_PREFIX)/include 
+
+phase.o: phase.cpp phase.h read.h
+	$(CXX) $(CFLAGS) -c $<  -I $(CONDA_PREFIX)/include
 
 vntr.o: vntr.cpp naive_anno.cpp bounded_anno.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h
 	$(CXX) $(CFLAGS) -c $< -I ../alglib/src -I ../edlib/include -I ../abpoa/include -I $(CONDA_PREFIX)/include

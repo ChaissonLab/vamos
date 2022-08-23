@@ -1,6 +1,8 @@
 #ifndef READ_H_
 #define READ_H_
 #include <string>
+#include <vector>
+
 using namespace std;
 /* 
 class READ constains
@@ -9,6 +11,13 @@ class READ constains
 @len: the read length
 @seq: the read sequence
 */
+
+class SNV {
+public:
+  int pos;
+  int nuc;
+};
+
 class READ
 {
 public: 
@@ -19,6 +28,8 @@ public:
 	char * seq;
 	bool rev;
         int haplotype;
+        string upstream, downstream;
+  vector<SNV> snvs;
 	READ () 
 	{
 		qname = NULL;
