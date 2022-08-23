@@ -52,16 +52,7 @@ def phase(key):
     os.system('%s view -h -S -b %s "%s:%s-%s" > %s' %(samtools, inBam, chr, start, end, extractBam))
     os.system('%s index %s' %(samtools, extractBam))
     os.system('%s --bam %s --ref %s --out %s -O %s' %(longshot, extractBam, ref, phaseVCF, phaseBam))
-    os.system('%s index %s' %(samtools, phaseBam))
-
-    '''os.system('%s view -H %s > %s.h.tmp' %(samtools, phaseBam, phaseBam))
-    os.system('%s view %s | grep "HP:i:1" > %s.sam.tmp' %(samtools, phaseBam, phaseBam))
-    os.system('cat %s.h.tmp %s.sam.tmp | %s view -bS > %s' %(phaseBam, phaseBam, samtools, phaseBam1))
-    os.system('%s index %s' %(samtools, phaseBam1))
-    os.system('%s view %s | grep "HP:i:2" > %s.sam.tmp' %(samtools, phaseBam, phaseBam))
-    os.system('cat %s.h.tmp %s.sam.tmp | %s view -bS > %s' %(phaseBam, phaseBam, samtools, phaseBam2))
-    os.system('%s index %s' %(samtools, phaseBam2))
-    os.system('rm %s* %s.h.tmp %s.sam.tmp' %(extractBam, phaseBam, phaseBam))'''
+    if os.path.exists(phaseBam): os.system('%s index %s' %(samtools, phaseBam))
 
 
 def multi(inBam, winDir, longshot, ref, samtools, thread, outDir):
