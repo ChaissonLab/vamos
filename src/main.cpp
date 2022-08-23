@@ -27,10 +27,10 @@ int liftover_flag = false;
 int single_seq_flag = false;
 int locuswise_flag = false;
 int num_processed = 0;
+
 struct timeval pre_start_time, pre_stop_time, pre_elapsed_time;
 struct timeval single_start_time, single_stop_time, single_elapsed_time;
 
-/* vamos -in read.bam -vntr vntrs.bed -motif motifs.csv -o out.vcf */
 
 void process_mem_usage(double &vm_usage, double &resident_set)
 {
@@ -51,9 +51,12 @@ void process_mem_usage(double &vm_usage, double &resident_set)
     resident_set = (rss * page_size_kb) / (1024.0 * 1024.0);
 }
 
+
+
+
 void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< int > &mismatchCI) 
 {
-
+  
 	if (it->nreads == 0 or it->motifs.size() > 255) 
 	{
 		it->skip = true;
@@ -120,7 +123,7 @@ void printUsage(IO &io)
 	printf("subcommand:\n");
 	printf("vamos --liftover    [-i in.bam] [-v vntrs.bed] [-o output.fa] [-s sample_name] \n");
 	printf("vamos --conseq_anno [-i in.fa]  [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!)\n");
-	printf("vamos --per_read [--output_seq]   [-b in.bam]  [-r vntrs.bed] [-o output.vcf] [-s sample_name] \n");	
+	printf("vamos --readwise [--output_seq]   [-b in.bam]  [-r vntrs.bed] [-o output.vcf] [-s sample_name] \n");	
 	printf("vamos --raw_anno    [-i in.bam] [-v vntrs.bed] [-m motifs.csv] [-o output.vcf] [-s sample_name]\n");
 	printf("   Input:\n");
 	printf("       -b   FILE         input indexed bam file. \n");	
@@ -147,7 +150,7 @@ void printUsage(IO &io)
 
 int main (int argc, char **argv)
 {
-
+  
 	int c;
 	IO io;
 	OPTION opt;
@@ -180,11 +183,12 @@ int main (int argc, char **argv)
 		{"penlaty_indel",   required_argument,       0, 'd'},
 		{"penlaty_mismatch",required_argument,       0, 'c'},
 		{"accuracy"        ,required_argument,       0, 'a'},
+		{"phase_flank"     ,required_argument,       0, 'p'},		
 		{NULL, 0, 0, '\0'}
 	};
 	/* getopt_long stores the option index here. */
 	int option_index = 0;
-	while ((c = getopt_long (argc, argv, "b:r:a:o:s:t:f:d:c:x:v:h", long_options, &option_index)) != -1)
+	while ((c = getopt_long (argc, argv, "b:r:a:o:s:t:f:d:c:x:v:p:h", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -200,6 +204,7 @@ int main (int argc, char **argv)
 			fprintf (stderr, "option -input with `%s'\n", optarg);
 			io.input_bam = (char *) malloc(strlen(optarg) + 1);
 			strcpy(io.input_bam, optarg);
+			io.input_bam[strlen(optarg)] = '\0';						
 			break;
 
 		// case 'i':
@@ -212,12 +217,15 @@ int main (int argc, char **argv)
 			fprintf (stderr, "option -vntr with `%s'\n", optarg);
 			io.vntr_bed = (char *) malloc(strlen(optarg) + 1);
 			strcpy(io.vntr_bed, optarg);
+			io.vntr_bed[strlen(optarg)] = '\0';			
 			break;
 
 		case 'r':
 			fprintf (stderr, "option -region with `%s'\n", optarg);
 			io.region_and_motifs = (char *) malloc(strlen(optarg) + 1);
 			strcpy(io.region_and_motifs, optarg);
+			io.region_and_motifs[strlen(optarg)] = '\0';
+			io.region_and_motifs[strlen(optarg)] = '\0';						
 			break;
 		  
 		// case 'm':
@@ -230,12 +238,14 @@ int main (int argc, char **argv)
 			fprintf (stderr, "option -output with `%s'\n", optarg);
 			io.out_vcf = (char *) malloc(strlen(optarg) + 1);
 			strcpy(io.out_vcf, optarg);
+			io.out_vcf[strlen(optarg)] = '\0';						
 			break;
 
 		case 's':
 			fprintf (stderr, "option -sampleName with `%s'\n", optarg);
 			io.sampleName = (char *) malloc(strlen(optarg) + 1);
 			strcpy(io.sampleName, optarg);
+			io.sampleName[strlen(optarg)] = '\0';						
 			break;
 
 		case 't':
@@ -274,6 +284,9 @@ int main (int argc, char **argv)
  		        opt.accuracy = stod(optarg);
 			fprintf (stderr, "option -accuracy with `%f'\n", opt.accuracy);
 			break;
+		case 'p':
+  		        opt.phaseFlank = atoi(optarg);
+                        fprintf (stderr, "option -phase_flank with `%d'\n", opt.phaseFlank);			             break;
 		default:
 			printUsage(io);
 			exit(EXIT_FAILURE);
@@ -365,7 +378,7 @@ int main (int argc, char **argv)
 
 	/* Create threads */
 	int i;
-
+	io.phaseFlank = opt.phaseFlank;
 	if (opt.nproc > 1)
 	{
 		pthread_t *tid = new pthread_t[opt.nproc];
