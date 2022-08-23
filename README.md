@@ -191,3 +191,37 @@ The following shows an example of the VCF file
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA24385_CCS_h1
 chr1	191351	.	N	<VNTR>	.	PASS	END=191386;RU=CACCACAGAAAACAGAG,CACCACAGAAAACAGAGC;SVTYPE=VNTR;ALTANNO_H1=1,0;LEN_H1=2;	GT	1/1
 ```
+
+## <a name="pipeline"></a>Running pipelines to analyze raw sequencing reads or assembled contigs
+A *snakemake* pipeline [snakefile/annotation.smk](https://github.com/ChaissonLab/vamos/blob/master/snakefile/annotation.smk) is developed that generates VNTR annotations for various types of input data. Accepted types of input data include raw sequencing long reads in `fasta/fastq/bam` format and assembled contigs in `fasta/bam` format.
+
+### <a name="config"></a>Pipeline config file
+To execute the pipeline, a single config file must be provided as below (example in *yaml* format)
+```
+input:
+    manifest: /path/to/sample/manifest.csv
+database:
+    reference: /path/to/reference/hg38.fasta
+    vntr: /path/to/vntr/vntrs.e.bed
+parameter:
+    vamos_repo: /path/to/vamos_repo
+    mode_of_analysis: raw
+    type_of_input: fasta
+    type_of_aligner: lra
+    window_size: 10000000
+    min_depth: 5
+cluster:
+    aln: sbatch --time=99:00:00 --cpus-per-task=16 --mem=180G
+    split: sbatch --time=99:00:00 --cpus-per-task=1 --mem=10G
+    phase: sbatch --time=99:00:00 --cpus-per-task=16 --mem=160G
+    anno_raw: sbatch --time=99:00:00 --cpus-per-task=16 --mem=120G
+    anno_ass: sbatch --time=99:00:00 --cpus-per-task=16 --mem=120G
+```
+the input `manifest` must be a csv file that contains the sample ID and path to the corresponding input sequence files (e.g., sample_id,path_to_seq_file), one line for one sample. Supply path of the reference genome and vntr motif config file to `reference`  and `vntr` under `database`. `vamos_repo` refers to the local git repository of the *vamos* software. `mode_of_analysis` specifies the mode of analysis as either raw sequencing reads (`raw`) or assembled contigs (`assembly`). `type_of_input` specifies format of the input data, accepted values are `fasta/fastq/bam`. Note that the pipeline will perform alignment if the input data is of `fasta/fastq`, by either *lra* (`lra`) or *minimap2* (`mm2`) as instructed by `type_of_aligner`. `window_size` is the size of genomic bins for phasing of sequencing reads (a value between 10Mb and 20Mb is recommended) and `min_depth` is the minimum depth requirement for each of the two haplotypes at a VNTR locus. Batch job submission command may be supplied under the `cluster` section (recommended resource specifications are listed in the example above).
+
+### <a name="running"></a>Running the pipeline
+All required packages including *snakemake* are installed under the *vamos* conda environment. The pipeline may be initiated by executing the following command
+```
+conda activate vamos
+snakemake --snakefile /path/to/snakefile/annotation.smk --config /path/to/config/annotation.yaml --cluster "{params.cluster} -o {params.stdout} -e {params.stderr}" --directory /path/to/analysis/directory
+```
