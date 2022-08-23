@@ -17,8 +17,8 @@ using namespace std;
 class IO
 {
 public:
-        char * region_and_motifs;
-        char * input_fasta;
+    char * region_and_motifs;
+    char * input_fasta;
 	char * input_bam;
 	char * vntr_bed;
 	char * motif_csv;
@@ -41,9 +41,9 @@ public:
 
 	~IO() 
 	{
-	        free(region_and_motifs);
-	        free(version);
-	        free(input_bam);
+        free(region_and_motifs);
+        free(version);
+        free(input_bam);
 		free(vntr_bed);
 		free(motif_csv);
 		free(out_vcf);
