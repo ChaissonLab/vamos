@@ -1,0 +1,21 @@
+input:
+    manifest: /project/mchaisso_100/cmb-16/bidagu/working/vamos/demo/readwise/sample.csv
+
+database:
+    reference: /project/mchaisso_100/cmb-16/bidagu/databases/references/GRCh38/fasta/hg38.fasta
+    vntr: /project/mchaisso_100/cmb-16/bidagu/pipelines/vamos/github/snakefile/configs/vntrs.e.bed
+
+parameter:
+    vamos_repo: /project/mchaisso_100/cmb-16/bidagu/pipelines/vamos/github
+    mode_of_analysis: raw
+    type_of_input: fasta
+    type_of_aligner: lra
+    window_size: 10000000
+    min_depth: 5
+
+cluster:
+    aln: sbatch --partition=qcb --time=99:00:00 --cpus-per-task=16 --mem=180G
+    split: sbatch --partition=qcb --time=99:00:00 --cpus-per-task=1 --mem=10G
+    phase: sbatch --partition=qcb --time=99:00:00 --cpus-per-task=16 --mem=160G
+    anno_raw: sbatch --partition=qcb --time=99:00:00 --cpus-per-task=16 --mem=120G --constraint=xeon-4116
+    anno_ass: sbatch --partition=qcb --time=99:00:00 --cpus-per-task=16 --mem=120G --constraint=xeon-4116
