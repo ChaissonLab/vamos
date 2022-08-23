@@ -54,16 +54,20 @@ vamos --single_seq -b ../example/one_read.fasta -r ../example/one_region_motif.b
 ## <a name="introduction"></a>Introduction
 Vamos is a tool to perform run-length encoding of VNTR sequences using a set of selected motifs from all motifs observed at that locus.
 Vamos guarantees that the encoding sequence is winthin a bounded edit distance of the original sequence. 
-For example, a VNTR sequence ACGGTACTGTACGT may be encoded to a more compact representation - ACGGT|AC**G**GT|ACGT using motif set [ACGGT, ACGT].
+For example, a VNTR sequence ACGGT|ACTGT|ACGT may be encoded to a more compact representation: ACGGT|AC**G**GT|ACGT using efficient motif set [ACGGT, ACGT].
+The edit distance between the original VNTR sequence and encoding sequence is 1. 
 
 Vamos can generate annotation for each read, given a set of motifs for each VNTR locus. (`--readwise` mode)
 Vamos can generate annotation for each VNTR locus by aggragating annotations of reads. (`--locuswise` mode)
 Vamos can generate annotation for subsequence of a read lifted from a particular VNTR locus. (`--single_seq` mode)
 
 ### <a name="emotif"></a>Efficient motif set
-We generate a set of efficient VNTR motifs from 32 haplotype-resolved LRS genomes sequenced for population references and diversity panels.
-XXXX (some statistics about # of VNTRs)
-XXXX (path)
+We defined VNTR loci and motifs using a collection of 32 haplotype-resolved LRS genomes constructed by Human Genome Structural Variation Consortium.
+XXXX(TOADD) loci of simple repeating sequences on the GRCh38 assembly were obtained from the table browser tool of the UCSC Genome Browser.
+For each assembly, VNTR sequences were lifted-over and decomposed into motifs by Tandem Repeats Finder (TRF). Post-filtering step leaves 467104 well-resolved VNTR loci. 
+We propose efficient motif set as a smallest set of motifs, such that the string decompositions of the assembly alleles are bounded by a given edit distance. 
+[snakefile/configs/vntr_region_motifs.e.bed.gz](https://github.com/ChaissonLab/vamos/blob/master/snakefile/configs/vntr_region_motifs.e.bed.gz) provides efficent motifs for 467104 VNTR loci.
+[snakefile/configs/vntr_region_motifs.o.bed.gz](https://github.com/ChaissonLab/vamos/blob/master/snakefile/configs/vntr_region_motifs.o.bed.gz) provides original motifs for 467104 VNTR loci.
 
 ## <a name="install"></a>Installation
 ### <a name="build"></a>Building vamos from source files
@@ -92,9 +96,8 @@ cd vamos/src; make
 
 ### <a name="binary"></a>Pre-built binary executable file for Linux/Unix 
 If you meet any compiling issue, please try the pre-built binary file:
-XXXX(TODO)
 ```
-wget https://github.com/ChaissonLab/vamos/releases/download/v1.0.0/vamos-v1.0.0_x64-linux.tar.gz
+wget https://github.com/ChaissonLab/vamos/releases/download/vamos-v1.0.0/vamos-v1.0.0_x64-linux.tar.gz
 tar -zxvf vamos-v1.0.0_x64-linux.tar.gz
 ```
 
@@ -143,7 +146,48 @@ vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s 
 ```
 
 ## <a name="input"></a>Input
+Vamos works with indexed bam file under `--readwise` and `--locuswise` modes, and works with fasta file under `--single_seq` mode. 
 
 ## <a name="output"></a>Output
+Vamos outputs BED file under `--readwise` mode, and outputs vcf file under `--locuswise` and `--single_seq` modes. 
+
+
 ### <a name="BED"></a>BED for readwise mode
-### <a name="VCF"></a>VCF for locuswise mode
+Vamos generates annotation for each read in BED file under `--readwise` mode.
+
+The BED file contains five columns - `CHROM`, `START`, `END`, `MOTIFS`, `INFO`.
+`CHROM:START-END`:coordinate of VNTR locus. \\
+`MOTIFS`: a comma-separated list of motifs at the locus. \\ 
+`INFO`: a colon-separated list of information about the read annotation. (Read_name:Haplotype(0 - not determined, 1/2 - haplotype):Annotation_length:Annotation(comma-separated, no spaces):Read_lifted_seq) \\
+
+The following is an example of the BED file: 
+```
+##fileformat=BED
+##source=vamos_v1.0.0
+##INFO=<Read_name:Haplotype(0 - not determined, 1/2 - haplotype):Annotation_length:Annotation(comma-separated, no spaces):Read_lifted_seq;,Description="read annotation information per read">
+#CHROM	START	END	MOTIFS	INFO
+chr1	189828	189966	TGAGAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAGGGCAGGAGGAGGGTGTGGGATGGTGGAGGGGTT,TGAGAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAAGGGAGGGGGAGGATGTGGGATGGTGGAGGGG,GAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAAGGGAGGGGGAGGATGTGGGATGGTGGAGGGGGA	cluster2_000015F:0:2:0,1:ATGAGAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAGGGCAGGAGGAGGGTGTGGGATGGTGGAGGGGTTTGAGAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAAGGGAGGGGGAGGATGTGGGATGGTGGAGGGG;cluster2_000015F:0:2:0,1:ATGAGAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAGGGCAGGAGGAGGGTGTGGGATGGTGGAGGGGTTTGAGAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAAGGGAGGGGGAGGATGTGGGATGGTGGAGGGG;
+```
+
+### <a name="VCF"></a>VCF for locuswise and single_seq modes
+Vamos generates annotation for each VNTR locus in VCF file under `--locuswise` and `--single_seq` modes.
+
+
+The following shows an example of the VCF file
+```
+##fileformat=VCFv4.1
+##source=vamos_V1.0.0
+##contig=<ID=chr1,length=248956422>
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant">
+##INFO=<ID=RU,Number=1,Type=String,Description="Comma separated motif sequences list in the reference orientation">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=ALTANNO_H1,Number=1,Type=String,Description=""Motif representation for the h1 alternate allele>
+##INFO=<ID=ALTANNO_H2,Number=1,Type=String,Description=""Motif representation for the h2 alternate allele>
+##INFO=<ID=LEN_H1,Number=1,Type=Integer,Description=""Length of the motif annotation for the h1 alternate allele>
+##INFO=<ID=LEN_H2,Number=1,Type=Integer,Description=""Length of the motif annotation for the h2 alternate allele>
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##ALT=<ID=VNTR,Description="Allele comprised of VNTR repeat units">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA24385_CCS_h1
+chr1	191351	.	N	<VNTR>	.	PASS	END=191386;RU=CACCACAGAAAACAGAG,CACCACAGAAAACAGAGC;SVTYPE=VNTR;ALTANNO_H1=1,0;LEN_H1=2;	GT	1/1
+```

@@ -364,6 +364,7 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
     abpt->out_msa = 1; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
     abpt->progressive_poa = 1;
+    // abpt->out_pog = 0;
 
     // variables to store result
     uint8_t **cons_seq; int **cons_cov, *cons_l, cons_n = 0;
@@ -442,12 +443,12 @@ void MSA (int motifs_size, const vector<int> &gp, const vector<vector<uint8_t>> 
 	}
 
     // collect sequence length
-    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
-    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
+    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs + 1);
+    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs + 1);
     int i, j;
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = annos[gp[i]].size();
-        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
+        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i] + 1);
         for (j = 0; j < seq_lens[i]; ++j)
         {
         	assert(annos[gp[i]][j] < motifs_size);
@@ -483,12 +484,12 @@ void MSA (int motifs_size, const vector<vector<uint8_t>> &annos, vector<uint8_t>
 	}
 
     // collect sequence length
-    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
-    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
+    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs + 1);
+    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs + 1);
     int i, j;
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = annos[i].size();
-        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
+        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i] + 1);
         for (j = 0; j < seq_lens[i]; ++j) 
         {
         	assert(annos[i][j] < motifs_size); 
@@ -709,11 +710,11 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     }        
 
     // collect sequence length and sequence
-    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
-    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
+    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs + 1);
+    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs + 1);
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = clean_annos[i].size();
-        bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * (seq_lens[i]));
+        bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * (seq_lens[i]) + 1);
         for (j = 0; j < seq_lens[i]; ++j) 
         {
             assert(clean_annos[i][j] < motifs_size); 
@@ -735,13 +736,14 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     abpt->gap_open2 = 1;   // gap open penalty #2
     abpt->gap_ext2 = 1;    // gap extension penalty #2
                            // gap_penalty = min{gap_open1 + gap_len * gap_ext1, gap_open2 + gap_len * gap_ext2}
-
     abpt->is_diploid = 0;
     // abpt->min_freq = 0.8; 
     abpt->out_msa = 0; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
     abpt->progressive_poa = 1;
     abpt->out_gfa = 0;
+    abpt->ret_cigar = 0; // turn off the cigar string. Otherwise, cg_backtrack step crashes! 
+    // abpt->out_pog = 0;
     abpoa_post_set_para(abpt);
 
     // variables to store result
@@ -765,7 +767,6 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
 
     abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
 
-    
     assert(cons_n > 0); // cons_n == 0 means no consensus sequence exists
     if (cons_n > 1) cerr << "het" << endl;
 
@@ -801,7 +802,7 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
             free(msa_seq);
         }
     }
-
+    
     abpoa_free(ab); 
     abpoa_free_para(abpt); 
 

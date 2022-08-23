@@ -220,6 +220,7 @@ int GetHap(char *s, int l) {
 */
 void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int sz) 
 {
+    if (cur_thread >= sz) return;
     char * bai = (char *) malloc(strlen(input_bam) + 4 + 1); // input_bam.bai
     strcpy(bai, input_bam);
     strcat(bai, ".bai");
@@ -275,14 +276,14 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
 
             read_aln_start = 0;
             read_len = aln->core.l_qseq;
-	    s=bam_get_seq(aln);
+            s = bam_get_seq(aln);
             uint32_t tmp;
             VNTR_s = vntr->ref_start;
             VNTR_e = vntr->ref_end;
-	    //	    kstring_t s;
-	    kstring_t auxStr = KS_INITIALIZE;
-	    int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
-	    int hap = GetHap(auxStr.s, auxStr.l);
+	       //	    kstring_t s;
+            kstring_t auxStr = KS_INITIALIZE;
+	        int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
+	        int hap = GetHap(auxStr.s, auxStr.l);
             if (VNTR_s < ref_aln_start or VNTR_e > ref_aln_end) // the alignment doesn't fully cover the VNTR locus
                 continue;
 
@@ -312,10 +313,17 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 read->len = liftover_read_e - liftover_read_s + 1; // read length
                 read->seq = (char *) malloc(read->len + 1); // read sequence array
                 read->rev = rev;
+<<<<<<< Updated upstream
+=======
+
+
+		StoreReadSeqAtRefCoord(aln, vntr->ref_start - phaseFlank, vntr->ref_start, read->upstream);
+		StoreReadSeqAtRefCoord(aln, vntr->ref_end, vntr->ref_end+phaseFlank, read->downstream);
+>>>>>>> Stashed changes
 		if (hap >= 0) {
 		  read->haplotype=hap;
 		}
-
+		
 		kstring_t auxStr = KS_INITIALIZE;
 		int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
 		if (auxStat ) {
@@ -326,6 +334,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
 		    read->haplotype=hap;
 		  }
 		}
+
                 for(i = 0; i < read->len; i++)
                 {
                     assert(i + liftover_read_s < read_len);
@@ -354,6 +363,8 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
     free(bai);
     bam_destroy1(aln);
     bam_hdr_destroy(bamHdr);
+    // if (itr) hts_itr_destroy(itr);
+    // if (idx) hts_idx_destroy(idx);
     hts_itr_destroy(itr);
     hts_idx_destroy(idx);
     sam_close(fp_in); 

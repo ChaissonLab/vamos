@@ -143,8 +143,7 @@ void printUsage(IO &io)
 	printf("       -t   INT          number of threads, DEFAULT: 1\n");
 	printf("       --debug           print out debug information\n");
 	printf("       -h                print out help message\n");
-} 
-
+}
 int main (int argc, char **argv)
 {
 
