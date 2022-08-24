@@ -1,5 +1,5 @@
 PROG=vamos
-LIBS=-lhts -labpoa -lz -lpthread 
+LIBS=-lhts  -lz -lpthread 
 PROF=/home1/jingwenr/.conda/envs/trf/lib
 DEBUG?="-g "
 OPT?=""
@@ -7,9 +7,9 @@ CXX=g++ -std=c++17
 CFLAGS=
 asan?=""
 tsan?=""
-
+ABPOA=/project/mchaisso_100/mchaisso/projects/vamos/src/abpoa/abPOA/
 ifeq ("$(DEBUG)", "TRUE")
-CFLAGS=-g -O0 #-fsanitize=address #-Wall -Wextra
+CFLAGS=-g  #-fsanitize=address #-Wall -Wextra
 else
 CFLAGS=-O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
 endif
@@ -31,7 +31,7 @@ endif
 all:$(PROG)
 
 vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o
-	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L ../static_lib/ -lalglib -ledlib -lrt 
+	$(CXX) $(CFLAGS) -o $@ $^ -L$(ABPOA)/lib -labpoa -L $(CONDA_PREFIX)/lib $(LIBS) -L ../static_lib/ -lalglib -ledlib -lrt 
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include  
@@ -43,7 +43,7 @@ vcf.o: vcf.cpp vcf.h
 	$(CXX) $(CFLAGS) -c $<  -I $(CONDA_PREFIX)/include 
 
 vntr.o: vntr.cpp naive_anno.cpp bounded_anno.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h
-	$(CXX) $(CFLAGS) -c $< -I ../alglib/src -I ../edlib/include -I ../abpoa/include -I $(CONDA_PREFIX)/include
+	$(CXX) $(CFLAGS) -c $< -I $(ABPOA)/include -I ../alglib/src -I ../edlib/include -I -I $(CONDA_PREFIX)/include
 
 acc_lookup_table.o: acc_lookup_table.cpp acc_lookup_table.h vntr.cpp vntr.h
 	$(CXX) $(CFLAGS) -c $< -I ../alglib/src -I ../edlib/include -I ../abpoa/include -I $(CONDA_PREFIX)/include

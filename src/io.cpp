@@ -333,7 +333,8 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                     base = bam_seqi(s, i + liftover_read_s);
                     assert(0 < base < 16);
                     read->seq[i] = seq_nt16_str[base]; //gets nucleotide id and converts them into IUPAC id.
-                } 
+                }
+		read->seq[read->len] = '\0';
                 vntr->reads.push_back(read); 
 
                 total_len += read->len;
