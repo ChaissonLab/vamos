@@ -553,7 +553,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
         vntr->nreads = vntr->reads.size();
         vntr->cur_len = (vntr->nreads == 0) ? 0 : (total_len / vntr->nreads);
 
-        sort(vntr->reads.begin(), vntr->reads.end(), less_than_key());
+        // sort(vntr->reads.begin(), vntr->reads.end(), less_than_key());
 
         if (vntr->nreads == 0) continue;
         // SimpleSNV(vntr, vntr->ref_start - phaseFlank, vntr->ref_start, 0);
