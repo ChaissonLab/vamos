@@ -194,6 +194,7 @@ The following shows an example of the VCF file
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA24385_CCS_h1
 chr1	191351	.	N	<VNTR>	.	PASS	END=191386;RU=CACCACAGAAAACAGAG,CACCACAGAAAACAGAGC;SVTYPE=VNTR;ALTANNO_H1=1,0;LEN_H1=2;	GT	1/1
 ```
+<<<<<<< HEAD
 
 ## <a name="pipeline"></a>Running pipelines to analyze raw sequencing reads or assembled contigs
 A *snakemake* pipeline [snakefile/annotation.smk](https://github.com/ChaissonLab/vamos/blob/master/snakefile/annotation.smk) is developed that generates VNTR annotations for various types of input data. Accepted types of input data include raw sequencing long reads in `fasta/fastq/bam` format and assembled contigs in `fasta/bam` format.
@@ -228,3 +229,5 @@ All required packages including *snakemake* are installed under the *vamos* cond
 conda activate vamos
 snakemake --snakefile /path/to/snakefile/annotation.smk --config /path/to/config/annotation.yaml --cluster "{params.cluster} -o {params.stdout} -e {params.stderr}" --directory /path/to/analysis/directory
 ```
+=======
+>>>>>>> simple-max-cut

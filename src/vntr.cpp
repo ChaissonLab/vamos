@@ -770,6 +770,7 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     //    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
     abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, NULL);//&cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);    
     cons_n = ab->abc->n_cons;
+
     assert(cons_n > 0); // cons_n == 0 means no consensus sequence exists
     if (cons_n > 1) cerr << "het" << endl;
 

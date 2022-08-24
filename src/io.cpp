@@ -507,13 +507,13 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 read->seq = (char *) malloc(read->len + 1); // read sequence array
                 read->rev = rev;
 
+
 		StoreReadSeqAtRefCoord(aln, vntr->ref_start - phaseFlank, vntr->ref_start, read->upstream);
 		StoreReadSeqAtRefCoord(aln, vntr->ref_end, vntr->ref_end+phaseFlank, read->downstream);
-		//		cout << "prefix: " << read->upstream << endl;
 		if (hap >= 0) {
 		  read->haplotype=hap;
 		}
-
+		
 		kstring_t auxStr = KS_INITIALIZE;
 		int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
 		if (auxStat ) {
@@ -524,6 +524,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
 		    read->haplotype=hap;
 		  }
 		}
+
                 for(i = 0; i < read->len; i++)
                 {
                     assert(i + liftover_read_s < read_len);
