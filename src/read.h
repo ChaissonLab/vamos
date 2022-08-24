@@ -27,8 +27,8 @@ public:
 	uint32_t len;
 	char * seq;
 	bool rev;
-        int haplotype;
-        string upstream, downstream;
+    int haplotype;
+    string upstream, downstream;
   vector<SNV> snvs;
 	READ () 
 	{
@@ -45,6 +45,15 @@ public:
 		free(seq);
 		free(qname);
 	};
+};
+
+class less_than_key
+{
+public:
+    inline bool operator() (READ * read1, READ * read2)
+    {
+        return (read1->len < read2->len);
+    }
 };
 
 #endif

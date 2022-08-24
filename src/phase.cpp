@@ -4,6 +4,9 @@
 #include <iostream>
 #include <set>
 
+extern int debug_flag;
+
+
 int  CountDiff(READ* r1, READ* r2) {
   int r1i=0, r2i=0;
   int nDiff=0;
@@ -36,11 +39,11 @@ void MaxCutPhase(VNTR *vntr) {
   for (auto i=0; i < reads.size(); i++) {
     nSNVs += reads[i]->snvs.size();
   }
-  if (reads.size() > 0) {
-    cout << "Average " << ((float)nSNVs) / reads.size() << endl;
+  if (debug_flag and reads.size() > 0) {
+    cerr << "Average " << ((float)nSNVs) / reads.size() << endl;
   }
-  if (reads.size() == 0) {
-    cout << vntr->region << " NoReads"<< endl << endl << endl << endl;
+  if (debug_flag and reads.size() == 0) {
+    cerr << vntr->region << " NoReads"<< endl << endl << endl << endl;
     return;
   }
   vector<int> totDiffs(reads.size(), 0);
@@ -57,9 +60,9 @@ void MaxCutPhase(VNTR *vntr) {
       totDiffs[j] += diffs[i][j];
       diffs[j][i] = diffs[i][j];
       if (diffs[i][j] > maxDiff) {
-	maxDiff = diffs[i][j];
-	max1i=i;
-	max2i=j;
+      	maxDiff = diffs[i][j];
+      	max1i=i;
+      	max2i=j;
       }
     }
   }
@@ -132,15 +135,18 @@ void MaxCutPhase(VNTR *vntr) {
     cut1.resize(0);
     cut2.resize(0);
   }
-    
-  cout << vntr->region << " cut 1 ";
-  for (auto &idx: cut1 ) { cout << idx << "/" << reads[idx]->haplotype << " "; }
-  cout << endl;
-  cout << vntr->region << " cut 2 ";
-  for (auto &idx: cut2 ) { cout << idx << "/" << reads[idx]->haplotype << " "; }
-  cout << endl;
-  cout << vntr->region << " cut 0 ";  
-  for (auto &idx: cut0 ) { cout << idx << "/" << reads[idx]->haplotype << " "; }
-  cout << endl;
+  
+  if (debug_flag) {
+    cerr << vntr->region << " cut 1 ";
+    for (auto &idx: cut1 ) { cerr << idx << "/" << reads[idx]->haplotype << " "; }
+    cerr << endl;
+    cerr << vntr->region << " cut 2 ";
+    for (auto &idx: cut2 ) { cerr << idx << "/" << reads[idx]->haplotype << " "; }
+    cerr << endl;
+    cerr << vntr->region << " cut 0 ";  
+    for (auto &idx: cut0 ) { cerr << idx << "/" << reads[idx]->haplotype << " "; }
+    cerr << endl;    
+  }
+
   
 }

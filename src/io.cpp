@@ -13,14 +13,15 @@
 #include "read.h"
 #include "vntr.h"
 #include "vcf.h"
+#include "phase.h"
 #include "abpoa.h"
 // #include <seqan/align.h>
 // #include <seqan/graph_msa.h>
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 #include <zlib.h>  
+
 #include "htslib/kseq.h"  
-#include "phase.h"
 
 extern int naive_flag;
 extern int debug_flag;
@@ -475,8 +476,8 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
             VNTR_e = vntr->ref_end;
 	       //	    kstring_t s;
             kstring_t auxStr = KS_INITIALIZE;
-	        int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
-	        int hap = GetHap(auxStr.s, auxStr.l);
+            int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
+            int hap = GetHap(auxStr.s, auxStr.l);
             if (VNTR_s < ref_aln_start or VNTR_e > ref_aln_end) // the alignment doesn't fully cover the VNTR locus
                 continue;
 
@@ -487,7 +488,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
             uint32_t cigar_start = 0;
             auto [liftover_read_s, iflift_s] = processCigar(aln, cigar, cigar_start, VNTR_s, ref_aln_start, read_aln_start);
             auto [liftover_read_e, iflift_e] = processCigar(aln, cigar, cigar_start, VNTR_e, ref_aln_start, read_aln_start);
-	    string upstream, downstream;
+            string upstream, downstream;
             // [liftover_read_s, liftover_read_e]
             if (iflift_s and iflift_e and liftover_read_e > liftover_read_s and liftover_read_e <= read_len)
             {
@@ -508,22 +509,23 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 read->rev = rev;
 
 
-		StoreReadSeqAtRefCoord(aln, vntr->ref_start - phaseFlank, vntr->ref_start, read->upstream);
-		StoreReadSeqAtRefCoord(aln, vntr->ref_end, vntr->ref_end+phaseFlank, read->downstream);
-		if (hap >= 0) {
-		  read->haplotype=hap;
-		}
-		
-		kstring_t auxStr = KS_INITIALIZE;
-		int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
-		if (auxStat ) {
-		  
-		  int si=0, nc=0;
-		  int hap=GetHap(auxStr.s, auxStr.l);
-		  if (hap >= 0 ) {
-		    read->haplotype=hap;
-		  }
-		}
+                StoreReadSeqAtRefCoord(aln, vntr->ref_start - phaseFlank, vntr->ref_start, read->upstream);
+                StoreReadSeqAtRefCoord(aln, vntr->ref_end, vntr->ref_end+phaseFlank, read->downstream);
+
+                if (hap >= 0) {
+                  read->haplotype=hap;
+                }
+
+                kstring_t auxStr = KS_INITIALIZE;
+                int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
+                if (auxStat ) {
+                  
+                  int si=0, nc=0;
+                  int hap=GetHap(auxStr.s, auxStr.l);
+                  if (hap >= 0 ) {
+                    read->haplotype=hap;
+                  }
+                }
 
                 for(i = 0; i < read->len; i++)
                 {
@@ -532,7 +534,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                     assert(0 < base < 16);
                     read->seq[i] = seq_nt16_str[base]; //gets nucleotide id and converts them into IUPAC id.
                 }
-		read->seq[read->len] = '\0';
+		            read->seq[read->len] = '\0';
                 vntr->reads.push_back(read); 
 
                 total_len += read->len;
@@ -549,11 +551,14 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
             }
         }
         vntr->nreads = vntr->reads.size();
-	SimpleSNV(vntr, vntr->ref_start- phaseFlank, vntr->ref_start, 0);
-	SimpleSNV(vntr, vntr->ref_end, vntr->ref_end + phaseFlank, 1);
-	MaxCutPhase(vntr);
-	
         vntr->cur_len = (vntr->nreads == 0) ? 0 : (total_len / vntr->nreads);
+
+        sort(vntr->reads.begin(), vntr->reads.end(), less_than_key());
+
+        if (vntr->nreads == 0) continue;
+        // SimpleSNV(vntr, vntr->ref_start - phaseFlank, vntr->ref_start, 0);
+        // SimpleSNV(vntr, vntr->ref_end, vntr->ref_end + phaseFlank, 1);
+        // MaxCutPhase(vntr);
     }
     free(bai);
     bam_destroy1(aln);

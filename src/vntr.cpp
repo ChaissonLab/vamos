@@ -445,16 +445,16 @@ void MSA (int motifs_size, const vector<int> &gp, const vector<vector<uint8_t>> 
 	}
 
     // collect sequence length
-    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs + 1);
-    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs + 1);
+    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
+    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
     int i, j;
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = annos[gp[i]].size();
-        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i] + 1);
+        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
         for (j = 0; j < seq_lens[i]; ++j)
         {
         	assert(annos[gp[i]][j] < motifs_size);
-        	bseqs[i][j] = annos[gp[i]][j];
+        	bseqs[i][j] = annos[gp[i]][j] + 1;
 
         	// if (annos[gp[i]][j] >= 0 and annos[gp[i]][j] < 45) 
         	// {
@@ -466,6 +466,7 @@ void MSA (int motifs_size, const vector<int> &gp, const vector<vector<uint8_t>> 
         	// }
             
         }
+        // bseqs[i][seq_lens[i]] = '\0';
     }
 
 	MSA_helper (motifs_size, n_seqs, consensus, seq_lens, bseqs);
@@ -486,16 +487,16 @@ void MSA (int motifs_size, const vector<vector<uint8_t>> &annos, vector<uint8_t>
 	}
 
     // collect sequence length
-    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs + 1);
-    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs + 1);
+    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
+    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
     int i, j;
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = annos[i].size();
-        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i] + 1);
+        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
         for (j = 0; j < seq_lens[i]; ++j) 
         {
         	assert(annos[i][j] < motifs_size); 
-        	bseqs[i][j] = annos[i][j];
+        	bseqs[i][j] = annos[i][j] + 1;
         }
     }
 
@@ -702,26 +703,31 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
         return;
     }
 
-    // change from clean_edist to dists
-    int i, j;
-    double dists [ncleanreads * ncleanreads];
-    for (i = 0; i < ncleanreads; ++i)
-    {
-        for (j = 0; j < ncleanreads; ++j)
-           dists[i * ncleanreads + j] = clean_edist[i][j];
-    }        
+    // sort clean_annos
+    vector<vector<uint8_t>> clean_annos_cp(clean_annos);
+    std::sort(clean_annos_cp.begin(), clean_annos_cp.end(), []( vector<uint8_t> & a, vector<uint8_t> & b){ return a.size() > b.size(); });
+
+    // // change from clean_edist to dists
+    // double dists [ncleanreads * ncleanreads];
+    // for (i = 0; i < ncleanreads; ++i)
+    // {
+    //     for (j = 0; j < ncleanreads; ++j)
+    //        dists[i * ncleanreads + j] = clean_edist[i][j];
+    // }        
 
     // collect sequence length and sequence
-    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs + 1);
-    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs + 1);
+    int i, j;
+    int *seq_lens = (int*)malloc(sizeof(int) * n_seqs);
+    uint8_t **bseqs = (uint8_t**)malloc(sizeof(uint8_t*) * n_seqs);
     for (i = 0; i < n_seqs; ++i) {
-        seq_lens[i] = clean_annos[i].size();
-        bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * (seq_lens[i]) + 1);
+        seq_lens[i] = clean_annos_cp[i].size();
+        bseqs[i] = (uint8_t*) malloc(sizeof(uint8_t) * (seq_lens[i] + 1));
         for (j = 0; j < seq_lens[i]; ++j) 
         {
-            assert(clean_annos[i][j] < motifs_size); 
-            bseqs[i][j] = clean_annos[i][j];
+            assert(clean_annos_cp[i][j] < motifs_size); 
+            bseqs[i][j] = clean_annos_cp[i][j] + 1;
         }
+        bseqs[i][seq_lens[i]] = '\0';
     }
 
     // initialize variables
@@ -781,10 +787,10 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     {
         for (j = 0; j < ab->abc->cons_len[i]; ++j)
         {
-            assert(ab->abc->cons_base[i][j] < motifs_size);
-            consensus[i].push_back((uint8_t)ab->abc->cons_base[i][j]);
+            assert(ab->abc->cons_base[i][j] <= motifs_size);
+            consensus[i].push_back((uint8_t)(ab->abc->cons_base[i][j]) - 1);
         }
-	cerr << "got consensus of size " << consensus.size() << endl;	      
+	    // cerr << "got consensus of size " << consensus.size() << endl;	      
         assert(consensus[i].size() > 0);        
     }
     /*
@@ -808,6 +814,7 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
         }
     }
     
+
     abpoa_free(ab); 
     abpoa_free_para(abpt); 
 
