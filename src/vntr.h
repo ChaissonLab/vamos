@@ -12,6 +12,7 @@
 #include "read.h"
 #include "option.h"
 
+
 using namespace std;
 
 /*
@@ -19,6 +20,9 @@ class MOTIF contains:
 @seq: the sequence of the motif
 @len: the lenght of the motif
 */
+
+
+
 class MOTIF
 {
 public:

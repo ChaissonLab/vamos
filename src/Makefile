@@ -7,7 +7,7 @@ CXX=g++ -std=c++17
 CFLAGS=
 asan?=""
 tsan?=""
-ABPOA=/project/mchaisso_100/mchaisso/projects/vamos/src/abpoa/abPOA/
+ABPOA=src/abpoa/abPOA/
 ifeq ("$(DEBUG)", "TRUE")
 CFLAGS=-g  #-fsanitize=address #-Wall -Wextra
 else
@@ -30,7 +30,10 @@ endif
 
 all:$(PROG)
 
-vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o
+src/abpoa/abPOA/lib/libabpoa.a:
+	pushd src/abpoa/abPOA && make -j 4
+
+vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o src/abpoa/abPOA/lib/libabpoa.a
 	$(CXX) $(CFLAGS) -o $@ $^ -L$(ABPOA)/lib -labpoa -L $(CONDA_PREFIX)/lib $(LIBS) -L ../static_lib/ -lalglib -ledlib -lrt 
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
@@ -41,6 +44,9 @@ io.o: io.cpp io.h vcf.h vntr.h read.h
 
 vcf.o: vcf.cpp vcf.h 
 	$(CXX) $(CFLAGS) -c $<  -I $(CONDA_PREFIX)/include 
+
+phase.o: phase.cpp phase.h read.h
+	$(CXX) $(CFLAGS) -c $<  -I $(CONDA_PREFIX)/include
 
 vntr.o: vntr.cpp naive_anno.cpp bounded_anno.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h
 	$(CXX) $(CFLAGS) -c $< -I $(ABPOA)/include -I ../alglib/src -I ../edlib/include -I -I $(CONDA_PREFIX)/include
