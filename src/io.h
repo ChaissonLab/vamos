@@ -26,7 +26,12 @@ public:
 	char * sampleName;
 	char * version;
 	OutWriter outWriter;
-
+  // Not the best place to put this, but since the IO is batched and we
+  // do not want to store the flanking sequences at each locus for
+  // the duration of the run of the program, it's passed through
+  // to here for now. Eventually if sites are processed immediately
+  // after overlapping reads are read, this can move.
+  int phaseFlank;
 	IO () 
 	{
 		version = (char *) malloc(7);

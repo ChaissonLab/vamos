@@ -12,6 +12,7 @@ public:
 	double penalty_indel;
 	double penalty_mismatch;
         double accuracy;
+        int phaseFlank;
 	OPTION ()
 	{
 		nproc = 1;
@@ -20,6 +21,7 @@ public:
 		penalty_indel = 1.0;
 		penalty_mismatch = 1.0;
 		accuracy=0.98;
+		phaseFlank=3000;
 	};
 
 	~OPTION () {};
