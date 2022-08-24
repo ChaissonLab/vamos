@@ -50,6 +50,9 @@ vamos --single_seq -b ../example/one_read.fasta -r ../example/one_region_motif.b
 - [Output](#output)
   - [BED for readwise mode](#BED)
   - [VCF for locuswise mode](#VCF)
+- [Pipeline](#pipeline)
+  - [config file](#config)
+  - [running](#running)
 
 ## <a name="introduction"></a>Introduction
 Vamos is a tool to perform run-length encoding of VNTR sequences using a set of selected motifs from all motifs observed at that locus.
