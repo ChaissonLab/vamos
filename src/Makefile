@@ -7,7 +7,7 @@ CXX=g++ -std=c++17
 CFLAGS=
 asan?=""
 tsan?=""
-ABPOA=src/abpoa/abPOA/
+ABPOA=abpoa/
 ifeq ("$(DEBUG)", "TRUE")
 CFLAGS=-g  #-fsanitize=address #-Wall -Wextra
 else
@@ -30,10 +30,10 @@ endif
 
 all:$(PROG)
 
-src/abpoa/abPOA/lib/libabpoa.a:
-	pushd src/abpoa/abPOA && make -j 4
+abpoa/lib/libabpoa.a:
+	pushd abpoa && make -j 4 CC=gcc
 
-vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o src/abpoa/abPOA/lib/libabpoa.a
+vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o abpoa/lib/libabpoa.a
 	$(CXX) $(CFLAGS) -o $@ $^ -L$(ABPOA)/lib -labpoa -L $(CONDA_PREFIX)/lib $(LIBS) -L ../static_lib/ -lalglib -ledlib -lrt 
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
