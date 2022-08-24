@@ -7,7 +7,7 @@ CXX=g++ -std=c++17
 CFLAGS=
 asan?=""
 tsan?=""
-ABPOA=abPOA
+ABPOA=abpoa
 ifeq ("$(DEBUG)", "TRUE")
 CFLAGS=-g  #-fsanitize=address #-Wall -Wextra
 else
