@@ -23,7 +23,7 @@ tar -zxvf vamos-v1.0.0.tar.gz && cd vamos-v1.0.0
 
 Or download the latest code from github
 ```
-git clone https://github.com/ChaissonLab/vamos.git
+git clone https://github.com/ChaissonLab/vamos.git 
 ```
 
 Make from source and run with test data:
@@ -93,7 +93,7 @@ cd vamos-v1.0.0/src; make
 Or, you can use `git clone` command to download the source code.
 This gives you the latest version of vamos, which might be still under development.
 ```
-git clone https://github.com/ChaissonLab/vamos.git
+git clone https://github.com/ChaissonLab/vamos.git 
 cd vamos/src; make
 ```
 

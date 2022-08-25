@@ -359,12 +359,13 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
     abpt->gap_ext2 = 1;   // gap extension penalty #2
                     	  // gap_penalty = min{gap_open1 + gap_len * gap_ext1, gap_open2 + gap_len * gap_ext2}
 
-    //    abpt->is_diploid = 0;
+    abpt->is_diploid = 0;
 	// abpt->min_freq = 0.8; 
     abpt->out_msa = 1; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
     abpt->progressive_poa = 1;
-    // abpt->out_pog = 0;
+    abpt->ret_cigar = 0;
+    abpt->out_pog = 0;
 
     // variables to store result
     uint8_t **cons_seq; int **cons_cov, *cons_l, cons_n = 0;
@@ -377,19 +378,26 @@ void MSA_helper (int motifs_size, int n_seqs, vector<uint8_t> &consensus, int *s
 
     // perform abpoa-msa
     // abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, stdout, NULL, NULL, NULL, NULL, NULL, NULL);
-
     // ab->abs->n_seq = 0; // To re-use ab, n_seq needs to be set as 0
-    //    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
+    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
     //    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, NULL);
-    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, NULL);//, &cons_seq, &cons_cov, NULL);    
+    // abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, NULL);//, &cons_seq, &cons_cov, NULL);    
     
 
-    assert(ab->abc->n_cons > 0); // cons_n == 0 means no consensus sequence exists
-    for (j = 0; j < ab->abc->cons_len[0]; ++j)
+    assert(cons_n > 0); // cons_n == 0 means no consensus sequence exists
+    for (j = 0; j < cons_l[0]; ++j) 
     {
-    	assert(ab->abc->cons_base[0][j] < motifs_size);
-    	consensus.push_back((uint8_t)ab->abc->cons_base[0][j]);
+        assert(cons_seq[0][j] < motifs_size);
+        consensus.push_back((uint8_t)(cons_seq[0][j] - 1)); // -1 to cancel out +1
     }
+
+    // assert(ab->abc->n_cons > 0); // cons_n == 0 means no consensus sequence exists
+    // for (j = 0; j < ab->abc->cons_len[0]; ++j)
+    // {
+    // 	assert(ab->abc->cons_base[0][j] < motifs_size);
+    // 	consensus.push_back((uint8_t)ab->abc->cons_base[0][j]);
+    // }
+
     assert(consensus.size() > 0);
 
     // fprintf(stdout, "=== output to variables ===\n");
@@ -450,23 +458,13 @@ void MSA (int motifs_size, const vector<int> &gp, const vector<vector<uint8_t>> 
     int i, j;
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = annos[gp[i]].size();
-        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
+        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * (seq_lens[i] + 1));
         for (j = 0; j < seq_lens[i]; ++j)
         {
         	assert(annos[gp[i]][j] < motifs_size);
-        	bseqs[i][j] = annos[gp[i]][j] + 1;
-
-        	// if (annos[gp[i]][j] >= 0 and annos[gp[i]][j] < 45) 
-        	// {
-        	// 	bseqs[i][j] = annos[gp[i]][j] + 33;
-        	// }
-        	// else 
-        	// {
-        	// 	bseqs[i][j] = annos[gp[i]][j] + 34;
-        	// }
-            
+        	bseqs[i][j] = annos[gp[i]][j] + 1;            
         }
-        // bseqs[i][seq_lens[i]] = '\0';
+        bseqs[i][seq_lens[i]] = '\0';
     }
 
 	MSA_helper (motifs_size, n_seqs, consensus, seq_lens, bseqs);
@@ -492,12 +490,13 @@ void MSA (int motifs_size, const vector<vector<uint8_t>> &annos, vector<uint8_t>
     int i, j;
     for (i = 0; i < n_seqs; ++i) {
         seq_lens[i] = annos[i].size();
-        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * seq_lens[i]);
+        bseqs[i] = (uint8_t*)malloc(sizeof(uint8_t) * (seq_lens[i] + 1));
         for (j = 0; j < seq_lens[i]; ++j) 
         {
         	assert(annos[i][j] < motifs_size); 
-        	bseqs[i][j] = annos[i][j] + 1;
+        	bseqs[i][j] = annos[i][j] + 1; // +1 to avoid 0
         }
+        bseqs[i][seq_lens[i]] = '\0';
     }
 
 	MSA_helper (motifs_size, n_seqs, consensus, seq_lens, bseqs);
@@ -725,7 +724,7 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
         for (j = 0; j < seq_lens[i]; ++j) 
         {
             assert(clean_annos_cp[i][j] < motifs_size); 
-            bseqs[i][j] = clean_annos_cp[i][j] + 1;
+            bseqs[i][j] = clean_annos_cp[i][j] + 1; // +1 to avoid 0
         }
         bseqs[i][seq_lens[i]] = '\0';
     }
@@ -744,14 +743,15 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     abpt->gap_open2 = 1;   // gap open penalty #2
     abpt->gap_ext2 = 1;    // gap extension penalty #2
                            // gap_penalty = min{gap_open1 + gap_len * gap_ext1, gap_open2 + gap_len * gap_ext2}
-    //    abpt->is_diploid = 0;
+    abpt->is_diploid = 0;
     // abpt->min_freq = 0.8; 
     abpt->out_msa = 0; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
     abpt->progressive_poa = 1;
     abpt->out_gfa = 0;
     abpt->ret_cigar = 0; // turn off the cigar string. Otherwise, cg_backtrack step crashes! 
-    // abpt->out_pog = 0;
+    abpt->rev_cigar = 0;
+    abpt->out_pog = 0;
     abpoa_post_set_para(abpt);
 
     // variables to store result
@@ -773,9 +773,9 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
       return;
     }
 
-    //    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
-    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, NULL);//&cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);    
-    cons_n = ab->abc->n_cons;
+    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
+    // abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, NULL);//&cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);    
+    // cons_n = ab->abc->n_cons;
 
     assert(cons_n > 0); // cons_n == 0 means no consensus sequence exists
     if (cons_n > 1) cerr << "het" << endl;
@@ -785,15 +785,19 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
     het = cons_n > 1 ? true : false;
     for (i = 0; i < numHap; ++i)
     {
-        for (j = 0; j < ab->abc->cons_len[i]; ++j)
+        for (j = 0; j < cons_l[i]; ++j) 
         {
-            assert(ab->abc->cons_base[i][j] <= motifs_size);
-            consensus[i].push_back((uint8_t)(ab->abc->cons_base[i][j]) - 1);
+            assert(cons_seq[i][j] <= motifs_size);
+            consensus[i].push_back((uint8_t)(cons_seq[i][j] - 1));            
         }
+        // for (j = 0; j < ab->abc->cons_len[i]; ++j)
+        // {
+        //     assert(ab->abc->cons_base[i][j] <= motifs_size);
+        //     consensus[i].push_back((uint8_t)(ab->abc->cons_base[i][j]) - 1);
+        // }
 	    // cerr << "got consensus of size " << consensus.size() << endl;	      
         assert(consensus[i].size() > 0);        
     }
-    /*
     if (cons_n) {
         for (i = 0; i < cons_n; ++i) 
         {
@@ -804,7 +808,6 @@ void VNTR::concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
         free(cons_cov); 
         free(cons_l);
     }
-    */
     if (msa_l) 
     {
         for (i = 0; i < n_seqs; ++i) 

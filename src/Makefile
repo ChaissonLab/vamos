@@ -1,5 +1,5 @@
 PROG=vamos
-LIBS=-lhts -lz -lpthread 
+LIBS=-lhts -lz -lpthread -labpoa
 PROF=/home1/jingwenr/.conda/envs/trf/lib
 DEBUG?="-g "
 OPT?=""
@@ -7,7 +7,7 @@ CXX=g++ -std=c++17
 CFLAGS=
 asan?=""
 tsan?=""
-ABPOA=abPOA
+ABPOA=../abPOA-1.2.5
 ifeq ("$(DEBUG)", "TRUE")
 CFLAGS=-g  #-fsanitize=address #-Wall -Wextra
 else
@@ -30,11 +30,8 @@ endif
 
 all:$(PROG)
 
-abpoa/lib/libabpoa.a:
-	pushd abpoa && make -j 4 CC=gcc 
-
-vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o abpoa/lib/libabpoa.a phase.o
-	$(CXX) $(CFLAGS) -o $@ $^ -L $(ABPOA)/lib -labpoa -L $(CONDA_PREFIX)/lib $(LIBS) -L ../static_lib/ -lalglib -ledlib -lrt 
+vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o
+	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L ../static_lib/ -lalglib -ledlib -lrt 
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include  
