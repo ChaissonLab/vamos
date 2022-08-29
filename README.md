@@ -29,8 +29,9 @@ git clone https://github.com/ChaissonLab/vamos.git
 Make from source and run with test data:
 ```
 cd vamos*/src/ && make
-vamos --readwise -b ../example/toy.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/readwise.bed -t 16
-vamos --locuswise -b ../example/toy.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/locuswise.bed -t 16
+vamos --readwise -b ../example/toy.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/readwise.bed -t 8
+vamos --locuswise_prephase -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/locuswise_prephase.vcf -t 8
+vamos --locuswise -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/locuswise.vcf -t 8
 vamos --single_seq -b ../example/one_read.fasta -r ../example/one_region_motif.bed -s NA24385_CCS_h1 -o ../example/single_seq.vcf (ONLY SUPPORT SINGLE THREAD!)
 ```
 
@@ -42,14 +43,15 @@ vamos --single_seq -b ../example/one_read.fasta -r ../example/one_region_motif.b
   - [Building vamos from source files](#build)
   - [Pre-built binary executable file for Linux/Unix](#binary)
 - [General usage](#usage)
-  - [To generate the annotation for each read](#readwise)
-  - [To generate the consensus annotation for each VNTR locus](#locuswise)
+  - [To generate annotation for each read](#readwise)
+  - [To generate annotation for each VNTR locus given pre-phased reads](#locuswise_prephase)
+  - [To generate annotations of both haplotypes for each VNTR locus (embeded phasing step in vamos)](#locuswise)
   - [To generate annotation for one single read](#single_seq)
 - [Commands and options](#cmd)
 - [Input](#input)
 - [Output](#output)
   - [BED for readwise mode](#BED)
-  - [VCF for locuswise mode](#VCF)
+  - [VCF for locuswise_prephase/locuswise/single_seq mode](#VCF)
 - [Pipeline](#pipeline)
   - [config file](#config)
   - [running](#running)
@@ -61,8 +63,9 @@ For example, a VNTR sequence ACGGT|ACTGT|ACGT may be encoded to a more compact r
 The edit distance between the original VNTR sequence and encoding sequence is 1. 
 
 Vamos can generate annotation for each read, given a set of motifs for each VNTR locus. (`--readwise` mode)
-Vamos can generate annotation for each VNTR locus by aggragating annotations of reads. (`--locuswise` mode)
-Vamos can generate annotation for subsequence of a read lifted from a particular VNTR locus. (`--single_seq` mode)
+Vamos can generate annotation for each VNTR locus by aggragating annotations of pre-phased reads. (`--locuswise_prephase` mode)
+Vamos can generate annotation of both haplotypes for each VNTR locus by phasing reads first and annotating the haplotype consensus sequence. (`--locuswise` mode)
+Vamos can generate annotation for the subsequence of a single read lifted from a particular VNTR locus. (`--single_seq` mode)
 
 ### <a name="emotif"></a>Efficient motif set
 We defined VNTR loci and motifs using a collection of 32 haplotype-resolved LRS genomes constructed by Human Genome Structural Variation Consortium.
@@ -105,13 +108,17 @@ tar -zxvf vamos-v1.0.0_x64-linux.tar.gz
 ```
 
 ## <a name="usage"></a>General usage
-### <a name="readwise"></a>To generate the annotation for each read
+### <a name="readwise"></a>To generate annotation for each read
 ```
 vamos --readwise -b ../example/toy.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/readwise.bed -t 16
 ```
-### <a name="locuswise"></a>To generate the consensus annotation for each VNTR locus
+### <a name="locuswise_prephase"></a>To generate annotation for each VNTR locus given pre-phased reads
 ```
-vamos --locuswise -b ../example/toy.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/locuswise.bed -t 16
+vamos --locuswise_prephase -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/locuswise_prephase.vcf -t 8
+```
+### <a name="locuswise"></a>To generate annotations of both haplotypes for each VNTR locus (embeded phasing step in vamos)
+```
+vamos --locuswise -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/locuswise.vcf -t 8
 ```
 ### <a name="single_seq"></a>To generate annotation for one single read
 ```
@@ -124,24 +131,26 @@ Usage: vamos [subcommand] [options] [-b in.bam] [-r vntrs_region_motifs.bed] [-o
 Version: v1.0.0
 subcommand:
 vamos --readwise   [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.bed] [-s sample_name] [-t threads] 
-vamos --locuswise  [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] 
+vamos --locuswise_prephase  [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] 
+vamos --locuswise [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank]
 vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) 
    Input: 
-       -b   FILE         input indexed bam file. 
+       -b   FILE         input indexed bam file (when using --readwise and --locuswise) or fasta file (when using --single_seq). 
        -r   FILE         file containing region coordinate and motifs of each VNTR locus. 
                          The file format: columns `chrom,start,end,motifs` are tab-delimited. 
                          Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR. 
        -s   CHAR         sample name. 
    Output: 
-       -o   FILE         output bed/vcf file. 
+       -o   FILE         output bed (when using --readwise) or vcf (when using --locuswise and --single_seq) file. 
    Dynamic Programming: 
        -d   DOUBLE       penalty of indel in dynamic programming (double) DEFAULT: 1.0. 
        -c   DOUBLE       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. 
        -a   DOUBLE       Global accuracy of the reads. DEFAULT: 0.98. 
        --naive           specify the naive version of code to do the annotation, DEFAULT: faster implementation. 
    Aggregate Annotation: 
-       -f   DOUBLE       filter noisy read annotations, DEFAULT: 0.0 (no filter). 
-       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom. 
+       -f   DOUBLE       filter out noisy read annotations, DEFAULT: 0.0 (no filter). 
+   Phase reads: 
+       -p   INT          the range of flanking sequences which is used in the phasing step. DEFAULT: 3000 bps. 
    Others: 
        -t   INT          number of threads, DEFAULT: 1. 
        --debug           print out debug information. 
@@ -149,10 +158,10 @@ vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s 
 ```
 
 ## <a name="input"></a>Input
-Vamos works with indexed bam file under `--readwise` and `--locuswise` modes, and works with fasta file under `--single_seq` mode. 
+Vamos works with indexed bam file under `--readwise` and `--locuswise` and `--locuswise_prephase` modes, and works with fasta file under `--single_seq` mode. 
 
 ## <a name="output"></a>Output
-Vamos outputs BED file under `--readwise` mode, and outputs vcf file under `--locuswise` and `--single_seq` modes. 
+Vamos outputs BED file under `--readwise` mode, and outputs vcf file under `--locuswise`, `--locuswise_prephase` and `--single_seq` modes. 
 
 
 ### <a name="BED"></a>BED for readwise mode
@@ -173,7 +182,7 @@ chr1	189828	189966	TGAGAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAGGGCAGGAGGAGGGTGTGGGATGGT
 ```
 
 ### <a name="VCF"></a>VCF for locuswise and single_seq modes
-Vamos generates annotation for each VNTR locus in VCF file under `--locuswise` and `--single_seq` modes.
+Vamos generates annotation for each VNTR locus in VCF file under `--locuswise`, `--locuswise_prephase` and `--single_seq` modes.
 
 
 The following shows an example of the VCF file
