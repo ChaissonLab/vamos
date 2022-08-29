@@ -101,14 +101,19 @@ public:
 	vector<MOTIF> motifs;
 	vector<READ *> reads; 
 	vector<vector<uint8_t>> annos; // the motif annotation for each read sequence
-	vector<string> annoStrs; 
+	// vector<string> annoStrs; 
 	int nreads;
+	vector<vector<double>> edist;
 
-	vector<READ *> clean_reads; 
-	vector<vector<uint8_t>> clean_annos; 
-	vector<string> clean_annoStrs;
-	int ncleanreads; 
-	vector<vector<double>> clean_edist;
+	// vector<READ *> clean_reads; 
+	// vector<vector<uint8_t>> clean_annos; 
+	// vector<string> clean_annoStrs;
+	// int ncleanreads; 
+	// vector<vector<double>> clean_edist;
+
+	vector<int> h1_reads;
+	vector<int> h2_reads;
+	vector<READ *> Hap_seqs;
 
 	vector<vector<uint8_t>> consensus; 
 	bool het;
@@ -118,7 +123,7 @@ public:
 
 	int len_h1;
 	int len_h2;
-   
+
 	VNTR () { het = false; nreads = 0; skip = false; nullAnno = false;};
 
 	VNTR (string Chr, uint32_t Start, uint32_t End, uint32_t Len) : chr(Chr), ref_start(Start), ref_end(End), len(Len) 
@@ -143,30 +148,41 @@ public:
 			delete reads[i];
 		}
 		reads.clear();
+
+		if (!het and nreads == 1) return;
+
+		for (size_t i = 0; i < Hap_seqs.size(); ++i) 
+		{ 
+			delete Hap_seqs[i];
+		}
+		Hap_seqs.clear();
+
 		return;
 	}
 
 	/* for each sequence, get the annotation of motifs */
-        void motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<int > &mismatchCI);
+    void motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<int > &mismatchCI);
 	// string * getAnnoStr (int i);
 
 	size_t getAnnoStrLen (int i);
 
 	void annoTostring (const OPTION &opt);
 
+	void consensusReadForHapByABpoa (const OPTION &opt);
+	
 	/* for all the sequences at the current VNTR locus, get the consensus; annotation */
-	void concensusMotifAnnoForOneVNTR (const OPTION &opt);
+	void consensusMotifAnnoForOneVNTRByClustering (const OPTION &opt);
 
-	void concensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt);
+	void consensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt);
 
-	// void concensusMotifAnnoForOneVNTRBySeqan (const OPTION &opt);
+	// void consensusMotifAnnoForOneVNTRBySeqan (const OPTION &opt);
 
 	int hClust (vector<int> &gp1, vector<int> &gp2, double dists []);
 
 	/* for one consensus; annotation, output the comma-delimited annotation */
 	void commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_rep);
 
-	int cleanNoiseAnno(const OPTION &opt);
+	// int cleanNoiseAnno(const OPTION &opt);
 };
 
 

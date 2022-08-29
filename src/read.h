@@ -4,6 +4,7 @@
 #include <vector>
 
 using namespace std;
+
 /* 
 class READ constains
 @qname: the read ID
@@ -29,7 +30,7 @@ public:
 	bool rev;
     int haplotype;
     string upstream, downstream;
-  vector<SNV> snvs;
+  	vector<SNV> snvs;
 	READ () 
 	{
 		qname = NULL;
@@ -37,7 +38,7 @@ public:
 		chr = NULL;
 		seq = NULL;
 		rev = false;
-		haplotype=0;
+		haplotype = 0;
 	};
 	READ (char * Qname, char * Chr, uint32_t Len) : qname(Qname), chr(Chr), len(Len) { seq = NULL;};
 	~READ () 

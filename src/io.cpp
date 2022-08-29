@@ -29,7 +29,9 @@ extern int hclust_flag;
 extern int seqan_flag;
 extern int liftover_flag;
 extern int conseq_anno_flag;
+extern int locuswise_prephase_flag;
 extern int locuswise_flag;
+
 //0123456789ABCDEF
 //=ACMGRSVTWYHKDBN  aka seq_nt16_str[]
 //=TGKCYSBAWRDMHVN  comp1ement of seq_nt16_str
@@ -436,7 +438,6 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
     uint32_t ref_len;
     uint32_t VNTR_s, VNTR_e;
     unsigned char base;
-    // vector<READ *> initial_reads;
     uint32_t total_len;
 
     int i;
@@ -474,7 +475,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
             uint32_t tmp;
             VNTR_s = vntr->ref_start;
             VNTR_e = vntr->ref_end;
-	       //	    kstring_t s;
+            // kstring_t s;
             kstring_t auxStr = KS_INITIALIZE;
             int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
             int hap = GetHap(auxStr.s, auxStr.l);
@@ -504,27 +505,22 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 strcpy(read->qname, name);
                 string tmp_name(read->qname);
                 read->l_qname = tmp_name.length();
-                read->len = liftover_read_e - liftover_read_s + 1; // read length
+                read->len = liftover_read_e - liftover_read_s; // read length
                 read->seq = (char *) malloc(read->len + 1); // read sequence array
                 read->rev = rev;
 
-
                 StoreReadSeqAtRefCoord(aln, vntr->ref_start - phaseFlank, vntr->ref_start, read->upstream);
-                StoreReadSeqAtRefCoord(aln, vntr->ref_end, vntr->ref_end+phaseFlank, read->downstream);
+                StoreReadSeqAtRefCoord(aln, vntr->ref_end, vntr->ref_end + phaseFlank, read->downstream);
 
-                if (hap >= 0) {
-                  read->haplotype=hap;
-                }
+                if (hap >= 0) read->haplotype=hap;
 
                 kstring_t auxStr = KS_INITIALIZE;
                 int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
-                if (auxStat ) {
-                  
+                if (auxStat ) 
+                {
                   int si=0, nc=0;
                   int hap=GetHap(auxStr.s, auxStr.l);
-                  if (hap >= 0 ) {
-                    read->haplotype=hap;
-                  }
+                  if (hap >= 0 ) read->haplotype=hap;
                 }
 
                 for(i = 0; i < read->len; i++)
@@ -551,20 +547,30 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
             }
         }
         vntr->nreads = vntr->reads.size();
+
+        sort(vntr->reads.begin(), vntr->reads.end(), []( READ * read1, READ * read2) {
+          return read1->len > read2->len;
+        });
+
         vntr->cur_len = (vntr->nreads == 0) ? 0 : (total_len / vntr->nreads);
+        if (vntr->nreads == 0) 
+        {
+          vntr->skip = true;
+          continue;
+        }
 
-        // sort(vntr->reads.begin(), vntr->reads.end(), less_than_key());
+        // phasing
+        if (locuswise_flag) 
+        {
+          SimpleSNV(vntr, vntr->ref_start - phaseFlank, vntr->ref_start, 0);
+          SimpleSNV(vntr, vntr->ref_end, vntr->ref_end + phaseFlank, 1);
+          MaxCutPhase(vntr);          
+        }
 
-        if (vntr->nreads == 0) continue;
-        // SimpleSNV(vntr, vntr->ref_start - phaseFlank, vntr->ref_start, 0);
-        // SimpleSNV(vntr, vntr->ref_end, vntr->ref_end + phaseFlank, 1);
-        // MaxCutPhase(vntr);
     }
     free(bai);
     bam_destroy1(aln);
     bam_hdr_destroy(bamHdr);
-    // if (itr) hts_itr_destroy(itr);
-    // if (idx) hts_idx_destroy(idx);
     hts_itr_destroy(itr);
     hts_idx_destroy(idx);
     sam_close(fp_in); 

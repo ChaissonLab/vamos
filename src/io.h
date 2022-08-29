@@ -12,6 +12,7 @@
 #include "read.h"
 #include "vntr.h"
 #include "vcf.h"
+
 using namespace std;
 
 class IO
@@ -42,6 +43,7 @@ public:
 		motif_csv = NULL;
 		out_vcf = NULL;
 		sampleName = NULL;
+		phaseFlank = 0;
 	};
 
 	~IO() 
@@ -55,7 +57,7 @@ public:
 		free(sampleName);
 	};
 
-        int readRegionAndMotifs (vector<VNTR*> &vntrs);
+    int readRegionAndMotifs (vector<VNTR*> &vntrs);
   
 	int readMotifsFromCsv (vector<VNTR *> &vntrs);
 

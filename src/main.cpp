@@ -19,14 +19,15 @@
 int naive_flag = false;
 int debug_flag = false;
 int hclust_flag = false;
-// int seqan_flag = false;
 int output_read_anno_flag = false;
 int readwise_anno_flag = false;
-// int output_read_flag = false;
 int liftover_flag = false;
 int single_seq_flag = false;
+int locuswise_prephase_flag = false;
 int locuswise_flag = false;
 int num_processed = 0;
+// int seqan_flag = false;
+// int output_read_flag = false;
 
 struct timeval pre_start_time, pre_stop_time, pre_elapsed_time;
 struct timeval single_start_time, single_stop_time, single_elapsed_time;
@@ -52,8 +53,6 @@ void process_mem_usage(double &vm_usage, double &resident_set)
 }
 
 
-
-
 void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< int > &mismatchCI) 
 {
   
@@ -62,22 +61,32 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< 
 		it->skip = true;
 		if (debug_flag and it->nreads == 0) cerr << "no reads" << endl;
 		if (debug_flag and it->motifs.size() > 255) cerr << "skip one vntr due to > 255 motifs" << endl;
-
 		return;
 	}
 
 	if (debug_flag) cerr << "start to do the annotation: " << s << endl;
 
-	it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI); 
-	it->annoTostring(opt);
-	it->cleanNoiseAnno(opt);
+	if (!locuswise_flag) 
+	{
+		it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI); 
+		
+		if (!readwise_anno_flag) 	
+			it->consensusMotifAnnoForOneVNTRByABpoa(opt);	
 
-	if (hclust_flag)
-		it->concensusMotifAnnoForOneVNTR(opt);
-	// else if (seqan_flag)
-	// 	it->concensusMotifAnnoForOneVNTRBySeqan(opt);
-	else if (!readwise_anno_flag) 
-		it->concensusMotifAnnoForOneVNTRByABpoa(opt);
+		// it->annoTostring(opt);
+		// it->cleanNoiseAnno(opt); // (TODO: remove this)
+		// if (hclust_flag)
+		// 	it->consensusMotifAnnoForOneVNTRByClustering(opt);
+		// else if (!readwise_anno_flag) 
+		// 	it->consensusMotifAnnoForOneVNTRByABpoa(opt);
+	}
+	else 
+	{
+		it->consensusReadForHapByABpoa(opt);
+		it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI); 
+		// it->annoTostring(opt);
+		// it->cleanNoiseAnno(opt);		
+	}
 	
 	return;
 }
@@ -91,6 +100,7 @@ void *ProcVNTRs (void *procInfoValue)
 	int i, s;
 	int sz = (procInfo->vntrs)->size();
 	SDTables sdTables;
+
 	// read bam 
 	(procInfo->io)->readSeqFromBam ((*(procInfo->vntrs)), (procInfo->opt)->nproc, procInfo->thread, sz);
 
@@ -103,7 +113,7 @@ void *ProcVNTRs (void *procInfoValue)
 	
 	procInfo->mtx->lock();
 	cerr << "outputing vcf" << endl;	
-	if (locuswise_flag) 
+	if (locuswise_prephase_flag or locuswise_flag) 
 		(procInfo->io)->writeVCFBody_locuswise(*(procInfo->out), (*(procInfo->vntrs)), procInfo->thread, (procInfo->opt)->nproc);	
 	else if (readwise_anno_flag) 
 		(procInfo->io)->writeBEDBody_readwise(*(procInfo->out), (*(procInfo->vntrs)), procInfo->thread, (procInfo->opt)->nproc);	
@@ -124,7 +134,8 @@ void printUsage(IO &io)
     
 	// printf("vamos --liftover   [-i in.bam] [-v vntrs.bed] [-o output.fa] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
 	printf("vamos --readwise   [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.bed] [-s sample_name] [-t threads] \n");	
-	printf("vamos --locuswise  [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
+	printf("vamos --locuswise_prephase  [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
+	printf("vamos --locuswise [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank]\n");
 	printf("vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
 	printf("   Input: \n");
 	printf("       -b   FILE         input indexed bam file (when using --readwise and --locuswise) or fasta file (when using --single_seq). \n");	
@@ -140,15 +151,16 @@ void printUsage(IO &io)
 	printf("       -a   DOUBLE       Global accuracy of the reads. DEFAULT: 0.98. \n");	
 	printf("       --naive           specify the naive version of code to do the annotation, DEFAULT: faster implementation. \n");
 	printf("   Aggregate Annotation: \n");
-	printf("       -f   DOUBLE       filter noisy read annotations, DEFAULT: 0.0 (no filter). \n");
-	printf("       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom. \n");
-	// printf("       --seqan           use seqan lib to do MSA (haploid only), DEFAULT: abPoa\n");
-	// printf("       --readanno        output read annotation in VCF and output vntr sequences to stdout. \n");
+	printf("       -f   DOUBLE       filter out noisy read annotations, DEFAULT: 0.0 (no filter). \n");
+	// printf("       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom. \n");
+	printf("   Phase reads: \n");
+	printf("       -p   INT       	 the range of flanking sequences which is used in the phasing step. DEFAULT: 3000 bps. \n");
 	printf("   Others: \n");
 	printf("       -t   INT          number of threads, DEFAULT: 1. \n");
 	printf("       --debug           print out debug information. \n");
 	printf("       -h                print out help message. \n");
-
+	// printf("       --seqan           use seqan lib to do MSA (haploid only), DEFAULT: abPoa\n");
+	// printf("       --readanno        output read annotation in VCF and output vntr sequences to stdout. \n");
 } 
 
 int main (int argc, char **argv)
@@ -161,23 +173,23 @@ int main (int argc, char **argv)
 	const struct option long_options[] =
 	{
 		/* These options set a flag. */
-		{"naive",         no_argument,             &naive_flag,                    1},
-		{"debug",         no_argument,             &debug_flag,                    1},
-		{"clust",         no_argument,             &hclust_flag,                   1},
+		{"naive",               no_argument,             &naive_flag,                    1},
+		{"debug",               no_argument,             &debug_flag,                    1},
+		// {"clust",               no_argument,             &hclust_flag,                   1},
+		{"readanno",            no_argument,             &output_read_anno_flag,         1},
+		{"locuswise_prephase",  no_argument,             &locuswise_prephase_flag,       1},
+		{"locuswise",           no_argument,             &locuswise_flag,                1},
+		{"single_seq",          no_argument,             &single_seq_flag,               1},
+		{"readwise",            no_argument,             &readwise_anno_flag,            1},
+		{"liftover",            no_argument,             &liftover_flag,                 1},
 		// {"seqan",         no_argument,             &seqan_flag,                    1},
-		{"readanno",      no_argument,             &output_read_anno_flag,         1},
-		{"locuswise",     no_argument,             &locuswise_flag,                 1},
-		{"single_seq",    no_argument,             &single_seq_flag,              1},
-		{"readwise",      no_argument,             &readwise_anno_flag,            1},
 		// {"output_read",   no_argument,             &output_read_flag,              1},		
-		{"liftover",      no_argument,             &liftover_flag,                 1},
+
 
 		/* These options don’t set a flag. We distinguish them by their indices. */
 		{"bam",             required_argument,       0, 'b'},
 		{"region",          required_argument,       0, 'r'},						
-		// {"input",           required_argument,       0, 'i'},
 		{"vntr",            required_argument,       0, 'v'},
-		// {"motif",           required_argument,       0, 'm'},
 		{"output",          required_argument,       0, 'o'},
 		{"out_fa",          required_argument,       0, 'x'},
 		{"sampleName",      required_argument,       0, 's'},
@@ -186,7 +198,10 @@ int main (int argc, char **argv)
 		{"penlaty_indel",   required_argument,       0, 'd'},
 		{"penlaty_mismatch",required_argument,       0, 'c'},
 		{"accuracy"        ,required_argument,       0, 'a'},
-		{"phase_flank"     ,required_argument,       0, 'p'},		
+		{"phase_flank"     ,required_argument,       0, 'p'},	
+		// {"input",           required_argument,       0, 'i'},
+		// {"motif",           required_argument,       0, 'm'},
+
 		{NULL, 0, 0, '\0'}
 	};
 	/* getopt_long stores the option index here. */
@@ -210,12 +225,6 @@ int main (int argc, char **argv)
 			io.input_bam[strlen(optarg)] = '\0';						
 			break;
 
-		// case 'i':
-		// 	fprintf (stderr, "option -input with `%s'\n", optarg);
-		// 	io.input_bam = (char *) malloc(strlen(optarg) + 1);
-		// 	strcpy(io.input_bam, optarg);
-		// 	break;
-
 		case 'v':
 			fprintf (stderr, "option -vntr with `%s'\n", optarg);
 			io.vntr_bed = (char *) malloc(strlen(optarg) + 1);
@@ -230,7 +239,14 @@ int main (int argc, char **argv)
 			io.region_and_motifs[strlen(optarg)] = '\0';
 			io.region_and_motifs[strlen(optarg)] = '\0';						
 			break;
-		  
+
+
+		// case 'i':
+		// 	fprintf (stderr, "option -input with `%s'\n", optarg);
+		// 	io.input_bam = (char *) malloc(strlen(optarg) + 1);
+		// 	strcpy(io.input_bam, optarg);
+		// 	break;
+
 		// case 'm':
 		// 	fprintf (stderr, "option -motif with `%s'\n", optarg);
 		// 	io.motif_csv = (char *) malloc(strlen(optarg) + 1);
@@ -272,6 +288,17 @@ int main (int argc, char **argv)
 			opt.filterNoisy = true;
 			break;
 
+		case 'a':
+ 		    opt.accuracy = stod(optarg);
+			fprintf (stderr, "option -accuracy with `%f'\n", opt.accuracy);
+			break;
+			
+		case 'p':
+  		    opt.phaseFlank = atoi(optarg);
+  		    io.phaseFlank = opt.phaseFlank;
+            fprintf (stderr, "option -phase_flank with `%d'\n", opt.phaseFlank);			             
+            break;
+
 		case 'h':
 			printUsage(io);
 			exit(EXIT_SUCCESS);
@@ -283,19 +310,16 @@ int main (int argc, char **argv)
 		case ':':
 			cerr << "[ERROR] missing option argument" << endl;
 			exit(EXIT_FAILURE);
-		case 'a':
- 		        opt.accuracy = stod(optarg);
-			fprintf (stderr, "option -accuracy with `%f'\n", opt.accuracy);
-			break;
-		case 'p':
-  		        opt.phaseFlank = atoi(optarg);
-                        fprintf (stderr, "option -phase_flank with `%d'\n", opt.phaseFlank);			             break;
+
 		default:
 			printUsage(io);
 			exit(EXIT_FAILURE);
 		}		
 	}
-	
+
+	if (locuswise_flag) io.phaseFlank = opt.phaseFlank;
+
+
 	/* Check mandatory parameters */
 	bool missingArg = false;
 	if (io.input_bam == NULL) 
@@ -308,7 +332,7 @@ int main (int argc, char **argv)
 		fprintf(stderr, "ERROR:-r must be specified!\n");
 		missingArg = true;
 	}
-	// if (io.motif_csv == NULL and (conseq_anno_flag or locuswise_flag))
+	// if (io.motif_csv == NULL and (conseq_anno_flag or locuswise_prephase_flag))
 	// {
 	// 	fprintf(stderr, "-m is mandatory with conseq and locuswise!\n");
 	// 	missingArg = true;
@@ -332,12 +356,13 @@ int main (int argc, char **argv)
 
   	if (naive_flag) fprintf(stderr, "naive_flag is set. \n");
   	if (debug_flag) fprintf(stderr, "debug_flag is set. \n");
-   	if (hclust_flag) fprintf(stderr, "hclust_flag is set. \n");
+   	// if (hclust_flag) fprintf(stderr, "hclust_flag is set. \n");
   	// if (seqan_flag) fprintf(stderr, "seqan_flag is set\n");
    	if (output_read_anno_flag) fprintf(stderr, "output_read_anno_flag is set. \n");
   	if (liftover_flag) fprintf(stderr, "liftover_flag is set\n");
   	if (single_seq_flag) fprintf(stderr, "single_seq_flag is set\n");
   	if (readwise_anno_flag) fprintf(stderr, "readwise_anno_flag is set. \n");
+  	if (locuswise_prephase_flag) fprintf(stderr, "locuswise_prephase_flag is set. \n");
   	if (locuswise_flag) fprintf(stderr, "locuswise_flag is set. \n");
 
 	/* Print any remaining command line arguments (not options). */
@@ -372,16 +397,16 @@ int main (int argc, char **argv)
 	  } 	
 	if (readwise_anno_flag)
 		io.writeBEDHeader_readwise(out);
-	else if (locuswise_flag or single_seq_flag)
+	else if (locuswise_prephase_flag or locuswise_flag or single_seq_flag)
 		io.writeVCFHeader_locuswise(out);
 
 	gettimeofday(&pre_stop_time, NULL);
 	timersub(&pre_stop_time, &pre_start_time, &pre_elapsed_time); 
 	long threads_elapsed_time = 0; 
 
+
 	/* Create threads */
 	int i;
-	io.phaseFlank = opt.phaseFlank;
 	if (opt.nproc > 1)
 	{
 		pthread_t *tid = new pthread_t[opt.nproc];
@@ -438,7 +463,7 @@ int main (int argc, char **argv)
 		// output vcf or bed or fasta
 		if (readwise_anno_flag) 
 		 	io.writeBEDBody_readwise(out, vntrs, -1, 1);
-		else if (locuswise_flag or single_seq_flag) 
+		else if (locuswise_prephase_flag or locuswise_flag or single_seq_flag) 
 			io.writeVCFBody_locuswise(out, vntrs, -1, 1);
 		else if (liftover_flag)
 			io.writeFa(out, vntrs);

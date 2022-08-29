@@ -73,6 +73,7 @@ void OutWriter::writeHeader_locuswise(ofstream &out)
 void writeSingleBody_locuswise(VNTR * it, ofstream &out)
 {
 	if (it->skip) return;
+	
 	string motif_list, motif_anno_h1, motif_anno_h2, GT; 
 	for (auto &piece : it->motifs) 
 	{ 
@@ -83,12 +84,12 @@ void writeSingleBody_locuswise(VNTR * it, ofstream &out)
     it->commaSeparatedMotifAnnoForConsensus(1, motif_anno_h1);
     it->commaSeparatedMotifAnnoForConsensus(0, motif_anno_h2);
 
-    vector<string> readAnnos(it->ncleanreads);
+    vector<string> readAnnos(it->nreads);
     if (readwise_anno_flag) 
     {
-		for (int i = 0; i < it->ncleanreads; ++i)
+		for (int i = 0; i < it->nreads; ++i)
 		{
-			for (auto &s : (it->clean_annos)[i]) {
+			for (auto &s : (it->annos)[i]) {
 				readAnnos[i] += to_string(s) + ","; 
 			}
 			if (!readAnnos[i].empty()) readAnnos[i].pop_back();
@@ -118,10 +119,10 @@ void writeSingleBody_locuswise(VNTR * it, ofstream &out)
 
 	if (output_read_anno_flag)
 	{
-		for (int i = 0; i < it->ncleanreads; ++i) 
+		for (int i = 0; i < it->nreads; ++i) 
 		{
 			out << "READANNO_";
-			out.write((it->clean_reads[i])->qname, (it->clean_reads[i])->l_qname);
+			out.write((it->reads[i])->qname, (it->reads[i])->l_qname);
 			out << "=" + readAnnos[i] + ";";
 		}
 	}
@@ -180,10 +181,10 @@ void writeSingleBody_readwise(VNTR * it, ofstream &out)
 	for (int i = 0; i < it->reads.size(); i++) {
 		out << it->reads[i]->qname << ":";
 		out << it->reads[i]->haplotype << ":";
-		out << (int) it->clean_annos[i].size() << ":";
-		for (int j = 0; j < it->clean_annos[i].size(); j++) {
-			out << (int)(it->clean_annos[i][j]); 
-			if (j + 1 < it->clean_annos[i].size()) 
+		out << (int) it->annos[i].size() << ":";
+		for (int j = 0; j < it->annos[i].size(); j++) {
+			out << (int)(it->annos[i][j]); 
+			if (j + 1 < it->annos[i].size()) 
 				out << ",";
 		}
 		if (readwise_anno_flag) {
