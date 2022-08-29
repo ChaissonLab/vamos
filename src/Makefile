@@ -30,7 +30,7 @@ endif
 
 all:$(PROG)
 
-vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o
+vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L ../static_lib/ -lalglib -ledlib -lrt 
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
@@ -45,8 +45,11 @@ phase.o: phase.cpp phase.h read.h
 vcf.o: vcf.cpp vcf.h 
 	$(CXX) $(CFLAGS) -c $<  -I $(CONDA_PREFIX)/include 
 
-vntr.o: vntr.cpp naive_anno.cpp bounded_anno.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h
-	$(CXX) $(CFLAGS) -c $< -I $(ABPOA)/include -I ../alglib/src -I ../edlib/include -I -I $(CONDA_PREFIX)/include
+vntr.o: vntr.cpp naive_anno.cpp bounded_anno.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h msa.h
+	$(CXX) $(CFLAGS) -c $< -I $(ABPOA)/include -I ../alglib/src -I ../edlib/include -I $(CONDA_PREFIX)/include
+
+msa.o: msa.cpp msa.h read.h option.h
+	$(CXX) $(CFLAGS) -c $< -I $(ABPOA)/include 
 
 acc_lookup_table.o: acc_lookup_table.cpp acc_lookup_table.h vntr.cpp vntr.h
 	$(CXX) $(CFLAGS) -c $< -I ../alglib/src -I ../edlib/include -I $(ABPOA)/include  -I $(CONDA_PREFIX)/include
