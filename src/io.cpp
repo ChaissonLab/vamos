@@ -509,8 +509,11 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 read->seq = (char *) malloc(read->len + 1); // read sequence array
                 read->rev = rev;
 
-                StoreReadSeqAtRefCoord(aln, vntr->ref_start - phaseFlank, vntr->ref_start, read->upstream);
-                StoreReadSeqAtRefCoord(aln, vntr->ref_end, vntr->ref_end + phaseFlank, read->downstream);
+                if (locuswise_flag) {
+                  StoreReadSeqAtRefCoord(aln, vntr->ref_start - phaseFlank, vntr->ref_start, read->upstream);
+                  StoreReadSeqAtRefCoord(aln, vntr->ref_end, vntr->ref_end + phaseFlank, read->downstream);                  
+                }
+
 
                 if (hap >= 0) read->haplotype=hap;
 
