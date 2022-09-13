@@ -123,8 +123,8 @@ public:
 
 	int len_h1;
 	int len_h2;
-
-	VNTR () { het = false; nreads = 0; skip = false; nullAnno = false;};
+        bool readsArePhased;
+        VNTR () { het = false; nreads = 0; skip = false; nullAnno = false; readsArePhased = false; };
 
 	VNTR (string Chr, uint32_t Start, uint32_t End, uint32_t Len) : chr(Chr), ref_start(Start), ref_end(End), len(Len) 
 	{

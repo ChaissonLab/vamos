@@ -13,6 +13,7 @@ public:
 	double penalty_mismatch;
         double accuracy;
         int phaseFlank;
+        string download;
 	OPTION ()
 	{
 		nproc = 1;
@@ -22,6 +23,7 @@ public:
 		penalty_mismatch = 1.0;
 		accuracy=0.98;
 		phaseFlank=3000;
+                download="";
 	};
 
 	~OPTION () {};

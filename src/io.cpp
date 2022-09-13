@@ -43,6 +43,8 @@ const char rcseq_nt16_str[] = "!TGKCYSBAWRDMHVN";
 // STEP 1: declare the type of file handler and the read() function  
 KSEQ_INIT(gzFile, gzread)
 
+
+
 int IO::readMotifsFromCsv (vector<VNTR *> &vntrs) 
 {
     ifstream ifs(motif_csv);
@@ -274,6 +276,23 @@ int GetHap(char *s, int l) {
   }
   return -1;
 }
+
+int QueryAndSetReadPhase(bam1_t* aln, READ *read) {
+  kstring_t auxStr = KS_INITIALIZE;  
+  int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
+  int setHap=0;
+  if (auxStat ) {
+    int si=0, nc=0;
+    int hap=GetHap(auxStr.s, auxStr.l);
+    if (hap >= 0 ) {
+      read->haplotype=hap;
+      setHap=1;
+    }
+  }
+  ks_free(&auxStr);
+  return setHap;
+}
+
 
 /*
  read alignment from bam
@@ -509,23 +528,18 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 read->seq = (char *) malloc(read->len + 1); // read sequence array
                 read->rev = rev;
 
-                if (locuswise_flag) {
+		bool readIsPhased;
+		readIsPhased = QueryAndSetReadPhase(aln, read);
+		if (readIsPhased) {
+		  vntr->readsArePhased = true;
+		}
+                if (locuswise_flag and readIsPhased) {
                   StoreReadSeqAtRefCoord(aln, vntr->ref_start - phaseFlank, vntr->ref_start, read->upstream);
                   StoreReadSeqAtRefCoord(aln, vntr->ref_end, vntr->ref_end + phaseFlank, read->downstream);                  
                 }
 
-
-                if (hap >= 0) read->haplotype=hap;
-
                 kstring_t auxStr = KS_INITIALIZE;
-                int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
-                if (auxStat ) 
-                {
-                  int si=0, nc=0;
-                  int hap=GetHap(auxStr.s, auxStr.l);
-                  if (hap >= 0 ) read->haplotype=hap;
-                }
-
+		// Store VNTR sequence
                 for(i = 0; i < read->len; i++)
                 {
                     assert(i + liftover_read_s < read_len);
@@ -533,7 +547,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                     assert(0 < base < 16);
                     read->seq[i] = seq_nt16_str[base]; //gets nucleotide id and converts them into IUPAC id.
                 }
-		            read->seq[read->len] = '\0';
+		read->seq[read->len] = '\0';
                 vntr->reads.push_back(read); 
 
                 total_len += read->len;
@@ -563,7 +577,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
         }
 
         // phasing
-        if (locuswise_flag) 
+        if (locuswise_flag and vntr->readsArePhased == false) 
         {
           SimpleSNV(vntr, vntr->ref_start - phaseFlank, vntr->ref_start, 0);
           SimpleSNV(vntr, vntr->ref_end, vntr->ref_end + phaseFlank, 1);

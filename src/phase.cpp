@@ -67,52 +67,11 @@ void MaxCutPhase(VNTR *vntr) {
     }
   }
   vector<int> cut1, cut2, cut0;
-  /*  int maxTotDiff=0, maxTotDiffIndex=0;
-  
-  for (auto i = 0; i < reads.size(); i++ ) {
-    if (totDiffs[i] > maxTotDiff) {
-      maxTotDiff = totDiffs[i];
-      maxTotDiffIndex=i;
-    }
-  }
-  int maxDiffCut=0;
-  int maxDiffCutIndex=0;
-  for (auto i = 0; i< reads.size(); i++ ) {
-    if (diffs[maxTotDiffIndex][i] > maxDiffCut) {
-      maxDiffCutIndex = i;
-      maxDiffCut = diffs[maxTotDiffIndex][i];
-    }
-    }
-  max1i=maxTotDiffIndex;
-  max2i=maxDiffCutIndex;
-  */
+
   cut1.push_back(max1i);
   cut2.push_back(max2i);
   
   for (auto j = 0; j < reads.size(); j++) {
-    /*
-    int diff1=0, diff2=0;
-    if (j == max1i or j == max2i) {
-      continue;
-    }
-    for (auto &i: cut1) {
-      diff1+=diffs[i][j];
-    }
-    for (auto &i: cut2) {
-      diff2 += diffs[i][j];
-    }
-    if (diff1 == diff2 ) {
-      cut0.push_back(j);
-    }
-    else if (diff1 > diff2) {
-      // i has the largest difference to members in 1, so add to 2
-      cut2.push_back(j);
-    }
-    else {
-      cut1.push_back(j);
-    }
-    */
-
     if (maxDiff <= 1 or diffs[j][max1i] == diffs[j][max2i]) {
       cut0.push_back(j);
     }
@@ -135,7 +94,16 @@ void MaxCutPhase(VNTR *vntr) {
     cut1.resize(0);
     cut2.resize(0);
   }
-  
+  for (auto &v: cut0) {
+    reads[v]->haplotype = 0;
+  }
+  for (auto &v: cut1) {
+    reads[v]->haplotype = 1;
+  }
+  for (auto &v : cut2) {
+    reads[v]->haplotype = 2;
+  }
+
   if (debug_flag) {
     cerr << vntr->region << " cut 1 ";
     for (auto &idx: cut1 ) { cerr << idx << "/" << reads[idx]->haplotype << " "; }

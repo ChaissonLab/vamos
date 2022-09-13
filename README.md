@@ -29,6 +29,18 @@ git clone https://github.com/ChaissonLab/vamos.git
 Make from source and run with test data:
 ```
 cd vamos*/src/ && make
+
+# For running vamos on a haplotype-resolved assembly:
+vamos --contig -b assembly.hap1.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s sample_name -o assembly.hap1.vcf
+vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s sample_name -o assembly.hap2.vcf
+
+# For running vamos on aligned reads (phased or unphased):
+
+vamos --reads -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o reads.vcf -t 8
+
+# Note, if the reads are pre-phased (e.g. by HapCut or WhatsHap) and have
+# the HA SAM tag, the phasing heuristic will not be applied. 
+
 vamos --readwise -b ../example/toy.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/readwise.bed -t 8
 vamos --locuswise_prephase -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/locuswise_prephase.vcf -t 8
 vamos --locuswise -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/locuswise.vcf -t 8
