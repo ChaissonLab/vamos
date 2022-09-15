@@ -91,9 +91,11 @@ void MSA::runConsensus ()
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
     abpt->progressive_poa = 1;
     abpt->ret_cigar = 0;
-    // abpt->rev_cigar = 0;
+    abpt->rev_cigar = 0;
     abpt->out_pog = 0;
     abpt->out_gfa = 0;
+    abpt->out_msa_header = 0;
+    abpt->use_read_ids = 0;
 
     abpoa_post_set_para(abpt);
 

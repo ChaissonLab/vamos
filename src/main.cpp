@@ -26,6 +26,7 @@ int single_seq_flag = false;
 int locuswise_prephase_flag = false;
 int locuswise_flag = false;
 int num_processed = 0;
+int download_emotifs_flag = false;
 // int seqan_flag = false;
 // int output_read_flag = false;
 
@@ -137,6 +138,7 @@ void printUsage(IO &io)
 	printf("vamos --locuswise_prephase  [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
 	printf("vamos --locuswise [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank]\n");
 	printf("vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
+	printf("vamos --download_emotifs \n");
 	printf("   Input: \n");
 	printf("       -b   FILE         input indexed bam file (when using --readwise and --locuswise) or fasta file (when using --single_seq). \n");	
 	printf("       -r   FILE         file containing region coordinate and motifs of each VNTR locus. \n");
@@ -182,6 +184,7 @@ int main (int argc, char **argv)
 		{"single_seq",          no_argument,             &single_seq_flag,               1},
 		{"readwise",            no_argument,             &readwise_anno_flag,            1},
 		{"liftover",            no_argument,             &liftover_flag,                 1},
+		{"download_emotifs",    no_argument,             &download_emotifs_flag,         1},
 		// {"seqan",         no_argument,             &seqan_flag,                    1},
 		// {"output_read",   no_argument,             &output_read_flag,              1},		
 
@@ -318,6 +321,10 @@ int main (int argc, char **argv)
 	}
 
 	if (locuswise_flag) io.phaseFlank = opt.phaseFlank;
+	if (download_emotifs_flag) 
+	{
+		printf("wget ");
+	}
 
 
 	/* Check mandatory parameters */
