@@ -30,17 +30,16 @@ Make from source and run with test data:
 ```
 cd vamos*/src/ && make
 ```
-# For running vamos on a haplotype-resolved assembly:
+For running vamos on a haplotype-resolved assembly:
 ```
 vamos --contig -b assembly.hap1.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s sample_name -o assembly.hap1.vcf -t 8
 vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s sample_name -o assembly.hap2.vcf -t 8
 ```
-# For running vamos on aligned reads (phased or unphased):
+For running vamos on aligned reads (phased or unphased):
 ```
 vamos --read -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o reads.vcf -t 8
 ```
-# Note, if the reads are pre-phased (e.g. by HapCut or WhatsHap) and have
-# the HA SAM tag, the phasing heuristic will not be applied. 
+Note, if the reads are pre-phased (e.g. by HapCut or WhatsHap) and have the HA SAM tag, the phasing heuristic will not be applied. 
 
 ```
 
