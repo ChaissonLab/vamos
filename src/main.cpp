@@ -140,7 +140,7 @@ void *ProcVNTRs (void *procInfoValue)
 void printUsage(IO &io) 
 {
 
-	printf("Usage: vamos [subcommand] [options] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf/bed] [-s sample_name] [-t threads] \n");
+	printf("Usage: vamos [subcommand] [options] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
 	printf("Version: %s\n", io.version);
 	printf("subcommand:\n");
     
@@ -151,7 +151,7 @@ void printUsage(IO &io)
 	// printf("vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
 	printf("vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
 	printf("vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");
-	printf("")
+	printf("");
 	printf("   Input: \n");
 	printf("       -b   FILE         input indexed bam file (when using --readwise and --locuswise) or fasta file (when using --single_seq). \n");	
 	printf("       -r   FILE         file containing region coordinate and motifs of each VNTR locus. \n");
@@ -171,10 +171,9 @@ void printUsage(IO &io)
 	printf("   Phase reads: \n");
 	printf("       -p   INT       	 the range of flanking sequences which is used in the phasing step. DEFAULT: 3000 bps. \n");
 	printf("   Downloading motifs:\n");
-	printf("       -m  MOTIF.        Prints a command to download a particular motif set. Current supported motif sets are:\n"
-	       "                         d10e32    Delta=10 generated from 32 haplotype-resolvd assemblies (Ebert et al., 2021)\n"
-	       "                         This may be copied and pasted in the command line, or executed as:\n"
-	       "                         >`<( vamos -m d10e32)`\n");
+	printf("       -m  MOTIF.        Prints a command to download a particular motif set. Current supported motif sets are: d10e32\n"
+	       "                         Delta=10 generated from 32 haplotype-resolvd assemblies (Ebert et al., 2021)\n"
+	       "                         This may be copied and pasted in the command line, or executed as: vamos -m d10e32\n");
 	printf("   Others: \n");
 	printf("       -t   INT          number of threads, DEFAULT: 1. \n");
 	printf("       --debug           print out debug information. \n");

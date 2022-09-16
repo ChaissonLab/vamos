@@ -15,10 +15,10 @@ conda activate vamos
 conda install -c bioconda --file requirements.txt
 ```
 
-Download the [latest release](https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.0.0.tar.gz)
+Download the [latest release](https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.1.0.tar.gz)
 ```
-wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.0.0.tar.gz
-tar -zxvf vamos-v1.0.0.tar.gz && cd vamos-v1.0.0
+wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.1.0.tar.gz
+tar -zxvf vamos-v1.1.0.tar.gz && cd vamos-v1.1.0
 ```
 
 Or download the latest code from github
@@ -31,20 +31,16 @@ Make from source and run with test data:
 cd vamos*/src/ && make
 
 # For running vamos on a haplotype-resolved assembly:
-vamos --contig -b assembly.hap1.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s sample_name -o assembly.hap1.vcf
-vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s sample_name -o assembly.hap2.vcf
+vamos --contig -b assembly.hap1.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s sample_name -o assembly.hap1.vcf -t 8
+vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s sample_name -o assembly.hap2.vcf -t 8
 
 # For running vamos on aligned reads (phased or unphased):
 
-vamos --reads -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o reads.vcf -t 8
+vamos --read -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o reads.vcf -t 8
 
 # Note, if the reads are pre-phased (e.g. by HapCut or WhatsHap) and have
 # the HA SAM tag, the phasing heuristic will not be applied. 
 
-vamos --readwise -b ../example/toy.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/readwise.bed -t 8
-vamos --locuswise_prephase -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/locuswise_prephase.vcf -t 8
-vamos --locuswise -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/locuswise.vcf -t 8
-vamos --single_seq -b ../example/one_read.fasta -r ../example/one_region_motif.bed -s NA24385_CCS_h1 -o ../example/single_seq.vcf (ONLY SUPPORT SINGLE THREAD!)
 ```
 
 ## Table of Contents
@@ -55,15 +51,11 @@ vamos --single_seq -b ../example/one_read.fasta -r ../example/one_region_motif.b
   - [Building vamos from source files](#build)
   - [Pre-built binary executable file for Linux/Unix](#binary)
 - [General usage](#usage)
-  - [To generate annotation for each read](#readwise)
-  - [To generate annotation for each VNTR locus given pre-phased reads](#locuswise_prephase)
-  - [To generate annotations of both haplotypes for each VNTR locus (embeded phasing step in vamos)](#locuswise)
-  - [To generate annotation for one single read](#single_seq)
+  - [To generate annotation for aligned reads at each VNTR locus](#read)
+  - [To generate annotation for haplotype-resolved assembly at each VNTR locus](#assembly)
 - [Commands and options](#cmd)
-- [Input](#input)
 - [Output](#output)
-  - [BED for readwise mode](#BED)
-  - [VCF for locuswise_prephase/locuswise/single_seq mode](#VCF)
+  - [VCF](#VCF)
 - [Pipeline](#pipeline)
   - [config file](#config)
   - [running](#running)
@@ -74,14 +66,12 @@ Vamos guarantees that the encoding sequence is winthin a bounded edit distance o
 For example, a VNTR sequence ACGGT|ACTGT|ACGT may be encoded to a more compact representation: ACGGT|AC**G**GT|ACGT using efficient motif set [ACGGT, ACGT].
 The edit distance between the original VNTR sequence and encoding sequence is 1. 
 
-Vamos can generate annotation for each read, given a set of motifs for each VNTR locus. (`--readwise` mode)
-Vamos can generate annotation for each VNTR locus by aggragating annotations of pre-phased reads. (`--locuswise_prephase` mode)
-Vamos can generate annotation of both haplotypes for each VNTR locus by phasing reads first and annotating the haplotype consensus sequence. (`--locuswise` mode)
-Vamos can generate annotation for the subsequence of a single read lifted from a particular VNTR locus. (`--single_seq` mode)
+Vamos can generate annotation for haplotype-resolved assembly at each VNTR locus, given a set of motifs at that VNTR locus. 
+Vamos can generate annotation for aligned reads (phased or unphased) at each VNTR locus. 
 
 ### <a name="emotif"></a>Efficient motif set
 We defined VNTR loci and motifs using a collection of 32 haplotype-resolved LRS genomes constructed by Human Genome Structural Variation Consortium.
-XXXX(TOADD) loci of simple repeating sequences on the GRCh38 assembly were obtained from the table browser tool of the UCSC Genome Browser.
+692,882 loci of simple repeating sequences on the GRCh38 assembly were obtained from the table browser tool of the UCSC Genome Browser.
 For each assembly, VNTR sequences were lifted-over and decomposed into motifs by Tandem Repeats Finder (TRF). Post-filtering step leaves 467104 well-resolved VNTR loci. 
 We propose efficient motif set as a smallest set of motifs, such that the string decompositions of the assembly alleles are bounded by a given edit distance. 
 [snakefile/configs/vntr_region_motifs.e.bed.gz](https://github.com/ChaissonLab/vamos/blob/master/snakefile/configs/vntr_region_motifs.e.bed.gz) provides efficent motifs for 467104 VNTR loci.
@@ -99,11 +89,11 @@ conda activate vamos
 conda install -c bioconda --file requirements.txt
 ```
 
-Download the [latest release](https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.0.0.tar.gz)
+Download the [latest release](https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.1.0.tar.gz)
 ```
-wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.0.0.tar.gz
-tar -zxvf vamos-v1.0.0.tar.gz
-cd vamos-v1.0.0/src; make
+wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.1.0.tar.gz
+tar -zxvf vamos-v1.1.0.tar.gz
+cd vamos-v1.1.0/src; make
 ```
 Or, you can use `git clone` command to download the source code.
 This gives you the latest version of vamos, which might be still under development.
@@ -115,37 +105,29 @@ cd vamos/src; make
 ### <a name="binary"></a>Pre-built binary executable file for Linux/Unix 
 If you meet any compiling issue, please try the pre-built binary file:
 ```
-wget https://github.com/ChaissonLab/vamos/releases/download/vamos-v1.0.0/vamos-v1.0.0_x64-linux.tar.gz
-tar -zxvf vamos-v1.0.0_x64-linux.tar.gz
+wget https://github.com/ChaissonLab/vamos/releases/download/vamos-v1.1.0/vamos-v1.1.0_x64-linux.tar.gz
+tar -zxvf vamos-v1.1.0_x64-linux.tar.gz
 ```
 
 ## <a name="usage"></a>General usage
-### <a name="readwise"></a>To generate annotation for each read
+### <a name="read"></a>To generate annotation for aligned reads at each VNTR locus
 ```
-vamos --readwise -b ../example/toy.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/readwise.bed -t 16
+vamos --read -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o reads.vcf -t 8
 ```
-### <a name="locuswise_prephase"></a>To generate annotation for each VNTR locus given pre-phased reads
+### <a name="assembly"></a>To generate annotation for haplotype-resolved assembly
 ```
-vamos --locuswise_prephase -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/locuswise_prephase.vcf -t 8
+vamos --contig -b assembly.hap1.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s sample_name -o assembly.hap1.vcf -t 8
+vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s sample_name -o assembly.hap2.vcf -t 8
 ```
-### <a name="locuswise"></a>To generate annotations of both haplotypes for each VNTR locus (embeded phasing step in vamos)
-```
-vamos --locuswise -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o ../example/locuswise.vcf -t 8
-```
-### <a name="single_seq"></a>To generate annotation for one single read
-```
-vamos --single_seq -b ../example/one_read.fasta -r ../example/one_region_motif.bed -s NA24385_CCS_h1 -o ../example/single_seq.vcf 
-```
+
 
 ## <a name="cmd"></a>Commands and options
 ```
-Usage: vamos [subcommand] [options] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf/bed] [-s sample_name] [-t threads] 
-Version: v1.0.0
+Usage: vamos [subcommand] [options] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] 
+Version: v1.1.0
 subcommand:
-vamos --readwise   [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.bed] [-s sample_name] [-t threads] 
-vamos --locuswise_prephase  [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] 
-vamos --locuswise [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank]
-vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) 
+vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] 
+vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] 
    Input: 
        -b   FILE         input indexed bam file (when using --readwise and --locuswise) or fasta file (when using --single_seq). 
        -r   FILE         file containing region coordinate and motifs of each VNTR locus. 
@@ -163,44 +145,27 @@ vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s 
        -f   DOUBLE       filter out noisy read annotations, DEFAULT: 0.0 (no filter). 
    Phase reads: 
        -p   INT          the range of flanking sequences which is used in the phasing step. DEFAULT: 3000 bps. 
+   Downloading motifs:
+       -m  MOTIF.        Prints a command to download a particular motif set. Current supported motif sets are: d10e32
+                         Delta=10 generated from 32 haplotype-resolvd assemblies (Ebert et al., 2021)
+                         This may be copied and pasted in the command line, or executed as: vamos -m d10e32
    Others: 
        -t   INT          number of threads, DEFAULT: 1. 
        --debug           print out debug information. 
        -h                print out help message. 
 ```
 
-## <a name="input"></a>Input
-Vamos works with indexed bam file under `--readwise` and `--locuswise` and `--locuswise_prephase` modes, and works with fasta file under `--single_seq` mode. 
-
-## <a name="output"></a>Output
 Vamos outputs BED file under `--readwise` mode, and outputs vcf file under `--locuswise`, `--locuswise_prephase` and `--single_seq` modes. 
 
 
-### <a name="BED"></a>BED for readwise mode
-Vamos generates annotation for each read in BED file under `--readwise` mode.
-
-The BED file contains five columns - `CHROM`, `START`, `END`, `MOTIFS`, `INFO`.
-`CHROM:START-END`:coordinate of VNTR locus. \\
-`MOTIFS`: a comma-separated list of motifs at the locus. \\ 
-`INFO`: a colon-separated list of information about the read annotation. (Read_name:Haplotype(0 - not determined, 1/2 - haplotype):Annotation_length:Annotation(comma-separated, no spaces):Read_lifted_seq) \\
-
-The following is an example of the BED file: 
-```
-##fileformat=BED
-##source=vamos_v1.0.0
-##INFO=<Read_name:Haplotype(0 - not determined, 1/2 - haplotype):Annotation_length:Annotation(comma-separated, no spaces):Read_lifted_seq;,Description="read annotation information per read">
-#CHROM	START	END	MOTIFS	INFO
-chr1	189828	189966	TGAGAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAGGGCAGGAGGAGGGTGTGGGATGGTGGAGGGGTT,TGAGAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAAGGGAGGGGGAGGATGTGGGATGGTGGAGGGG,GAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAAGGGAGGGGGAGGATGTGGGATGGTGGAGGGGGA	cluster2_000015F:0:2:0,1:ATGAGAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAGGGCAGGAGGAGGGTGTGGGATGGTGGAGGGGTTTGAGAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAAGGGAGGGGGAGGATGTGGGATGGTGGAGGGG;cluster2_000015F:0:2:0,1:ATGAGAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAGGGCAGGAGGAGGGTGTGGGATGGTGGAGGGGTTTGAGAAGGCAGAGGCGCGACTGGGGTTCATGAGGAAAGGGAGGGGGAGGATGTGGGATGGTGGAGGGG;
-```
-
 ### <a name="VCF"></a>VCF for locuswise and single_seq modes
-Vamos generates annotation for each VNTR locus in VCF file under `--locuswise`, `--locuswise_prephase` and `--single_seq` modes.
+Vamos generates annotation for each VNTR locus in VCF file under `--contig` and `--read` modes.
 
 
 The following shows an example of the VCF file
 ```
 ##fileformat=VCFv4.1
-##source=vamos_V1.0.0
+##source=vamos_v1.1.0
 ##contig=<ID=chr1,length=248956422>
 ##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant">
 ##INFO=<ID=RU,Number=1,Type=String,Description="Comma separated motif sequences list in the reference orientation">
