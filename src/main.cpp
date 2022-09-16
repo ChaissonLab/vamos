@@ -197,15 +197,15 @@ int main (int argc, char **argv)
 		/* These options set a flag. */
 		{"naive",               no_argument,             &naive_flag,                    1},
 		{"debug",               no_argument,             &debug_flag,                    1},
-		// {"clust",               no_argument,             &hclust_flag,                   1},
 		{"readanno",            no_argument,             &output_read_anno_flag,         1},
 		{"locuswise_prephase",  no_argument,             &locuswise_prephase_flag,       1},
-		{"contigs",             no_argument,             &locuswise_prephase_flag,       1},		
+		{"contigs",            no_argument,              &locuswise_prephase_flag,       1},		
 		{"locuswise",           no_argument,             &locuswise_flag,                1},
-		{"reads",               no_argument,             &locuswise_flag,                1},		
+		{"reads",               no_argument,              &locuswise_flag,                1},		
 		{"single_seq",          no_argument,             &single_seq_flag,               1},
 		{"readwise",            no_argument,             &readwise_anno_flag,            1},
 		{"liftover",            no_argument,             &liftover_flag,                 1},
+		// {"clust",               no_argument,             &hclust_flag,                   1},
 		// {"seqan",         no_argument,             &seqan_flag,                    1},
 		// {"output_read",   no_argument,             &output_read_flag,              1},		
 
