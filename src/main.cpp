@@ -153,31 +153,31 @@ void printUsage(IO &io)
 	printf("vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");
 	printf("");
 	printf("   Input: \n");
-	printf("       -b   FILE         input indexed bam file (when using --readwise and --locuswise) or fasta file (when using --single_seq). \n");	
-	printf("       -r   FILE         file containing region coordinate and motifs of each VNTR locus. \n");
+	printf("       -b   FILE         Input indexed bam file. \n");	
+	printf("       -r   FILE         File containing region coordinate and motifs of each VNTR locus. \n");
 	printf("                         The file format: columns `chrom,start,end,motifs` are tab-delimited. \n");
 	printf("                         Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR. \n");
-	printf("       -s   CHAR         sample name. \n");
+	printf("       -s   CHAR         Sample name. \n");
 	printf("   Output: \n");
-	printf("       -o   FILE         vcf file. \n");
+	printf("       -o   FILE         Output vcf file. \n");
 	printf("   Dynamic Programming: \n");
-	printf("       -d   DOUBLE       penalty of indel in dynamic programming (double) DEFAULT: 1.0. \n");
-	printf("       -c   DOUBLE       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. \n");
+	printf("       -d   DOUBLE       Penalty of indel in dynamic programming (double) DEFAULT: 1.0. \n");
+	printf("       -c   DOUBLE       Penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. \n");
 	printf("       -a   DOUBLE       Global accuracy of the reads. DEFAULT: 0.98. \n");	
-	printf("       --naive           specify the naive version of code to do the annotation, DEFAULT: faster implementation. \n");
-	printf("   Aggregate Annotation: \n");
-	printf("       -f   DOUBLE       filter out noisy read annotations, DEFAULT: 0.0 (no filter). \n");
+	printf("       --naive           Specify the naive version of code to do the annotation, DEFAULT: faster implementation. \n");
+	// printf("   Aggregate Annotation: \n");
+	// printf("       -f   DOUBLE       Filter out noisy read annotations, DEFAULT: 0.0 (no filter). \n");
 	// printf("       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom. \n");
 	printf("   Phase reads: \n");
-	printf("       -p   INT       	 the range of flanking sequences which is used in the phasing step. DEFAULT: 3000 bps. \n");
+	printf("       -p   INT       	 Range of flanking sequences which is used in the phasing step. DEFAULT: 3000 bps. \n");
 	printf("   Downloading motifs:\n");
-	printf("       -m  MOTIF.        Prints a command to download a particular motif set. Current supported motif sets are: d10e32\n"
-	       "                         Delta=10 generated from 32 haplotype-resolvd assemblies (Ebert et al., 2021)\n"
+	printf("       -m  MOTIF         Prints a command to download a particular motif set. Current supported motif set is: d10e32. \n"
+	       "                         This motif set is selected at a level of Delta=10 from 32 haplotype-resolvd assemblies (Ebert et al., 2021)\n"
 	       "                         This may be copied and pasted in the command line, or executed as: vamos -m d10e32\n");
 	printf("   Others: \n");
-	printf("       -t   INT          number of threads, DEFAULT: 1. \n");
-	printf("       --debug           print out debug information. \n");
-	printf("       -h                print out help message. \n");
+	printf("       -t   INT          Number of threads, DEFAULT: 1. \n");
+	printf("       --debug           Print out debug information. \n");
+	printf("       -h                Print out help message. \n");
 	
 
 	// printf("       --seqan           use seqan lib to do MSA (haploid only), DEFAULT: abPoa\n");
