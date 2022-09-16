@@ -562,15 +562,15 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 bool readIsPhased;
                 readIsPhased = QueryAndSetReadPhase(aln, read);
                 if (readIsPhased) {
-                  vntr->readsArePhased = true;
+                    vntr->readsArePhased = true;
                 }
                 if (locuswise_flag and readIsPhased) {
-                  StoreReadSeqAtRefCoord(aln, vntr->ref_start - phaseFlank, vntr->ref_start, read->upstream);
-                  StoreReadSeqAtRefCoord(aln, vntr->ref_end, vntr->ref_end + phaseFlank, read->downstream);                  
+                    StoreReadSeqAtRefCoord(aln, vntr->ref_start - phaseFlank, vntr->ref_start, read->upstream);
+                    StoreReadSeqAtRefCoord(aln, vntr->ref_end, vntr->ref_end + phaseFlank, read->downstream);                  
                 }
 
                 kstring_t auxStr = KS_INITIALIZE;
-		// Store VNTR sequence
+		            // Store VNTR sequence
                 for(i = 0; i < read->len; i++)
                 {
                     assert(i + liftover_read_s < read_len);

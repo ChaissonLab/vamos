@@ -159,7 +159,7 @@ void printUsage(IO &io)
 	printf("                         Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR. \n");
 	printf("       -s   CHAR         sample name. \n");
 	printf("   Output: \n");
-	printf("       -o   FILE         output bed (when using --readwise) or vcf (when using --locuswise and --single_seq) file. \n");
+	printf("       -o   FILE         vcf file. \n");
 	printf("   Dynamic Programming: \n");
 	printf("       -d   DOUBLE       penalty of indel in dynamic programming (double) DEFAULT: 1.0. \n");
 	printf("       -c   DOUBLE       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. \n");
@@ -318,15 +318,16 @@ int main (int argc, char **argv)
 			break;
 			
 		case 'p':
-  	                opt.phaseFlank = atoi(optarg);
-  	                io.phaseFlank = opt.phaseFlank;
-                        fprintf (stderr, "option -phase_flank with `%d'\n", opt.phaseFlank);
-                        break;
+            opt.phaseFlank = atoi(optarg);
+            io.phaseFlank = opt.phaseFlank;
+            fprintf (stderr, "option -phase_flank with `%d'\n", opt.phaseFlank);
+            break;
 
-                case 'm':
-                        opt.download=optarg;
+        case 'm':
+            opt.download=optarg;
 			download_motifs=true;
-                        break;
+            break;
+
 		case 'h':
 			printUsage(io);
 			exit(EXIT_SUCCESS);
@@ -334,9 +335,11 @@ int main (int argc, char **argv)
 		case '?':
 			fprintf(stderr, "Unknown option: %c\n", optopt);
 			exit(EXIT_FAILURE);
+
 		case ':':
 			cerr << "[ERROR] missing option argument" << endl;
 			exit(EXIT_FAILURE);
+
 		default:
 			printUsage(io);
 			exit(EXIT_FAILURE);
@@ -346,8 +349,8 @@ int main (int argc, char **argv)
 	if (locuswise_flag) io.phaseFlank = opt.phaseFlank;
 
 	if (download_motifs) {
-	  PrintDownloadMotifs(opt);
-          exit(0);
+	  	PrintDownloadMotifs(opt);
+        exit(0);
 	}
 
 	/* Check mandatory parameters */
