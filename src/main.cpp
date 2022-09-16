@@ -149,8 +149,8 @@ void printUsage(IO &io)
 	// printf("vamos --locuswise_prephase  [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
 	// printf("vamos --locuswise [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank]\n");
 	// printf("vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
-	printf("vamos --contigs [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
-	printf("vamos --reads [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");
+	printf("vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
+	printf("vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");
 	printf("")
 	printf("   Input: \n");
 	printf("       -b   FILE         input indexed bam file (when using --readwise and --locuswise) or fasta file (when using --single_seq). \n");	
@@ -197,15 +197,15 @@ int main (int argc, char **argv)
 		/* These options set a flag. */
 		{"naive",               no_argument,             &naive_flag,                    1},
 		{"debug",               no_argument,             &debug_flag,                    1},
-		// {"clust",               no_argument,             &hclust_flag,                   1},
 		{"readanno",            no_argument,             &output_read_anno_flag,         1},
 		{"locuswise_prephase",  no_argument,             &locuswise_prephase_flag,       1},
-		{"contigs",             no_argument,             &locuswise_prephase_flag,       1},		
+		{"contig",             no_argument,              &locuswise_prephase_flag,       1},		
 		{"locuswise",           no_argument,             &locuswise_flag,                1},
-		{"reads",               no_argument,             &locuswise_flag,                1},		
+		{"read",               no_argument,              &locuswise_flag,                1},		
 		{"single_seq",          no_argument,             &single_seq_flag,               1},
 		{"readwise",            no_argument,             &readwise_anno_flag,            1},
 		{"liftover",            no_argument,             &liftover_flag,                 1},
+		// {"clust",               no_argument,             &hclust_flag,                   1},
 		// {"seqan",         no_argument,             &seqan_flag,                    1},
 		// {"output_read",   no_argument,             &output_read_flag,              1},		
 
