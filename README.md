@@ -41,7 +41,6 @@ vamos --read -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA2438
 ```
 Note, if the reads are pre-phased (e.g. by HapCut or WhatsHap) and have the HA SAM tag, the phasing heuristic will not be applied. 
 
-```
 
 ## Table of Contents
 
