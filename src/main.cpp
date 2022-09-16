@@ -198,7 +198,7 @@ int main (int argc, char **argv)
 		{"debug",               no_argument,             &debug_flag,                    1},
 		{"readanno",            no_argument,             &output_read_anno_flag,         1},
 		{"locuswise_prephase",  no_argument,             &locuswise_prephase_flag,       1},
-		{"contig",             no_argument,              &locuswise_prephase_flag,       1},		
+		{"contig",            no_argument,               &locuswise_prephase_flag,       1},		
 		{"locuswise",           no_argument,             &locuswise_flag,                1},
 		{"read",               no_argument,              &locuswise_flag,                1},		
 		{"single_seq",          no_argument,             &single_seq_flag,               1},
