@@ -151,7 +151,7 @@ void printUsage(IO &io)
 	// printf("vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
 	printf("vamos --contigs [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
 	printf("vamos --reads [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");
-	printf("")
+	printf("");
 	printf("   Input: \n");
 	printf("       -b   FILE         input indexed bam file (when using --readwise and --locuswise) or fasta file (when using --single_seq). \n");	
 	printf("       -r   FILE         file containing region coordinate and motifs of each VNTR locus. \n");
