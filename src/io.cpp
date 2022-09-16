@@ -43,6 +43,8 @@ const char rcseq_nt16_str[] = "!TGKCYSBAWRDMHVN";
 // STEP 1: declare the type of file handler and the read() function  
 KSEQ_INIT(gzFile, gzread)
 
+
+
 int IO::readMotifsFromCsv (vector<VNTR *> &vntrs) 
 {
     ifstream ifs(motif_csv);
@@ -153,61 +155,68 @@ int FRONT=0;
 int BACK=1;
 
 void StoreReadSeqAtRefCoord(bam1_t *aln, uint32_t refRangeStart, uint32_t refRangeEnd, string &seq) {
-  uint32_t readPos=0;
-  uint32_t refEnd=bam_endpos(aln);
-  uint32_t refPos=aln->core.pos;
-  uint32_t refStartPos=refPos;    
-  uint32_t *cigar = bam_get_cigar(aln);
-  int op, type, len;
-  uint8_t *read;
-  uint32_t readLen = aln->core.l_qseq;
-  // If there is a prefix gap, add those.
-  for (int i=refRangeStart; i < refPos; i++) {
-    seq.push_back('F');
-  }
-  read=bam_get_seq(aln);
-  char *name = bam_get_qname(aln);
-  string nucSeq;
-  nucSeq.resize(readLen);
-  for (auto i=0;i<readLen; i++) {
-    nucSeq[i] = seq_nt16_str[bam_seqi(read,i)];
-  }
-  for (uint32_t k = 0; k < aln->core.n_cigar && refPos < refRangeEnd && readPos < readLen; k++) {
-    assert(readPos < readLen);
-    op = bam_cigar_op(cigar[k]);
-    type = bam_cigar_type(op);
-    len = bam_cigar_oplen(cigar[k]);
+    uint32_t readPos=0;
+    uint32_t refEnd=bam_endpos(aln);
+    uint32_t refPos=aln->core.pos;
+    uint32_t refStartPos=refPos;    
+    uint32_t *cigar = bam_get_cigar(aln);
+    int op, type, len;
+    uint8_t *read;
+    uint32_t readLen = aln->core.l_qseq;
+    // If there is a prefix gap, add those.
+    for (int i=refRangeStart; i < refPos; i++) {
+        seq.push_back('F');
+    }
+    read=bam_get_seq(aln);
+    char *name = bam_get_qname(aln);
+    string nucSeq;
+    nucSeq.resize(readLen);
+    for (auto i=0;i<readLen; i++) {
+        nucSeq[i] = seq_nt16_str[bam_seqi(read,i)];
+    }
+    for (uint32_t k = 0; k < aln->core.n_cigar && refPos < refRangeEnd && readPos < readLen; k++) 
+    {
+        assert(readPos < readLen);
+        op = bam_cigar_op(cigar[k]);
+        type = bam_cigar_type(op);
+        len = bam_cigar_oplen(cigar[k]);
 
-    if (!(type & 1) and !(type & 2)) // Hard clip
-      continue;
-    // A match or mismatch type
-    if ((type & 1) && (type & 2)) {
-      for (int i=0; i < len; i++ ) {
-	if (refPos >= refRangeStart and refPos < refRangeEnd) {	  
-	  seq.push_back(nucSeq[readPos]);
-	}
-	readPos++;
-	refPos++;
-      }
+        if (!(type & 1) and !(type & 2)) // Hard clip
+            continue;
+        // A match or mismatch type
+        if ((type & 1) && (type & 2)) 
+        {
+            for (int i=0; i < len; i++ ) 
+            {
+                if (refPos >= refRangeStart and refPos < refRangeEnd) 
+                {	  
+                  seq.push_back(nucSeq[readPos]);
+                }
+                readPos++;
+                refPos++;
+            }
+        }
+        else if ( (type & 1) == 0 && (type & 2) != 0 ) {
+            for (int i=0; i < len; i++) 
+            {
+                if (refPos >= refRangeStart and refPos < refRangeEnd) 
+                {	  	
+                  seq.push_back('F');
+                }
+                refPos +=1;
+            }
+        }
+        else if ((type & 1) != 0 && (type & 2) == 0) {
+            readPos+=len;
+        }
     }
-    else if ( (type & 1) == 0 && (type & 2) != 0 ) {
-      for (int i=0; i < len; i++) {
-	if (refPos >= refRangeStart and refPos < refRangeEnd) {	  	
-	  seq.push_back('F');
-	}
-	refPos +=1;
-      }
+    if (refPos < refRangeStart) { refPos = refRangeStart;}
+    while (refPos < refRangeEnd) 
+    {
+        seq.push_back('F');
+        refPos++;
     }
-    else if ((type & 1) != 0 && (type & 2) == 0) {
-      readPos+=len;
-    }
-  }
-  if (refPos < refRangeStart) { refPos = refRangeStart;}
-  while (refPos < refRangeEnd) {
-    seq.push_back('F');
-    refPos++;
-  }
-  assert(seq.size() == refRangeEnd-refRangeStart);
+    assert(seq.size() == refRangeEnd-refRangeStart);
 }
 
 pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGAR_start, uint32_t target_crd, uint32_t &ref_aln_start, uint32_t &read_aln_start)
@@ -264,16 +273,36 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGA
 }
 
 int GetHap(char *s, int l) {
-  int si=0, nc=0;
-  for (; si < l; si++) {
-    if (s[si] == ':') { nc+=1;}
-    if (nc == 2) { si++; break; }
-  }
-  if (nc == 2) {
-    return atoi(&s[si]);
-  }
-  return -1;
+    int si=0, nc=0;
+    for (; si < l; si++) 
+    {
+        if (s[si] == ':') { nc+=1;}
+        if (nc == 2) { si++; break; }
+    }
+    if (nc == 2) 
+    {
+        return atoi(&s[si]);
+    }
+    return -1;
 }
+
+int QueryAndSetReadPhase(bam1_t* aln, READ *read) {
+    kstring_t auxStr = KS_INITIALIZE;  
+    int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
+    int setHap=0;
+    if (auxStat ) 
+    {
+        int si=0, nc=0;
+        int hap=GetHap(auxStr.s, auxStr.l);
+        if (hap >= 0 ) {
+            read->haplotype=hap;
+            setHap=1;
+        }
+    }
+    ks_free(&auxStr);
+    return setHap;
+}
+
 
 /*
  read alignment from bam
@@ -281,136 +310,157 @@ int GetHap(char *s, int l) {
  get the subsequence 
 */
 void InitNucIndex(char nucIndex[]) {
-  memset(nucIndex, 254, 256);
-  nucIndex['a']=0;  nucIndex['A']=0;
-  nucIndex['c']=1;  nucIndex['C']=1;
-  nucIndex['g']=2;  nucIndex['G']=2;
-  nucIndex['t']=3;  nucIndex['T']=3;
-  nucIndex['-']=4;
-  // Special character for flanking sequence. 
-  nucIndex['F']=5;
+    memset(nucIndex, 254, 256);
+    nucIndex['a']=0;  nucIndex['A']=0;
+    nucIndex['c']=1;  nucIndex['C']=1;
+    nucIndex['g']=2;  nucIndex['G']=2;
+    nucIndex['t']=3;  nucIndex['T']=3;
+    nucIndex['-']=4;
+    // Special character for flanking sequence. 
+    nucIndex['F']=5;
 }
 
 string &FlankSeq(READ* read, int side) {
-  if (side == 0) {
-    return read->upstream;
-  }
-  else {
-    return read->downstream;
-  }
+    if (side == 0) {
+        return read->upstream;
+    }
+    else {
+        return read->downstream;
+    }
 }
 void SimpleSNV(VNTR *vntr, uint32_t start, uint32_t end, int side=0) {
-/* vamos -in read.bam -vntr vntrs.bed -motif motifs.csv -o out.vcf */
-  char nucIndex[256];
-  InitNucIndex(nucIndex);
-  vector<vector<int> > counts;
-  int len=end-start;
-  int nChars=6;
-  counts.resize(nChars);
-  for (auto i=0; i <nChars; i++) {
-    counts[i].resize(len, 0);
-  }
-  for (auto i=0; i < vntr->nreads; i++) {
-    for (auto p=0; p < FlankSeq(vntr->reads[i], side).size(); p++) {
-      counts[nucIndex[FlankSeq(vntr->reads[i], side)[p]]][p] += 1;
+  /* vamos -in read.bam -vntr vntrs.bed -motif motifs.csv -o out.vcf */
+    char nucIndex[256];
+    InitNucIndex(nucIndex);
+    vector<vector<int> > counts;
+    int len=end-start;
+    int nChars=6;
+    counts.resize(nChars);
+    for (auto i=0; i <nChars; i++) {
+        counts[i].resize(len, 0);
     }
-  }
-  //  cout << "simpsnv ";
-  vector<int> snvIdx;
-  vector<bool> cluster(counts[0].size(), false);
-  int prevIndex=-1;
-  for (auto j=0; j < counts[0].size(); j++) {
-    int colSum=0;
-    // Exclude flanking sequences in total count.
-    for (auto i=0; i < 5; i++) {
-      colSum += counts[i][j];
+    for (auto i=0; i < vntr->nreads; i++) 
+    {
+        for (auto p=0; p < FlankSeq(vntr->reads[i], side).size(); p++) {
+            counts[nucIndex[FlankSeq(vntr->reads[i], side)[p]]][p] += 1;
+        }
     }
-    if (colSum > 0) {
-      vector<float> frac(4,0);
-      vector<int> suffIdx;
-      vector<char> snvNuc;
-      for (auto i=0; i < 4; i++) {
-	frac[i] = ((float)counts[i][j]/colSum);
-	if (frac[i] > 0.3) {
-	  suffIdx.push_back(i);
-	  snvNuc.push_back("ACGT"[i]);
-	}
-      }
-      if (suffIdx.size() == 2) {
-	if (prevIndex >= 0 and j - prevIndex < 50) {
-	  cluster[prevIndex] = true;
-	  cluster[j] = true;
-	}
-	prevIndex=j;
-      }
+    //  cout << "simpsnv ";
+    vector<int> snvIdx;
+    vector<bool> cluster(counts[0].size(), false);
+    int prevIndex=-1;
+    for (auto j=0; j < counts[0].size(); j++) 
+    {
+        int colSum=0;
+        // Exclude flanking sequences in total count.
+        for (auto i=0; i < 5; i++) 
+        {
+          colSum += counts[i][j];
+        }
+        if (colSum > 0) 
+        {
+            vector<float> frac(4,0);
+            vector<int> suffIdx;
+            vector<char> snvNuc;
+            for (auto i=0; i < 4; i++) 
+            {
+                frac[i] = ((float)counts[i][j]/colSum);
+                if (frac[i] > 0.3) 
+                {
+                  suffIdx.push_back(i);
+                  snvNuc.push_back("ACGT"[i]);
+                }
+            }
+            if (suffIdx.size() == 2) 
+            {
+                if (prevIndex >= 0 and j - prevIndex < 50) 
+                {
+                    cluster[prevIndex] = true;
+                    cluster[j] = true;
+                }
+                prevIndex=j;
+            }
+        }
     }
-  }
-  
-  for (auto j=0; j < counts[0].size(); j++) {
-    int colSum=0;
-    // Exclude flanking sequences in total count.
-    for (auto i=0; i < 5; i++) {
-      colSum += counts[i][j];
+    
+    for (auto j=0; j < counts[0].size(); j++) 
+    {
+        int colSum=0;
+        // Exclude flanking sequences in total count.
+        for (auto i=0; i < 5; i++) 
+        {
+            colSum += counts[i][j];
+        }
+        if (colSum > 0) 
+        {
+            vector<float> frac(4,0);
+            vector<int> suffIdx;
+            vector<char> snvNuc;
+            for (auto i=0; i < 4; i++) 
+            {
+                frac[i] = ((float)counts[i][j]/colSum);
+                if (frac[i] > 0.3) 
+                {
+                    suffIdx.push_back(i);
+                    snvNuc.push_back("ACGT"[i]);
+                }
+            }
+            if (suffIdx.size() == 2 and cluster[j] == false) 
+            {
+                /*	for (int k=0; k < vntr->nreads; k++) {
+                cout << vntr->reads[k]->upstream[j];
+                }
+                cout << endl;*/
+                snvIdx.push_back(j);
+                for (auto ri=0; ri < vntr->nreads; ri++) 
+                {
+                    SNV snv;
+                    snv.nuc='-';
+                    snv.pos=start + j;
+                    if (FlankSeq(vntr->reads[ri], side)[j] == snvNuc[0]) 
+                    {
+                        snv.nuc=snvNuc[0];
+                    }
+                    if (FlankSeq(vntr->reads[ri], side)[j] == snvNuc[1]) 
+                    {
+                        snv.nuc=snvNuc[1];
+                    }
+                    if (snv.nuc != '-') 
+                    {
+                        vntr->reads[ri]->snvs.push_back(snv);
+                    }
+                }      
+                //	cout << "*";
+                //
+                // Found a het site
+                //	cout << "HET: " << vntr->chr << ":" << start + j << "-" << start + j + 1 << " " << "ACGT"[suffIdx[0]] << " " << counts[suffIdx[0]][j] << " " << "ACGT"[suffIdx[1]] << " " << counts[suffIdx[1]][j] << endl;
+            }
+            else {
+            //	cout << " ";
+            }
+        }
     }
-    if (colSum > 0) {
-      vector<float> frac(4,0);
-      vector<int> suffIdx;
-      vector<char> snvNuc;
-      for (auto i=0; i < 4; i++) {
-	frac[i] = ((float)counts[i][j]/colSum);
-	if (frac[i] > 0.3) {
-	  suffIdx.push_back(i);
-	  snvNuc.push_back("ACGT"[i]);
-	}
-      }
-      if (suffIdx.size() == 2 and cluster[j] == false) {
-	/*	for (int k=0; k < vntr->nreads; k++) {
-	  cout << vntr->reads[k]->upstream[j];
-	}
-	cout << endl;*/
-	snvIdx.push_back(j);
-	for (auto ri=0; ri < vntr->nreads; ri++) {
-	  SNV snv;
-	  snv.nuc='-';
-	  snv.pos=start + j;
-	  if (FlankSeq(vntr->reads[ri], side)[j] == snvNuc[0]) {
-	    snv.nuc=snvNuc[0];
-	  }
-	  if (FlankSeq(vntr->reads[ri], side)[j] == snvNuc[1]) {
-	    snv.nuc=snvNuc[1];
-	  }
-	  if (snv.nuc != '-') {
-	    vntr->reads[ri]->snvs.push_back(snv);
-	  }
-	}      
-	//	cout << "*";
-	//
-	// Found a het site
-	//	cout << "HET: " << vntr->chr << ":" << start + j << "-" << start + j + 1 << " " << "ACGT"[suffIdx[0]] << " " << counts[suffIdx[0]][j] << " " << "ACGT"[suffIdx[1]] << " " << counts[suffIdx[1]][j] << endl;
-      }
-      else {
-	//	cout << " ";
-      }
+    //  cout << endl;
+    for (auto si=0; si < snvIdx.size(); si++ ) 
+    {
+        vector<float> frac(4,0);
+        vector<int> suffIdx;
+        int colSum=0;
+        for (auto i=0; i < 4; i++) 
+        {
+            colSum+= counts[i][snvIdx[si]];
+        }
+        for (auto i=0; i < 4; i++) 
+        {
+            frac[i] = ((float)counts[i][snvIdx[si]]/colSum);
+            if (frac[i] > 0.3) {
+                suffIdx.push_back(i);
+            }
+        }
+        if (suffIdx.size() == 2) {
+          //      cout << "HET: " << vntr->chr << ":" << start + snvIdx[si] << "-" << start + snvIdx[si] + 1 << " " << "ACGT"[suffIdx[0]] << " " << counts[suffIdx[0]][snvIdx[si]] << " " << "ACGT"[suffIdx[1]] << " " << counts[suffIdx[1]][snvIdx[si]] << endl;
+        }
     }
-  }
-  //  cout << endl;
-  for (auto si=0; si < snvIdx.size(); si++ ) {
-    vector<float> frac(4,0);
-    vector<int> suffIdx;
-    int colSum=0;
-    for (auto i=0; i < 4; i++) {
-      colSum+= counts[i][snvIdx[si]];
-    }
-    for (auto i=0; i < 4; i++) {
-      frac[i] = ((float)counts[i][snvIdx[si]]/colSum);
-      if (frac[i] > 0.3) {
-	suffIdx.push_back(i);
-      }
-    }
-    if (suffIdx.size() == 2) {
-      //      cout << "HET: " << vntr->chr << ":" << start + snvIdx[si] << "-" << start + snvIdx[si] + 1 << " " << "ACGT"[suffIdx[0]] << " " << counts[suffIdx[0]][snvIdx[si]] << " " << "ACGT"[suffIdx[1]] << " " << counts[suffIdx[1]][snvIdx[si]] << endl;
-    }
-  }
 }
 
 
@@ -509,23 +559,18 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 read->seq = (char *) malloc(read->len + 1); // read sequence array
                 read->rev = rev;
 
-                if (locuswise_flag) {
+                bool readIsPhased;
+                readIsPhased = QueryAndSetReadPhase(aln, read);
+                if (readIsPhased) {
+                  vntr->readsArePhased = true;
+                }
+                if (locuswise_flag and readIsPhased) {
                   StoreReadSeqAtRefCoord(aln, vntr->ref_start - phaseFlank, vntr->ref_start, read->upstream);
                   StoreReadSeqAtRefCoord(aln, vntr->ref_end, vntr->ref_end + phaseFlank, read->downstream);                  
                 }
 
-
-                if (hap >= 0) read->haplotype=hap;
-
                 kstring_t auxStr = KS_INITIALIZE;
-                int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
-                if (auxStat ) 
-                {
-                  int si=0, nc=0;
-                  int hap=GetHap(auxStr.s, auxStr.l);
-                  if (hap >= 0 ) read->haplotype=hap;
-                }
-
+		// Store VNTR sequence
                 for(i = 0; i < read->len; i++)
                 {
                     assert(i + liftover_read_s < read_len);
@@ -533,7 +578,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                     assert(0 < base < 16);
                     read->seq[i] = seq_nt16_str[base]; //gets nucleotide id and converts them into IUPAC id.
                 }
-		            read->seq[read->len] = '\0';
+                read->seq[read->len] = '\0';
                 vntr->reads.push_back(read); 
 
                 total_len += read->len;
@@ -563,7 +608,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
         }
 
         // phasing
-        if (locuswise_flag) 
+        if (locuswise_flag and vntr->readsArePhased == false) 
         {
           SimpleSNV(vntr, vntr->ref_start - phaseFlank, vntr->ref_start, 0);
           SimpleSNV(vntr, vntr->ref_end, vntr->ref_end + phaseFlank, 1);

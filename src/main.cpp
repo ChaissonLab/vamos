@@ -26,13 +26,24 @@ int single_seq_flag = false;
 int locuswise_prephase_flag = false;
 int locuswise_flag = false;
 int num_processed = 0;
-int download_emotifs_flag = false;
+int download_motifs=false;
 // int seqan_flag = false;
 // int output_read_flag = false;
 
 struct timeval pre_start_time, pre_stop_time, pre_elapsed_time;
 struct timeval single_start_time, single_stop_time, single_elapsed_time;
 
+
+void PrintDownloadMotifs(OPTION &opts) {
+  if (opts.download == "d10") {
+    fprintf(stdout,"please run:\ncurl \"https://zenodo.org/record/7063019/files/emotifs.d10.64h.bed?download=1\"  > emotifs.d10.64h.bed\n");
+  }
+  else {
+    fprintf(stderr, "download option '%s' is not supported. Please use one of:\n"
+	    "   d10   delta=10, 64-haplotypes (Ebert 2021).\n", opts.download);
+    exit(1);
+  }
+}
 
 void process_mem_usage(double &vm_usage, double &resident_set)
 {
@@ -134,11 +145,13 @@ void printUsage(IO &io)
 	printf("subcommand:\n");
     
 	// printf("vamos --liftover   [-i in.bam] [-v vntrs.bed] [-o output.fa] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
-	printf("vamos --readwise   [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.bed] [-s sample_name] [-t threads] \n");	
-	printf("vamos --locuswise_prephase  [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
-	printf("vamos --locuswise [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank]\n");
-	printf("vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
-	printf("vamos --download_emotifs \n");
+	// printf("vamos --readwise   [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.bed] [-s sample_name] [-t threads] \n");	
+	// printf("vamos --locuswise_prephase  [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
+	// printf("vamos --locuswise [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank]\n");
+	// printf("vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
+	printf("vamos --contigs [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
+	printf("vamos --reads [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");
+	printf("")
 	printf("   Input: \n");
 	printf("       -b   FILE         input indexed bam file (when using --readwise and --locuswise) or fasta file (when using --single_seq). \n");	
 	printf("       -r   FILE         file containing region coordinate and motifs of each VNTR locus. \n");
@@ -157,10 +170,17 @@ void printUsage(IO &io)
 	// printf("       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom. \n");
 	printf("   Phase reads: \n");
 	printf("       -p   INT       	 the range of flanking sequences which is used in the phasing step. DEFAULT: 3000 bps. \n");
+	printf("   Downloading motifs:\n");
+	printf("       -m  MOTIF.        Prints a command to download a particular motif set. Current supported motif sets are:\n"
+	       "                         d10e32    Delta=10 generated from 32 haplotype-resolvd assemblies (Ebert et al., 2021)\n"
+	       "                         This may be copied and pasted in the command line, or executed as:\n"
+	       "                         >`<( vamos -m d10e32)`\n");
 	printf("   Others: \n");
 	printf("       -t   INT          number of threads, DEFAULT: 1. \n");
 	printf("       --debug           print out debug information. \n");
 	printf("       -h                print out help message. \n");
+	
+
 	// printf("       --seqan           use seqan lib to do MSA (haploid only), DEFAULT: abPoa\n");
 	// printf("       --readanno        output read annotation in VCF and output vntr sequences to stdout. \n");
 } 
@@ -180,11 +200,12 @@ int main (int argc, char **argv)
 		// {"clust",               no_argument,             &hclust_flag,                   1},
 		{"readanno",            no_argument,             &output_read_anno_flag,         1},
 		{"locuswise_prephase",  no_argument,             &locuswise_prephase_flag,       1},
+		{"contigs",             no_argument,             &locuswise_prephase_flag,       1},		
 		{"locuswise",           no_argument,             &locuswise_flag,                1},
+		{"reads",               no_argument,             &locuswise_flag,                1},		
 		{"single_seq",          no_argument,             &single_seq_flag,               1},
 		{"readwise",            no_argument,             &readwise_anno_flag,            1},
 		{"liftover",            no_argument,             &liftover_flag,                 1},
-		{"download_emotifs",    no_argument,             &download_emotifs_flag,         1},
 		// {"seqan",         no_argument,             &seqan_flag,                    1},
 		// {"output_read",   no_argument,             &output_read_flag,              1},		
 
@@ -201,7 +222,8 @@ int main (int argc, char **argv)
 		{"penlaty_indel",   required_argument,       0, 'd'},
 		{"penlaty_mismatch",required_argument,       0, 'c'},
 		{"accuracy"        ,required_argument,       0, 'a'},
-		{"phase_flank"     ,required_argument,       0, 'p'},	
+		{"phase_flank"     ,required_argument,       0, 'p'},
+        {"download_db"     ,required_argument,       0, 'm'},
 		// {"input",           required_argument,       0, 'i'},
 		// {"motif",           required_argument,       0, 'm'},
 
@@ -209,7 +231,7 @@ int main (int argc, char **argv)
 	};
 	/* getopt_long stores the option index here. */
 	int option_index = 0;
-	while ((c = getopt_long (argc, argv, "b:r:a:o:s:t:f:d:c:x:v:p:h", long_options, &option_index)) != -1)
+	while ((c = getopt_long (argc, argv, "b:r:a:o:s:t:f:d:c:x:v:m:p:h", long_options, &option_index)) != -1)
 	{
 		switch (c)
 		{
@@ -297,11 +319,15 @@ int main (int argc, char **argv)
 			break;
 			
 		case 'p':
-  		    opt.phaseFlank = atoi(optarg);
-  		    io.phaseFlank = opt.phaseFlank;
-            fprintf (stderr, "option -phase_flank with `%d'\n", opt.phaseFlank);			             
-            break;
+  	                opt.phaseFlank = atoi(optarg);
+  	                io.phaseFlank = opt.phaseFlank;
+                        fprintf (stderr, "option -phase_flank with `%d'\n", opt.phaseFlank);
+                        break;
 
+                case 'm':
+                        opt.download=optarg;
+			download_motifs=true;
+                        break;
 		case 'h':
 			printUsage(io);
 			exit(EXIT_SUCCESS);
@@ -309,11 +335,9 @@ int main (int argc, char **argv)
 		case '?':
 			fprintf(stderr, "Unknown option: %c\n", optopt);
 			exit(EXIT_FAILURE);
-
 		case ':':
 			cerr << "[ERROR] missing option argument" << endl;
 			exit(EXIT_FAILURE);
-
 		default:
 			printUsage(io);
 			exit(EXIT_FAILURE);
@@ -321,11 +345,11 @@ int main (int argc, char **argv)
 	}
 
 	if (locuswise_flag) io.phaseFlank = opt.phaseFlank;
-	if (download_emotifs_flag) 
-	{
-		printf("wget ");
-	}
 
+	if (download_motifs) {
+	  PrintDownloadMotifs(opt);
+          exit(0);
+	}
 
 	/* Check mandatory parameters */
 	bool missingArg = false;
@@ -371,6 +395,7 @@ int main (int argc, char **argv)
   	if (readwise_anno_flag) fprintf(stderr, "readwise_anno_flag is set. \n");
   	if (locuswise_prephase_flag) fprintf(stderr, "locuswise_prephase_flag is set. \n");
   	if (locuswise_flag) fprintf(stderr, "locuswise_flag is set. \n");
+	
 
 	/* Print any remaining command line arguments (not options). */
 	if (optind < argc)
