@@ -77,7 +77,7 @@ void MSA::runConsensus ()
     int i, j;
 
     // alignment parameters
-    abpt->align_mode = 1; // 0:global 1:local, 2:extension
+    abpt->align_mode = 2; // 0:global 1:local, 2:extension
     abpt->match = 1;      // match score
     abpt->mismatch = 1;   // mismatch penalty
     abpt->gap_mode = ABPOA_AFFINE_GAP; // gap penalty mode
