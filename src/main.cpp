@@ -38,17 +38,18 @@ void PrintDownloadMotifs(OPTION &opts) {
   if (opts.download == "original") {  
     fprintf(stdout, "please run:\ncurl \"https://zenodo.org/record/7155334/files/processed_vntrs.tsv?download=1\" > original_motifs.bed\n");
   }
-  if (opts.download == "q10") {
+  else if (opts.download == "q10") {
     fprintf(stdout,"please run:\ncurl \"https://zenodo.org/record/7155329/files/vntrs_motifs_delta_0.1.bed?download=1\"  > vntrs_motifs_delta_0.1.bed\n");
   }
-  if (opts.download == "q20") {
+  else if (opts.download == "q20") {
     fprintf(stdout,"please run:\ncurl \"https://zenodo.org/record/7155329/files/vntrs_motifs_delta_0.2.bed?download=1\"  > vntrs_motifs_delta_0.2.bed\n");
   }
-  if (opts.download == "q30") {
+  else if (opts.download == "q30") {
     fprintf(stdout,"please run:\ncurl \"https://zenodo.org/record/7155329/files/vntrs_motifs_delta_0.3.bed?download=1\"  > vntrs_motifs_delta_0.3.bed\n");
   }
   else {
     fprintf(stderr, "download option '%s' is not supported. Please use one of:\n"
+	    "   original q=0, 64-haplotypes (Ebert 2021).\n"
 	    "   q10   q=0.10, 64-haplotypes (Ebert 2021).\n" 
 	    "   q20   q=0.20, 64-haplotypes (Ebert 2021).\n" 
 	    "   q30   q=0.30, 64-haplotypes (Ebert 2021).\n", opts.download.c_str());      
