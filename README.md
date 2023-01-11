@@ -18,8 +18,8 @@ conda install -c bioconda --file requirements.txt
 
 Download the [latest release](https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.1.0.tar.gz)
 ```
-wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.1.0.tar.gz
-tar -zxvf vamos-v1.1.0.tar.gz && cd vamos-v1.1.0
+wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.1.1.tar.gz
+tar -zxvf vamos-v1.1.1.tar.gz && cd vamos-v1.1.1
 ```
 
 Or download the latest code from github
