@@ -163,6 +163,7 @@ void printUsage(IO &io)
 	// printf("vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
 	printf("vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
 	printf("vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");
+	printf("vamos -m [verison of efficient motif set]\n");
 	printf("\n");
 	printf("   Input: \n");
 	printf("       -b   FILE         Input indexed bam file. \n");	
@@ -183,9 +184,9 @@ void printUsage(IO &io)
 	printf("   Phase reads: \n");
 	printf("       -p   INT       	 Range of flanking sequences which is used in the phasing step. DEFAULT: 3000 bps. \n");
 	printf("   Downloading motifs:\n");
-	printf("       -m  MOTIF         Prints a command to download a particular motif set. Current supported motif set is: d10e32. \n"
-	       "                         This motif set is selected at a level of Delta=10 from 32 haplotype-resolvd assemblies (Ebert et al., 2021)\n"
-	       "                         This may be copied and pasted in the command line, or executed as: vamos -m d10e32\n");
+	printf("       -m  MOTIF         Prints a command to download a particular motif set. Current supported motif set is: q20. \n"
+	       "                         This motif set is selected at a level of Delta=20 from 64 haplotype-resolvd assemblies (Ebert et al., 2021)\n"
+	       "                         This may be copied and pasted in the command line, or executed as: vamos -m q20\n");
 	printf("   Others: \n");
 	printf("       -t   INT          Number of threads, DEFAULT: 1. \n");
 	printf("       --debug           Print out debug information. \n");

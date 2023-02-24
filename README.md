@@ -42,6 +42,10 @@ vamos --read -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA2438
 ```
 Note, if the reads are pre-phased (e.g. by HapCut or WhatsHap) and have the HA SAM tag, the phasing heuristic will not be applied. 
 
+For downloading efficient motif set selected at a level of Delta=20:
+```
+vamos -m q10
+```
 
 ## Table of Contents
 
@@ -121,11 +125,13 @@ vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s s
 
 ## <a name="cmd"></a>Commands and options
 ```
+Usage: vamos [subcommand] [options] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads]
 Version: v1.1.0
-Usage: vamos [subcommand] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads]
 subcommand:
 vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads]
 vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank]
+vamos -m [verison of efficient motif set]
+
    Input:
        -b   FILE         Input indexed bam file.
        -r   FILE         File containing region coordinate and motifs of each VNTR locus.
@@ -142,9 +148,9 @@ vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample
    Phase reads:
        -p   INT          Range of flanking sequences which is used in the phasing step. DEFAULT: 3000 bps.
    Downloading motifs:
-       -m  MOTIF         Prints a command to download a particular motif set. Current supported motif set is: d10e32.
-                         This motif set is selected at a level of Delta=10 from 32 haplotype-resolvd assemblies (Ebert et al., 2021)
-                         This may be copied and pasted in the command line, or executed as: vamos -m d10e32
+       -m  MOTIF         Prints a command to download a particular motif set. Current supported motif set is: q20.
+                         This motif set is selected at a level of Delta=20 from 64 haplotype-resolvd assemblies (Ebert et al., 2021)
+                         This may be copied and pasted in the command line, or executed as: vamos -m q20
    Others:
        -t   INT          Number of threads, DEFAULT: 1.
        --debug           Print out debug information.
