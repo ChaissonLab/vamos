@@ -44,7 +44,7 @@ Note, if the reads are pre-phased (e.g. by HapCut or WhatsHap) and have the HA S
 
 For downloading efficient motif set selected at a level of Delta=20:
 ```
-vamos -m q10
+vamos -m q20
 ```
 
 ## Table of Contents
