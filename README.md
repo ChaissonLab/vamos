@@ -121,36 +121,34 @@ vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s s
 
 ## <a name="cmd"></a>Commands and options
 ```
-Usage: vamos [subcommand] [options] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] 
 Version: v1.1.0
+Usage: vamos [subcommand] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads]
 subcommand:
-vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] 
-vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] 
-   Input: 
-       -b   FILE         input indexed bam file (when using --readwise and --locuswise) or fasta file (when using --single_seq). 
-       -r   FILE         file containing region coordinate and motifs of each VNTR locus. 
-                         The file format: columns `chrom,start,end,motifs` are tab-delimited. 
-                         Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR. 
-       -s   CHAR         sample name. 
-   Output: 
-       -o   FILE         output bed (when using --readwise) or vcf (when using --locuswise and --single_seq) file. 
-   Dynamic Programming: 
-       -d   DOUBLE       penalty of indel in dynamic programming (double) DEFAULT: 1.0. 
-       -c   DOUBLE       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. 
-       -a   DOUBLE       Global accuracy of the reads. DEFAULT: 0.98. 
-       --naive           specify the naive version of code to do the annotation, DEFAULT: faster implementation. 
-   Aggregate Annotation: 
-       -f   DOUBLE       filter out noisy read annotations, DEFAULT: 0.0 (no filter). 
-   Phase reads: 
-       -p   INT          the range of flanking sequences which is used in the phasing step. DEFAULT: 3000 bps. 
+vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads]
+vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank]
+   Input:
+       -b   FILE         Input indexed bam file.
+       -r   FILE         File containing region coordinate and motifs of each VNTR locus.
+                         The file format: columns `chrom,start,end,motifs` are tab-delimited.
+                         Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR.
+       -s   CHAR         Sample name.
+   Output:
+       -o   FILE         Output vcf file.
+   Dynamic Programming:
+       -d   DOUBLE       Penalty of indel in dynamic programming (double) DEFAULT: 1.0.
+       -c   DOUBLE       Penalty of mismatch in dynamic programming (double) DEFAULT: 1.0.
+       -a   DOUBLE       Global accuracy of the reads. DEFAULT: 0.98.
+       --naive           Specify the naive version of code to do the annotation, DEFAULT: faster implementation.
+   Phase reads:
+       -p   INT          Range of flanking sequences which is used in the phasing step. DEFAULT: 3000 bps.
    Downloading motifs:
-       -m  MOTIF.        Prints a command to download a particular motif set. Current supported motif sets are: d10e32
-                         Delta=10 generated from 32 haplotype-resolvd assemblies (Ebert et al., 2021)
+       -m  MOTIF         Prints a command to download a particular motif set. Current supported motif set is: d10e32.
+                         This motif set is selected at a level of Delta=10 from 32 haplotype-resolvd assemblies (Ebert et al., 2021)
                          This may be copied and pasted in the command line, or executed as: vamos -m d10e32
-   Others: 
-       -t   INT          number of threads, DEFAULT: 1. 
-       --debug           print out debug information. 
-       -h                print out help message. 
+   Others:
+       -t   INT          Number of threads, DEFAULT: 1.
+       --debug           Print out debug information.
+       -h                Print out help message.
 ```
 
 ### <a name="VCF"></a>VCF for locuswise and single_seq modes
