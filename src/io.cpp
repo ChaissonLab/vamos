@@ -357,6 +357,7 @@ void SimpleSNV(VNTR *vntr, uint32_t start, uint32_t end, int side=0) {
         {
           colSum += counts[i][j];
         }
+
         if (colSum > 0) 
         {
             vector<float> frac(4,0);
@@ -564,7 +565,7 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 if (readIsPhased) {
                     vntr->readsArePhased = true;
                 }
-                if (locuswise_flag and readIsPhased) {
+                if (locuswise_flag) {
                     StoreReadSeqAtRefCoord(aln, vntr->ref_start - phaseFlank, vntr->ref_start, read->upstream);
                     StoreReadSeqAtRefCoord(aln, vntr->ref_end, vntr->ref_end + phaseFlank, read->downstream);                  
                 }
