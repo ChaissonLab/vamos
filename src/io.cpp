@@ -550,10 +550,14 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
 
                 READ * read = new READ();
                 read->chr = bamHdr->target_name[aln->core.tid]; 
-                read->qname = (char *) malloc(aln->core.l_qname + 1);
+                read->flag = aln->core.flag;
                 name = bam_get_qname(aln);
-                strcpy(read->qname, name);
-                string tmp_name(read->qname);
+                string tmp_name(name);
+                string info = (rev == 0) ? ":" + to_string(liftover_read_s) + "-" + to_string(liftover_read_e) + ";str=0;flag=" + to_string(read->flag) : 
+                                           ":" + to_string(read_len - liftover_read_e + 1) + "-" + to_string(read_len - liftover_read_s + 1) + ";str=1;flag=" + to_string(read->flag);
+                tmp_name.append(info);
+                read->qname = (char *) malloc(tmp_name.length() + 1);
+                strcpy(read->qname, tmp_name.c_str());
                 read->l_qname = tmp_name.length();
                 read->len = liftover_read_e - liftover_read_s; // read length
                 read->seq = (char *) malloc(read->len + 1); // read sequence array
@@ -570,7 +574,8 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 }
 
                 kstring_t auxStr = KS_INITIALIZE;
-		            // Store VNTR sequence
+
+                // Store VNTR sequence
                 for(i = 0; i < read->len; i++)
                 {
                     assert(i + liftover_read_s < read_len);
@@ -580,17 +585,17 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
                 }
                 read->seq[read->len] = '\0';
                 vntr->reads.push_back(read); 
-
                 total_len += read->len;
 
                 if (debug_flag)
                 {
                      cerr << "read_name: " << bam_get_qname(aln) << endl; 
-                     // cerr << "vntr->ref_start: " << vntr->ref_start << " vntr->ref_end: " << vntr->ref_end << endl;
-                     // cerr << "liftover_read_s: " << liftover_read_s << " liftover_read_e: " << liftover_read_e << endl;
-                     cerr << "read length: " << read->len << endl;
-                     cout.write(read->seq, read->len);
-                     cout << endl; 
+                     cerr << "vntr->ref_start: " << vntr->ref_start << " vntr->ref_end: " << vntr->ref_end << endl;
+                     cerr << "liftover_read_s: " << liftover_read_s << " liftover_read_e: " << liftover_read_e << endl;
+                     cerr << "read length: " << read_len << endl;
+                     cerr << "read strand: " <<  read->rev << endl;
+                     cerr.write(read->seq, read->len);
+                     cerr << endl; 
                 }
             }
         }
