@@ -181,7 +181,7 @@ void printUsage(IO &io)
 	// printf("       -f   DOUBLE       Filter out noisy read annotations, DEFAULT: 0.0 (no filter). \n");
 	// printf("       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom. \n");
 	printf("   Phase reads: \n");
-	printf("       -p   INT       	 Range of flanking sequences which is used in the phasing step. DEFAULT: 3000 bps. \n");
+	printf("       -p   INT       	 Range of flanking sequences which is used in the phasing step. DEFAULT: 15000 bps. \n");
 	printf("   Downloading motifs:\n");
 	printf("       -m  MOTIF         Prints a command to download a particular motif set. Current supported motif set is: d10e32. \n"
 	       "                         This motif set is selected at a level of Delta=10 from 32 haplotype-resolvd assemblies (Ebert et al., 2021)\n"
