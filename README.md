@@ -1,3 +1,4 @@
+
 # Vamos: VNTR Annotation tool using efficient MOtifs Sets
 
 ## Updates 
@@ -17,8 +18,8 @@ conda install -c bioconda --file requirements.txt
 
 Download the [latest release](https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.1.0.tar.gz)
 ```
-wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.1.0.tar.gz
-tar -zxvf vamos-v1.1.0.tar.gz && cd vamos-v1.1.0
+wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.1.1.tar.gz
+tar -zxvf vamos-v1.1.1.tar.gz && cd vamos-v1.1.1
 ```
 
 Or download the latest code from github
@@ -41,6 +42,10 @@ vamos --read -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA2438
 ```
 Note, if the reads are pre-phased (e.g. by HapCut or WhatsHap) and have the HA SAM tag, the phasing heuristic will not be applied. 
 
+For downloading efficient motif set selected at a level of Delta=20:
+```
+vamos -m q20
+```
 
 ## Table of Contents
 
@@ -55,9 +60,7 @@ Note, if the reads are pre-phased (e.g. by HapCut or WhatsHap) and have the HA S
 - [Commands and options](#cmd)
 - [Output](#output)
   - [VCF](#VCF)
-- [Pipeline](#pipeline)
-  - [config file](#config)
-  - [running](#running)
+- [Combine VCFs](#combine)
 
 ## <a name="introduction"></a>Introduction
 Vamos is a tool to perform run-length encoding of VNTR sequences using a set of selected motifs from all motifs observed at that locus.
@@ -122,36 +125,36 @@ vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s s
 
 ## <a name="cmd"></a>Commands and options
 ```
-Usage: vamos [subcommand] [options] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] 
+Usage: vamos [subcommand] [options] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads]
 Version: v1.1.0
 subcommand:
-vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] 
-vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] 
-   Input: 
-       -b   FILE         input indexed bam file (when using --readwise and --locuswise) or fasta file (when using --single_seq). 
-       -r   FILE         file containing region coordinate and motifs of each VNTR locus. 
-                         The file format: columns `chrom,start,end,motifs` are tab-delimited. 
-                         Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR. 
-       -s   CHAR         sample name. 
-   Output: 
-       -o   FILE         output bed (when using --readwise) or vcf (when using --locuswise and --single_seq) file. 
-   Dynamic Programming: 
-       -d   DOUBLE       penalty of indel in dynamic programming (double) DEFAULT: 1.0. 
-       -c   DOUBLE       penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. 
-       -a   DOUBLE       Global accuracy of the reads. DEFAULT: 0.98. 
-       --naive           specify the naive version of code to do the annotation, DEFAULT: faster implementation. 
-   Aggregate Annotation: 
-       -f   DOUBLE       filter out noisy read annotations, DEFAULT: 0.0 (no filter). 
-   Phase reads: 
-       -p   INT          the range of flanking sequences which is used in the phasing step. DEFAULT: 3000 bps. 
+vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads]
+vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank]
+vamos -m [verison of efficient motif set]
+
+   Input:
+       -b   FILE         Input indexed bam file.
+       -r   FILE         File containing region coordinate and motifs of each VNTR locus.
+                         The file format: columns `chrom,start,end,motifs` are tab-delimited.
+                         Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR.
+       -s   CHAR         Sample name.
+   Output:
+       -o   FILE         Output vcf file.
+   Dynamic Programming:
+       -d   DOUBLE       Penalty of indel in dynamic programming (double) DEFAULT: 1.0.
+       -c   DOUBLE       Penalty of mismatch in dynamic programming (double) DEFAULT: 1.0.
+       -a   DOUBLE       Global accuracy of the reads. DEFAULT: 0.98.
+       --naive           Specify the naive version of code to do the annotation, DEFAULT: faster implementation.
+   Phase reads:
+       -p   INT          Range of flanking sequences which is used in the phasing step. DEFAULT: 3000 bps.
    Downloading motifs:
-       -m  MOTIF.        Prints a command to download a particular motif set. Current supported motif sets are: d10e32
-                         Delta=10 generated from 32 haplotype-resolvd assemblies (Ebert et al., 2021)
-                         This may be copied and pasted in the command line, or executed as: vamos -m d10e32
-   Others: 
-       -t   INT          number of threads, DEFAULT: 1. 
-       --debug           print out debug information. 
-       -h                print out help message. 
+       -m  MOTIF         Prints a command to download a particular motif set. Current supported motif set is: q20.
+                         This motif set is selected at a level of Delta=20 from 64 haplotype-resolvd assemblies (Ebert et al., 2021)
+                         This may be copied and pasted in the command line, or executed as: vamos -m q20
+   Others:
+       -t   INT          Number of threads, DEFAULT: 1.
+       --debug           Print out debug information.
+       -h                Print out help message.
 ```
 
 ### <a name="VCF"></a>VCF for locuswise and single_seq modes
@@ -177,36 +180,9 @@ The following shows an example of the VCF file
 chr1	191351	.	N	<VNTR>	.	PASS	END=191386;RU=CACCACAGAAAACAGAG,CACCACAGAAAACAGAGC;SVTYPE=VNTR;ALTANNO_H1=1,0;LEN_H1=2;	GT	1/1
 ```
 
-## <a name="pipeline"></a>Running pipelines to analyze raw sequencing reads or assembled contigs
-A *snakemake* pipeline [snakefile/annotation.smk](https://github.com/ChaissonLab/vamos/blob/master/snakefile/annotation.smk) is developed that generates VNTR annotations for various types of input data. Accepted types of input data include raw sequencing long reads in `fasta/fastq/bam` format and assembled contigs in `fasta/bam` format.
-
-### <a name="config"></a>Pipeline config file
-To execute the pipeline, a single config file must be provided as below (example in *yaml* format)
+## <a name="combine"></a>Generate multi-sample vcf
+A *python* script [snakefile/pyscript/combine_vcf.py](https://github.com/ChaissonLab/vamos/blob/master/snakefile/pyscript/combine_vcf.py) is developed that combines vcfs output by *vamos* into multi-sample vcf.
 ```
-input:
-    manifest: /path/to/sample/manifest.csv
-database:
-    reference: /path/to/reference/hg38.fasta
-    vntr: /path/to/vntr/vntrs.e.bed
-parameter:
-    vamos_repo: /path/to/vamos_repo
-    mode_of_analysis: raw
-    type_of_input: fasta
-    type_of_aligner: lra
-    window_size: 10000000
-    min_depth: 5
-cluster:
-    aln: sbatch --time=99:00:00 --cpus-per-task=16 --mem=180G
-    split: sbatch --time=99:00:00 --cpus-per-task=1 --mem=10G
-    phase: sbatch --time=99:00:00 --cpus-per-task=16 --mem=160G
-    anno_raw: sbatch --time=99:00:00 --cpus-per-task=16 --mem=120G
-    anno_ass: sbatch --time=99:00:00 --cpus-per-task=16 --mem=120G
+python combine_vcf.py -i vcf.list -o combine.vcf
 ```
-the input `manifest` must be a csv file that contains the sample ID and path to the corresponding input sequence files (e.g., sample_id,path_to_seq_file), one line for one sample. Supply path of the reference genome and vntr motif config file to `reference`  and `vntr` under `database`. `vamos_repo` refers to the local git repository of the *vamos* software. `mode_of_analysis` specifies the mode of analysis as either raw sequencing reads (`raw`) or assembled contigs (`assembly`). `type_of_input` specifies format of the input data, accepted values are `fasta/fastq/bam`. Note that the pipeline will perform alignment if the input data is of `fasta/fastq`, by either *lra* (`lra`) or *minimap2* (`mm2`) as instructed by `type_of_aligner`. `window_size` is the size of genomic bins for phasing of sequencing reads (a value between 10Mb and 20Mb is recommended) and `min_depth` is the minimum depth requirement for each of the two haplotypes at a VNTR locus. Batch job submission command may be supplied under the `cluster` section (recommended resource specifications are listed in the example above).
-
-### <a name="running"></a>Running the pipeline
-All required packages including *snakemake* are installed under the *vamos* conda environment. The pipeline may be initiated by executing the following command
-```
-conda activate vamos
-snakemake --snakefile /path/to/snakefile/annotation.smk --config /path/to/config/annotation.yaml --cluster "{params.cluster} -o {params.stdout} -e {params.stderr}" --directory /path/to/analysis/directory
-```
+The input `vcf.list` is simply a list of all vcfs to be combined, one line for each vcf. The combined vcf records all unique alleles of the input samples in the `info` field and records the genotype of each sample accordingly.
