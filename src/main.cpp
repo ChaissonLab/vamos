@@ -80,11 +80,18 @@ void process_mem_usage(double &vm_usage, double &resident_set)
 void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< int > &mismatchCI) 
 {
   
-	if (it->nreads == 0 or it->motifs.size() > 255) 
+	// if (it->nreads == 0 or it->motifs.size() > 255) 
+	// {
+	// 	it->skip = true;
+	// 	if (debug_flag and it->nreads == 0) cerr << "no reads" << endl;
+	// 	if (debug_flag and it->motifs.size() > 255) cerr << "skip one vntr due to > 255 motifs" << endl;
+	// 	return;
+	// }
+
+	if (it->nreads == 0) 
 	{
 		it->skip = true;
 		if (debug_flag and it->nreads == 0) cerr << "no reads" << endl;
-		if (debug_flag and it->motifs.size() > 255) cerr << "skip one vntr due to > 255 motifs" << endl;
 		return;
 	}
 
@@ -131,7 +138,6 @@ void *ProcVNTRs (void *procInfoValue)
 	for (i = procInfo->thread, s = 0; i < sz; i += (procInfo->opt)->nproc, s += 1)
 	{
 		if (debug_flag) cerr << "processing vntr: " << i << endl;
-		// procInfo->numOfProcessed += ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt));
 		ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt), sdTables, *(procInfo->mismatchCI));
 	}		
 	

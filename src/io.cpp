@@ -332,6 +332,7 @@ void SimpleSNV(VNTR *vntr, uint32_t start, uint32_t end, int side=0) {
   /* vamos -in read.bam -vntr vntrs.bed -motif motifs.csv -o out.vcf */
     char nucIndex[256];
     InitNucIndex(nucIndex);
+    // cerr << "nucIndex: " << nucIndex << endl;
     vector<vector<int> > counts;
     int len=end-start;
     int nChars=6;
@@ -342,6 +343,11 @@ void SimpleSNV(VNTR *vntr, uint32_t start, uint32_t end, int side=0) {
     for (auto i=0; i < vntr->nreads; i++) 
     {
         for (auto p=0; p < FlankSeq(vntr->reads[i], side).size(); p++) {
+            // cerr << "first: " << FlankSeq(vntr->reads[i], side)[p] << endl;
+            // cerr << "char: " << nucIndex[FlankSeq(vntr->reads[i], side)[p]] << endl;
+            // int tmp = nucIndex[FlankSeq(vntr->reads[i], side)[p]];
+            // cerr << "tmp: " << tmp << endl;
+            assert(p < counts[nucIndex[FlankSeq(vntr->reads[i], side)[p]]].size());
             counts[nucIndex[FlankSeq(vntr->reads[i], side)[p]]][p] += 1;
         }
     }
