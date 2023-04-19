@@ -497,6 +497,8 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int s
     for (int j = cur_thread; j < sz; j += nproc) 
     {
         vntr = vntrs[j];
+        // set phaseFlank
+        phaseFlank = (phaseFlank > vntr->ref_start) ? vntr->ref_start : phaseFlank;
         total_len = 0;
         itr = bam_itr_querys(idx, bamHdr, vntr->region.c_str());
         while(bam_itr_next(fp_in, itr, aln) >= 0)
