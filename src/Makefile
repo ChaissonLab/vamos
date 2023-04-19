@@ -1,6 +1,6 @@
 PROG=vamos
 LIBS=-lhts -lz -lpthread -labpoa
-PROF=/home1/jingwenr/.conda/envs/trf/lib
+PROF=$(CONDA_PREFIX)/lib
 DEBUG?="-g "
 OPT?=""
 CXX=g++ -std=c++17 
