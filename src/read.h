@@ -31,6 +31,7 @@ public:
     int haplotype;
     string upstream, downstream;
   	vector<SNV> snvs;
+  	uint16_t flag=0;
 	READ () 
 	{
 		qname = NULL;
