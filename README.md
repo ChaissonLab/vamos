@@ -16,10 +16,10 @@ conda activate vamos
 conda install -c bioconda --file requirements.txt
 ```
 
-Download the [latest release](https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.1.0.tar.gz)
+Download the [latest release](https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.2.0.tar.gz)
 ```
-wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.1.1.tar.gz
-tar -zxvf vamos-v1.1.1.tar.gz && cd vamos-v1.1.1
+wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.2.0.tar.gz
+tar -zxvf vamos-v1.2.0.tar.gz && cd vamos-v1.2.0
 ```
 
 Or download the latest code from github
@@ -91,11 +91,11 @@ conda activate vamos
 conda install -c bioconda --file requirements.txt
 ```
 
-Download the [latest release](https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.1.0.tar.gz)
+Download the [latest release](https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.2.0.tar.gz)
 ```
-wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.1.0.tar.gz
-tar -zxvf vamos-v1.1.0.tar.gz
-cd vamos-v1.1.0/src; make
+wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.2.0.tar.gz
+tar -zxvf vamos-v1.2.0.tar.gz
+cd vamos-v1.2.0/src; make
 ```
 Or, you can use `git clone` command to download the source code.
 This gives you the latest version of vamos, which might be still under development.
@@ -107,8 +107,8 @@ cd vamos/src; make
 ### <a name="binary"></a>Pre-built binary executable file for Linux/Unix 
 If you meet any compiling issue, please try the pre-built binary file:
 ```
-wget https://github.com/ChaissonLab/vamos/releases/download/vamos-v1.1.0/vamos-v1.1.0_x64-linux.tar.gz
-tar -zxvf vamos-v1.1.0_x64-linux.tar.gz
+wget https://github.com/ChaissonLab/vamos/releases/download/vamos-v1.2.0/vamos-v1.2.0_x64-linux
+tar -zxvf vamos-v1.2.0_x64-linux
 ```
 
 ## <a name="usage"></a>General usage
@@ -126,7 +126,7 @@ vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s s
 ## <a name="cmd"></a>Commands and options
 ```
 Usage: vamos [subcommand] [options] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads]
-Version: v1.1.0
+Version: v1.2.0
 subcommand:
 vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads]
 vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank]
