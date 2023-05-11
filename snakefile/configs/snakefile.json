@@ -3,6 +3,7 @@
 "input_path" : "/project/mchaisso_100/cmb-16/jingwenr/trfCall",
 "emotif_path" : "/project/mchaisso_100/cmb-16/jingwenr/trfCall/emotifs",
 "ILP_Solver_py" : "/project/mchaisso_100/cmb-16/jingwenr/trfCall/vamos/snakefile/py/ILP_Solver.ray.fast.py",
+"compare_with_greedy_py" : "/project/mchaisso_100/cmb-16/jingwenr/trfCall/script/CompareWithGreedy_new.py",
 "lra" : "~/.conda/envs/lra/bin/lra",
 "mm2" : "/project/mchaisso_100/cmb-16/jingwenr/software/minimap2",
 "samtools" : "~/.conda/envs/lra/bin/samtools",
