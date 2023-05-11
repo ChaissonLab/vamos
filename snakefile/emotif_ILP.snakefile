@@ -6,12 +6,19 @@ import re
 
 """
 This snakefile generate emotifs for vntr loci
+
+Needs update: 
+
+"numOfSplits" : "10000",
+"delta_threshold" : ["0.1", "0.2", "0.3"],
+"genomes_index" : ["64"],
+"mode" : ["summary_2023-03-31"],
 """
 
 SD = os.path.dirname(workflow.snakefile)
 
 # Config
-configfile: "/project/mchaisso_100/cmb-16/jingwenr/trfCall/script/snakefile.json"
+configfile: "/project/mchaisso_100/cmb-16/jingwenr/trfCall/vamos/snakefile/configs/snakefile.json"
 
 input_path = config["input_path"]
 numOfSplits = int(config["numOfSplits"])
@@ -22,7 +29,8 @@ mode = config["mode"]
 
 rule all:
 	input:
-		splitfa = expand("{input_path}/emotifs/{mode}/split_{genomes_index}/seq/vntr_motif.{splits_index}.tsv", mode = mode, input_path = input_path, genomes_index = genomes_index, splits_index = splits_index),
+		splitfa = expand("{input_path}/emotifs/{mode}/split_{genomes_index}/seq/vntr_motif.{splits_index}.tsv", \
+		         mode = mode, input_path = input_path, genomes_index = genomes_index, splits_index = splits_index),
 		splitILP = expand("{input_path}/emotifs/{mode}/initial-{genomes_index}-delta-{delta_threshold}/emotifs.{splits_index}.tsv", mode = mode, input_path = input_path, genomes_index = genomes_index, delta_threshold = delta_threshold, splits_index = splits_index),
 		emo=expand("{input_path}/emotifs/{mode}/out-{genomes_index}-delta-{delta_threshold}/emotifs.tsv", mode = mode, input_path = input_path, genomes_index = genomes_index, delta_threshold = delta_threshold),
 		vm=expand("{input_path}/emotifs/{mode}/out-{genomes_index}-delta-{delta_threshold}/vntrs_motifs.bed", mode = mode, input_path = input_path, genomes_index = genomes_index, delta_threshold = delta_threshold)
@@ -37,7 +45,7 @@ rule splitSeq:
 		grid_opts = config["grid_split"]
 	shell:"""
 		mkdir -p "{wildcards.input_path}/emotifs/{wildcards.mode}/split_{wildcards.genomes_index}/seq"
-		awk '{{if ((NR >= 2) && (NR - 1) % {params.numOfSplits} == {wildcards.splits_index}) {{print $0;}} }}' {input} > {output}
+		awk '{{split($2, a, ","); if ((NR >= 2) && ((NR - 1) % {params.numOfSplits} == {wildcards.splits_index}) && (length(a) <= 1000)) {{print $0;}} }}' {input} > {output}
 	"""
 
 rule runILP_solver:
@@ -46,11 +54,11 @@ rule runILP_solver:
 	output:
 		"{input_path}/emotifs/{mode}/initial-{genomes_index}-delta-{delta_threshold}/emotifs.{splits_index}.tsv"
 	params:
-		ILP_Solver = config["ILP_Solver"],
+		ILP_Solver_py = config["ILP_Solver_py"],
 		grid_opts = config["grid_ILP"]
 	shell:"""
 		mkdir -p "{wildcards.input_path}/emotifs/{wildcards.mode}/initial-{wildcards.genomes_index}-delta-{wildcards.delta_threshold}"
-		time python3 {params.ILP_Solver} {input} {output} 5 {wildcards.delta_threshold}
+		time python3 {params.ILP_Solver_py} {input} {output} 9 {wildcards.delta_threshold}
 	"""
 
 rule combineResult:
@@ -76,12 +84,3 @@ rule getVNTRBed:
 		awk '{{split($1, a, ":|-"); if (NR > 1) {{print a[1]"\\t"a[2]"\\t"a[3];}} }}' {input} > {output.v}
 		awk '{{split($1, a, ":|-"); if (NR > 1) {{print$7;}} }}' {input} > {output.m}
 	""" 
-
-
-# rule header:
-#   output:
-#     "header.tsv"
-#   shell: """
-#     echo "coordinate\torginal_motifs\tmapped_motifs\tmapping_cost\tnum_original_motifs\tnum_mapped_motifs\tclean_motifs\tclean_motifs_counts\tindicator" >> {output}
-#   """
-
