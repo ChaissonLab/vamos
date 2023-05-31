@@ -115,6 +115,16 @@ void MaxCutPhase(VNTR *vntr) {
     for (auto &idx: cut0 ) { cerr << idx << "/" << reads[idx]->haplotype << " "; }
     cerr << endl;    
   }
-
+  if (debug_flag) {
+    cerr << vntr->region << " cut 1 ";
+    for (auto &idx: cut1 ) { cerr << reads[idx]->qname << "   " << reads[idx]->haplotype << "\n"; }
+    cerr << endl;
+    cerr << vntr->region << " cut 2 ";
+    for (auto &idx: cut2 ) { cerr << reads[idx]->qname << "   " << reads[idx]->haplotype << "\n"; }
+    cerr << endl;
+    cerr << vntr->region << " cut 0 ";  
+    for (auto &idx: cut0 ) { cerr << reads[idx]->qname << "   " << reads[idx]->haplotype << "\n"; }
+    cerr << endl;    
+  }
   
 }

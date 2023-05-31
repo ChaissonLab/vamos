@@ -151,10 +151,10 @@ public:
 
 		if (!het and nreads == 1) return;
 
-		for (size_t i = 0; i < Hap_seqs.size(); ++i) 
-		{ 
-			delete Hap_seqs[i];
-		}
+		// for (size_t i = 0; i < Hap_seqs.size(); ++i) 
+		// { 
+		// 	delete Hap_seqs[i];
+		// }
 		Hap_seqs.clear();
 
 		return;

@@ -7,10 +7,12 @@ import re
 import itertools
 from ortools.sat.python import cp_model
 import Levenshtein as lv
-import multiprocessing 
+# import multiprocessing 
+from ray.util.multiprocessing import Pool
 from statistics import mean
 import random 
 import traceback
+import time 
 
 os.chdir(r"/project/mchaisso_100/cmb-16/jingwenr/trfCall")
 random.seed(0)
@@ -47,6 +49,7 @@ class MotifsInfo:
                 # if idx == 0: #### Update the idx constraint
                 #     continue
                 fields = re.split('\t', line.strip('\n'))
+                # if fields[0] == "chr6_157310355-157314362" or fields[0] == "chr7_158146914-158149196": continue
                 self.coords.append(fields[0])
                 self.motifs.append(fields[1].split(','))
                 self.motifs_counts.append([int(cnt) for cnt in fields[2].split(',')])
@@ -82,9 +85,24 @@ class MotifsInfo:
         self.delta = [0] * self.numOfVNTR
         for idx_vntr in range(self.numOfVNTR):
             numOfmotifs = len(self.editdist[idx_vntr])
-            temp = np.array(list(itertools.chain(*self.editdist[idx_vntr])))
-            # self.delta[idx_vntr] = int(np.quantile(temp, delta_threshold) * self.total_motifs_cnt[idx_vntr])  # new added
-            self.delta[idx_vntr] = int(np.quantile(temp, delta_threshold) * numOfmotifs) 
+            if numOfmotifs == 1:
+                self.delta[idx_vntr] = 0 
+                continue
+
+            temp = []
+            for k in range(numOfmotifs):
+                for h in range(numOfmotifs):
+                    if k < h: # k replace h                        
+                        temp.extend([self.editdist[idx_vntr][k][h]] * self.motifs_counts[idx_vntr][k])
+                    elif h < k:
+                        temp.extend([self.editdist[idx_vntr][h][k]] * self.motifs_counts[idx_vntr][h])
+            temp_arr = np.array(temp)
+            temp_arr.sort()
+            # self.delta[idx_vntr] = int(np.quantile(temp_arr, delta_threshold) * self.total_motifs_cnt[idx_vntr]) # delta strategy 1
+            # self.delta[idx_vntr] = int(np.quantile(temp_arr, delta_threshold) * int(self.total_motifs_cnt[idx_vntr] * delta_threshold)) # delta strategy 2
+            self.delta[idx_vntr] = int(np.quantile(temp_arr, delta_threshold) * int(self.total_motifs_cnt[idx_vntr] * delta_threshold)) # delta strategy 3
+        return 
+
 
     """
     plot out the histogram of edit distance for a vntr site
@@ -104,10 +122,12 @@ class MotifsInfo:
 build up the ILP solver
 """
 def ILPsolver(motifs, motifs_counts, costs, idx_vntr, delta):
-    print("entering ILP solver")
+    start = time.time()
+    print("processing VNTR " + str(idx_vntr))
     model = cp_model.CpModel()
     num_originalMotifs, num_afterMotifs = len(costs), len(costs)
     assert(len(motifs) == len(costs)), "motifs and costs have different lengths!"
+
     """
     create the variables
     """
@@ -137,6 +157,34 @@ def ILPsolver(motifs, motifs_counts, costs, idx_vntr, delta):
     for j in range(num_afterMotifs):
         model.Add(1 - sum(x[i][j] for i in range(num_originalMotifs)) >= -num_afterMotifs * y[j] + 1)
 
+    # Declare our intermediate boolean variable.
+    b = []
+    for i in range(num_originalMotifs):
+        t = []
+        for j in range(num_afterMotifs):
+            t.append(model.NewBoolVar(f'b[{i},{j}]'))
+        b.append(t)
+
+
+    # Implement b[i][j] == (motifs_counts[i] < motifs_counts[j]).
+    # for i in range(num_originalMotifs):
+    #     for j in range(num_afterMotifs):
+    #         model.Add(motifs_counts[i] < motifs_counts[j]).OnlyEnforceIf(b[i][j])
+    #         model.Add(motifs_counts[i] >= motifs_counts[j]).OnlyEnforceIf(b[i][j].Not())
+
+    for i in range(num_originalMotifs):
+        for j in range(num_afterMotifs):
+            model.Add(motifs_counts[i] > motifs_counts[j]).OnlyEnforceIf(b[i][j])
+            model.Add(motifs_counts[i] <= motifs_counts[j]).OnlyEnforceIf(b[i][j].Not())
+
+
+    for i in range(num_originalMotifs):
+        for j in range(num_afterMotifs):
+            model.Add(x[i][j] == 0).OnlyEnforceIf(b[i][j])
+            model.Add(x[i][j] >= 0).OnlyEnforceIf(b[i][j].Not())
+
+
+
     # # The total cost is less than or equal to \delta
     model.Add(sum(motifs_counts[i] * sum(x[i][j] * int(costs[i][j]) for j in range(num_afterMotifs)) for i in range(num_originalMotifs)) <= delta)
 
@@ -149,15 +197,15 @@ def ILPsolver(motifs, motifs_counts, costs, idx_vntr, delta):
     # model.Minimize(sum(objective_terms))
     
     # The total efficent motifs <= 255
-    model.Add(sum(y) <= 255)
+    # model.Add(sum(y) <= 255)
 
     """
     create objective function
     minimizing the sum of efficient motif set size and replacement cost
     """
-    model.Minimize(sum(y))
+    # model.Minimize(sum(y))
 
-
+    model.Minimize(delta * sum(y) + sum(motifs_counts[i] * sum(x[i][j] * int(costs[i][j]) for j in range(num_afterMotifs)) for i in range(num_originalMotifs)))
 
     """
     invoke the solver
@@ -166,7 +214,9 @@ def ILPsolver(motifs, motifs_counts, costs, idx_vntr, delta):
     print("invoke the solver")
 
      # Sets a time limit of 300 seconds
-    solver.parameters.max_time_in_seconds = 300.0
+    solver.parameters.max_time_in_seconds = 600.0
+    solver.parameters.num_search_workers = 2
+    # solver.parameters.enumerate_all_solutions = True
 
     print("start the solver")
     status = solver.Solve(model)
@@ -180,12 +230,14 @@ def ILPsolver(motifs, motifs_counts, costs, idx_vntr, delta):
     mapcosts = []
     clean_motifs = []
     clean_motifs_counts = []
-
+    status_str = ''
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         print()
         if status == cp_model.OPTIMAL:
+            status_str = "OPTIMAL"
             print(f'OPTIMAL solution found')
         else:
+            status_str = "FEASIBLE"
             print(f'A solution found, but may not be optimal')
 
         print(f'Original Domain Size = {num_originalMotifs}')
@@ -197,7 +249,7 @@ def ILPsolver(motifs, motifs_counts, costs, idx_vntr, delta):
             for j in range(num_afterMotifs):
                 if solver.BooleanValue(x[i][j]):
                     aftermotifs.append(motifs[j])
-                    aftercounts[j] += 1
+                    aftercounts[j] += motifs_counts[i]
                     mapcosts.append(costs[i][j])
                     check = True
                     # print(f'motif {i} assigned to motif {j} Cost = {costs[i][j]}')
@@ -205,8 +257,11 @@ def ILPsolver(motifs, motifs_counts, costs, idx_vntr, delta):
             assert check == True, f'motif i - {i} is mapped to nothing!'
         assert len(motifs) == len(aftermotifs), f'motifs - {len(motifs)} and aftermotifs - {len(aftermotifs)} have different lengths!'
     else:
+        status_str = "INFEASIBLE"
         print('No solution found.')
-        return idx_vntr, [], mapcosts, num_originalMotifs, int(solver.ObjectiveValue()), clean_motifs, clean_motifs_counts, []
+        return idx_vntr, list(zip(motifs, motifs)), ['0' for cnt in range(num_originalMotifs)], num_originalMotifs, num_originalMotifs, \
+            motifs, motifs_counts, ['1' for cnt in motifs_counts], delta, motifs_counts, status_str
+        # return idx_vntr, [], mapcosts, num_originalMotifs, int(solver.ObjectiveValue()), clean_motifs, clean_motifs_counts, [], delta, motifs_counts
 
     # Statistics.
     print('\nStatistics')
@@ -224,8 +279,12 @@ def ILPsolver(motifs, motifs_counts, costs, idx_vntr, delta):
     assert len(motifs) == len(aftermotifs), f'motifs - {len(motifs)} and aftermotifs - {len(aftermotifs)} have different lengths!'
 
     indicator = ['0' if cnt == 0 else '1' for cnt in aftercounts]
+    end = time.time()
+    print(f'finish vntr-{idx_vntr} (time: {(end - start)/60} min)')
+    
     # return idx_vntr, list(zip(motifs, aftermotifs)), aftercounts, mapcosts, num_originalMotifs, int(solver.ObjectiveValue())
-    return idx_vntr, list(zip(motifs, aftermotifs)), mapcosts, num_originalMotifs, int(solver.ObjectiveValue()), clean_motifs, clean_motifs_counts, indicator
+    return idx_vntr, list(zip(motifs, aftermotifs)), mapcosts, num_originalMotifs, int(solver.ObjectiveValue()), \
+        clean_motifs, clean_motifs_counts, indicator, delta, motifs_counts, status_str
 
 """
 plot out the histogram of mapping cost for each vntr site
@@ -269,14 +328,16 @@ def PlotMotifSizeChange(original_motifs_size, after_motifs_size):
 """
 multiple processing
 """
+start = time.time()
 motifsInfo = MotifsInfo() 
 motifsInfo.readFile(input_file)
 motifsInfo.pairwiseLevenshteinDist()
 motifsInfo.decideDelta()
 original_motifs_size = []
 after_motifs_size = []
+end = time.time()
 # motifsInfo.HisteditDist()
-print("finish reading files")
+print(f'finish reading files (time: {(end - start) / 60} min)')
     
 def mp_worker(idx_vntr):
     print("start ILP solver")
@@ -289,9 +350,12 @@ def mp_worker(idx_vntr):
         raise e
 
 def mp_handler():
-
-    pool = multiprocessing.Pool(numOfProcessors)
+    print("initiate multiprocessing")
+    # pool = multiprocessing.Pool(numOfProcessors)
+    pool = Pool(numOfProcessors)
     all_vntr = range(motifsInfo.numOfVNTR)
+    print(all_vntr)
+    print("start multiprocessing")
 
     with open(output_file, 'w') as f:
         # f.write('coordinate' + '\t'	+ 'orginal_motifs' + '\t' + 'mapped_motifs' + '\t' + 
@@ -299,8 +363,8 @@ def mp_handler():
         # 	    'clean_motifs' + '\t' + 'clean_motifs_counts' + '\t' + 'indicator' + '\n')
 
         try:
-            for idx_vntr, motifs_pair, mapcosts, original_domain_size, after_domain_size, clean_motifs, clean_motifs_counts, indicator in pool.imap_unordered(mp_worker, all_vntr):
-                print("processing VNTR " + str(idx_vntr))
+            for idx_vntr, motifs_pair, mapcosts, original_domain_size, after_domain_size, clean_motifs, clean_motifs_counts, indicator, delta, motifs_counts, status in pool.imap_unordered(mp_worker, all_vntr):
+                print("summarizing VNTR " + str(idx_vntr))
                 if len(motifs_pair) > 0:
                     # Histmapcost(idx_vntr, mapcosts, motifsInfo.delta[idx_vntr] / len(motifsInfo.motifs[idx_vntr]))
                     original_motifs_size.append(original_domain_size)
@@ -313,7 +377,10 @@ def mp_handler():
                             str(after_domain_size) + '\t' + 
                             ','.join(clean_motifs) + '\t' + 
                             ','.join([str(cnt) for cnt in clean_motifs_counts]) + '\t' + 
-                            ','.join(indicator) + '\n')
+                            ','.join(indicator) + '\t' +
+                            str(delta) + '\t' +
+                            ','.join([str(cnt) for cnt in motifs_counts]) + '\t' + 
+                            status + '\n')
         except:
             print ("Outer exception caught!")
     pool.close()

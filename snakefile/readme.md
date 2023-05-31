@@ -1,28 +1,21 @@
-# efficient motifs
+# Efficient motifs
 1. emotif_ILP.snakefile
-	This script splits all vntr loci into `numOfSplits` files and runs ILP solver on each file with 5 threads
+	This script splits all vntr loci into `numOfSplits` files and runs ILP solver on each file with 9 threads. 
 
-# assembly study
-1. asm_Anno.snakefile
-	This script annotates asm with original & efficient motifs
-2. asm_plot.snakefile & Assembly_alleles.ipynb
-	This script plots histogram of # of alleles for asm vcf
-3. visualAllele.py
-	This script generates allele heatmaps for vntr loci based on annotation vcf using 32 threads
-	`python3 visualAllele.py lra anno-delta-0.5`
-	`python3 visualAllele.py lra anno-original-motifs`
+# Comparison with SV-based method (Jasmine)
+1. process_before_sv-vntr.snakefile
+	This script filters SNPs and indels under specified length.
 
-# simulation study
-1. ReadAnno_ConsensusInside.snakefile 
-	This script aligns reads, uses `vamos --liftover` to take out the subseq of each vntr, uses `vamos --conseq_anno` to annotate.
+2. separate_Jasmine_merge_by_chrom_indel20.snakefile
+	This script separates SVs by chromosomes and Jasmine to merge SVs across samples. 
 
-2. ReadAnno_nonConsensus.snakefile
-	This script aligns simulated reads, use `vamos --raw_anno` to annotate. 
+3. sv-vntr_combine.snakefile
+	This script compares SV alleles overlapping with VNTRs with vamos alleles. 
 
-3. CompAnno.snakefile
-	This script compares the `vamos annotation` with `replacement annotation`.
-	NOTE: This needs to adjust manually for `nonconsensus` and `consensus-inside`, due to different read types setting.
+# Plot the heatmap-plot for special loci 
+1. plot_special_loci.snakefile
+	This script extracts VCF for specific VNTR loci. 
 
-4. Comp_plot.snakefile
-	This script generates violin plot to evaluate the `vamos annotation` VS `replacement annotation`
-
+# Comparison with Greedy method
+1. vamos_greedy_compare.snakefile
+	This script compares the results from greedy and vamos methods. 
