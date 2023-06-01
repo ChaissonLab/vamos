@@ -8,7 +8,6 @@
 #include "vntr.h"
 // #include "bounded_anno.cpp"
 #include "bounded_anno_local.cpp"
-#include "naive_anno.cpp"
 #include "edlib.h"
 #include "dataanalysis.h"
 #include "abpoa.h"
@@ -158,8 +157,11 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
                 cerr << "skip the vntr" << endl;
                 return;
             }    
-            if (naive_flag)
-                naive_anno(consensus[i], motifs, Hap_seqs[i]->seq, Hap_seqs[i]->len);
+            if (naive_flag) {
+	      cerr << "This option is no longer supported" << endl;
+	      exit(0);
+	    }
+	      //                naive_anno(consensus[i], motifs, Hap_seqs[i]->seq, Hap_seqs[i]->len);
             else {
                 vector<int> starts, ends, sdAnnos, sdQV;
                 vector<vector<int > > motifNMatch;
@@ -225,8 +227,10 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
                 return;
             }     
 
-            if (naive_flag)
-                naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
+            if (naive_flag) {
+	      cerr << "Naive annotation is not supported" << endl;
+	      exit(0);
+	    }//                naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
             else {
                 // bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len, opt);
                 vector<int> starts, ends, sdAnnos, sdQV;
