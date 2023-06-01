@@ -1,5 +1,5 @@
 
-# Vamos: VNTR Annotation tool using efficient MOtifs Sets
+# Vamos: VNTR Annotation tool using efficient MOtif Sets
 
 ## Updates 
 
