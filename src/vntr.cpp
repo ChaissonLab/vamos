@@ -6,10 +6,7 @@
 #include <utility>
 #include <numeric>
 #include "vntr.h"
-// #include "bounded_anno.cpp"
 #include "bounded_anno_local.cpp"
-#include "edlib.h"
-#include "dataanalysis.h"
 #include "abpoa.h"
 #include "option.h"
 #include "msa.h"

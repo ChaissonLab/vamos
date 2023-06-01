@@ -45,14 +45,14 @@ phase.o: phase.cpp phase.h read.h
 vcf.o: vcf.cpp vcf.h 
 	$(CXX) $(CFLAGS) -c $<  -I $(CONDA_PREFIX)/include 
 
-vntr.o: vntr.cpp naive_anno.cpp bounded_anno.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h msa.h
-	$(CXX) $(CFLAGS) -c $< -I $(ABPOA)/include -I ../alglib/src -I ../edlib/include -I $(CONDA_PREFIX)/include
+vntr.o: vntr.cpp bounded_anno.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h msa.h
+	$(CXX) $(CFLAGS) -c $< -I $(ABPOA)/include -I $(CONDA_PREFIX)/include
 
 msa.o: msa.cpp msa.h read.h option.h
 	$(CXX) $(CFLAGS) -c $< -I $(ABPOA)/include 
 
 acc_lookup_table.o: acc_lookup_table.cpp acc_lookup_table.h vntr.cpp vntr.h
-	$(CXX) $(CFLAGS) -c $< -I ../alglib/src -I ../edlib/include -I $(ABPOA)/include  -I $(CONDA_PREFIX)/include
+	$(CXX) $(CFLAGS) -c $<  -I  $(ABPOA)/include  -I $(CONDA_PREFIX)/include
 
 # edlib.o:
 # 	$(CXX) -c edlib/src/edlib.cpp -o edlib.o -I edlib/include
