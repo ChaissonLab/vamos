@@ -1,61 +1,90 @@
-PROG=vamos
-LIBS=-lhts -lz -lpthread -labpoa
-PROF=$(CONDA_PREFIX)/lib
-DEBUG?="-g "
-OPT?=""
-CXX=g++ -std=c++17 
-CFLAGS=
-asan?=""
-tsan?=""
-ABPOA=../abPOA-1.2.5
+PROG = vamos
+# linking static libraries
+LIBS       = -lhts -lz -lpthread
+#ABPOA_LIBS = -lm -lz -lpthread
+
+CC  ?= gcc
+CXX ?= g++ -std=c++17
+
+CCFLAGS = -Wall -O3 -Wno-unused-function -Wno-misleading-indentation
+SIMD_FLAG = -march=native
+
+DEBUG ?= "-g "
+OPT   ?= ""
+asan  ?= ""
+tsan  ?= ""
+
 ifeq ("$(DEBUG)", "TRUE")
-CFLAGS=-g  #-fsanitize=address #-Wall -Wextra
+  CFLAGS = -g #-fsanitize=address #-Wall -Wextra
 else
-CFLAGS=-O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
+  CFLAGS = -O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
 endif
 
 ifneq ($(asan), "")
-  CFLAGS+=-fsanitize=address # boundaries check for memory access
-  LIBS+=-fsanitize=address
+  CFLAGS += -fsanitize=address # boundaries check for memory access
+  LIBS += -fsanitize=address
 endif
 
 ifneq ($(tsan), "")
-  CFLAGS+=-fsanitize=thread
-  LIBS+=-fsanitize=thread
+  CFLAGS += -fsanitize=thread
+  LIBS += -fsanitize=thread
 endif
 
 ifneq ($(OPT), "")
-STATIC=-L $(PROF) -lprofiler
+  STATIC = -L $(PROF) -lprofiler
 endif
 
-all:$(PROG)
+PROF = $(CONDA_PREFIX)/lib
 
-vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o
-	$(CXX) $(CFLAGS) -fPIE -o $@ $^ $(LDFLAGS) -L$(PREFIX)/lib -L $(CONDA_PREFIX)/lib $(LIBS) -L  -lrt
+ABPOA_DIR = ../abPOA-v1.2.5
+ABPOA_SRC = $(ABPOA_DIR)/src
+ABPOA_OBJS = $(ABPOA_SRC)/abpoa_align.o $(ABPOA_SRC)/abpoa_graph.o $(ABPOA_SRC)/abpoa_plot.o $(ABPOA_SRC)/abpoa_seed.o $(ABPOA_SRC)/abpoa_seq.o $(ABPOA_SRC)/kalloc.o $(ABPOA_SRC)/kstring.o $(ABPOA_SRC)/simd_abpoa_align.o $(ABPOA_SRC)/simd_check.o $(ABPOA_SRC)/utils.o
+
+
+all: $(PROG)
+
+vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o $(ABPOA_DIR)/lib/libabpoa.a
+	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -lrt
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
-	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include  
+	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include
 
 io.o: io.cpp io.h vcf.h vntr.h read.h phase.h
-	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -I $(ABPOA)/include -I $(CONDA_PREFIX)/include 
+	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -I $(ABPOA_DIR)/include -I $(CONDA_PREFIX)/include
 
 phase.o: phase.cpp phase.h read.h
-	$(CXX) $(CFLAGS) -c $<  -I $(CONDA_PREFIX)/include
+	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include
 
 vcf.o: vcf.cpp vcf.h 
-	$(CXX) $(CFLAGS) -c $<  -I $(CONDA_PREFIX)/include 
+	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include
 
 vntr.o: vntr.cpp bounded_anno.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h msa.h
-	$(CXX) $(CFLAGS) -c $< -I $(ABPOA)/include -I $(CONDA_PREFIX)/include
+	$(CXX) $(CFLAGS) -c $< -I $(ABPOA_DIR)/include -I ../alglib/src -I ../edlib/include -I $(CONDA_PREFIX)/include
 
 msa.o: msa.cpp msa.h read.h option.h
-	$(CXX) $(CFLAGS) -c $< -I $(ABPOA)/include 
+	$(CXX) $(CFLAGS) -c $< -I $(ABPOA_DIR)/include
+
+
+$(ABPOA_DIR)/lib/libabpoa.a:$(ABPOA_OBJS)
+	if [ ! -d $(ABPOA_DIR)/lib ]; then mkdir $(ABPOA_DIR)/lib; fi
+	$(AR) -csr $@ $(ABPOA_OBJS)
+
+$(ABPOA_SRC)/abpoa.o:$(ABPOA_SRC)/abpoa.c $(ABPOA_SRC)/abpoa.h $(ABPOA_SRC)/abpoa_graph.h $(ABPOA_SRC)/abpoa_align.h \
+                   $(ABPOA_SRC)/abpoa_seq.h $(ABPOA_SRC)/utils.h $(ABPOA_SRC)/simd_instruction.h
+	$(CC) -c $(CCFLAGS) $(SIMD_FLAG) $< -o $@
+
+$(ABPOA_SRC)/simd_check.o:$(ABPOA_SRC)/simd_check.c $(ABPOA_SRC)/simd_instruction.h
+	$(CC) -c $(CCFLAGS) $(SIMD_FLAG) $< -o $@
+
+$(ABPOA_SRC)/simd_abpoa_align.o:$(ABPOA_SRC)/simd_abpoa_align.c $(ABPOA_SRC)/abpoa_graph.h $(ABPOA_SRC)/abpoa_align.h $(ABPOA_SRC)/simd_instruction.h $(ABPOA_SRC)/utils.h
+	$(CC) -c $(CCFLAGS) $(SIMD_FLAG) $< -o $@
+
 
 acc_lookup_table.o: acc_lookup_table.cpp acc_lookup_table.h vntr.cpp vntr.h
-	$(CXX) $(CFLAGS) -c $<  -I  $(ABPOA)/include  -I $(CONDA_PREFIX)/include
+	$(CXX) $(CFLAGS) -c $< -I ../alglib/src -I ../edlib/include -I $(ABPOA_DIR)/include  -I $(CONDA_PREFIX)/include
 
 # edlib.o:
 # 	$(CXX) -c edlib/src/edlib.cpp -o edlib.o -I edlib/include
 
 clean:
-	rm -f $(PROG) *.o 
+	rm -f $(PROG) *.o $(ABPOA_SRC)/*.o $(ABPOA_DIR)/lib/libabpoa.a
