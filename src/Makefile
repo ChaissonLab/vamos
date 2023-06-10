@@ -7,7 +7,6 @@ CC  ?= gcc
 CXX ?= g++ -std=c++17
 
 CCFLAGS = -Wall -O3 -Wno-unused-function -Wno-misleading-indentation
-SIMD_FLAG = -march=native
 
 DEBUG ?= "-g "
 OPT   ?= ""
