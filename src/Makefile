@@ -37,11 +37,11 @@ endif
 PROF = $(CONDA_PREFIX)/lib
 
 ABPOA_DIR = ../abPOA-v1.2.5
-ABPOA_SRC = $(ABPOA_DIR)/src
-ABPOA_OBJS = $(ABPOA_SRC)/abpoa_align.o $(ABPOA_SRC)/abpoa_graph.o $(ABPOA_SRC)/abpoa_plot.o $(ABPOA_SRC)/abpoa_seed.o $(ABPOA_SRC)/abpoa_seq.o $(ABPOA_SRC)/kalloc.o $(ABPOA_SRC)/kstring.o $(ABPOA_SRC)/simd_abpoa_align.o $(ABPOA_SRC)/simd_check.o $(ABPOA_SRC)/utils.o
-
 
 all: $(PROG)
+
+$(ABPOA_DIR)/lib/libabpoa.a:
+	cd $(ABPOA_DIR) && make sse2=TRUE CC=gcc
 
 vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o $(ABPOA_DIR)/lib/libabpoa.a
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -lrt
@@ -63,22 +63,6 @@ vntr.o: vntr.cpp bounded_anno.cpp bounded_anno_local.cpp io.h vntr.h read.h opti
 
 msa.o: msa.cpp msa.h read.h option.h
 	$(CXX) $(CFLAGS) -c $< -I $(ABPOA_DIR)/include
-
-
-$(ABPOA_DIR)/lib/libabpoa.a:$(ABPOA_OBJS)
-	if [ ! -d $(ABPOA_DIR)/lib ]; then mkdir $(ABPOA_DIR)/lib; fi
-	$(AR) -csr $@ $(ABPOA_OBJS)
-
-$(ABPOA_SRC)/abpoa.o:$(ABPOA_SRC)/abpoa.c $(ABPOA_SRC)/abpoa.h $(ABPOA_SRC)/abpoa_graph.h $(ABPOA_SRC)/abpoa_align.h \
-                   $(ABPOA_SRC)/abpoa_seq.h $(ABPOA_SRC)/utils.h $(ABPOA_SRC)/simd_instruction.h
-	$(CC) -c $(CCFLAGS) $(SIMD_FLAG) $< -o $@
-
-$(ABPOA_SRC)/simd_check.o:$(ABPOA_SRC)/simd_check.c $(ABPOA_SRC)/simd_instruction.h
-	$(CC) -c $(CCFLAGS) $(SIMD_FLAG) $< -o $@
-
-$(ABPOA_SRC)/simd_abpoa_align.o:$(ABPOA_SRC)/simd_abpoa_align.c $(ABPOA_SRC)/abpoa_graph.h $(ABPOA_SRC)/abpoa_align.h $(ABPOA_SRC)/simd_instruction.h $(ABPOA_SRC)/utils.h
-	$(CC) -c $(CCFLAGS) $(SIMD_FLAG) $< -o $@
-
 
 acc_lookup_table.o: acc_lookup_table.cpp acc_lookup_table.h vntr.cpp vntr.h
 	$(CXX) $(CFLAGS) -c $< -I ../alglib/src -I ../edlib/include -I $(ABPOA_DIR)/include  -I $(CONDA_PREFIX)/include
