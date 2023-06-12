@@ -44,7 +44,7 @@ all: $(PROG)
 
 
 $(ABPOA_DIR)/lib/libabpoa.a:
-	cd $(ABPOA_DIR) && make sse2=TRUE
+	cd $(ABPOA_DIR) && make sse2=TRUE PREFIX=.
 
 vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o $(ABPOA_DIR)/lib/libabpoa.a
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -lrt
