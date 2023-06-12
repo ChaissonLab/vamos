@@ -3,7 +3,10 @@ PROG = vamos
 LIBS       = -lhts -lz -lpthread
 #ABPOA_LIBS = -lm -lz -lpthread
 
-CC  ?= gcc
+ifeq ($(CC),)
+	CC=gcc
+endif
+
 CXX ?= g++ -std=c++17
 
 CCFLAGS = -Wall -O3 -Wno-unused-function -Wno-misleading-indentation
@@ -39,12 +42,9 @@ ABPOA_DIR = ../abPOA-v1.2.5
 
 all: $(PROG)
 
-ifneq ($(CC),)
-	CC=gcc
-endif
 
 $(ABPOA_DIR)/lib/libabpoa.a:
-	cd $(ABPOA_DIR) && make sse2=TRUE CC="$(CC)"
+	cd $(ABPOA_DIR) && make sse2=TRUE CC=\"$(CC)\"
 
 vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o $(ABPOA_DIR)/lib/libabpoa.a
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -lrt
