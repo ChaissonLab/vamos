@@ -100,7 +100,7 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< 
 	if (!locuswise_flag) 
 	{
 		it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI); 
-		
+
 		if (!readwise_anno_flag) 	
 			it->consensusMotifAnnoForOneVNTRByABpoa(opt);	
 
@@ -113,8 +113,8 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< 
 	}
 	else 
 	{
-		it->consensusReadForHapByABpoa(opt);
-		it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI); 
+	    it->consensusReadForHapByABpoa(opt);
+	    it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI); 
 		// it->annoTostring(opt);
 		// it->cleanNoiseAnno(opt);		
 	}
@@ -132,13 +132,15 @@ void *ProcVNTRs (void *procInfoValue)
 	int sz = (procInfo->vntrs)->size();
 	SDTables sdTables;
 
-	// read bam 
-	(procInfo->io)->readSeqFromBam ((*(procInfo->vntrs)), (procInfo->opt)->nproc, procInfo->thread, sz);
+	// read bam
+	//	procInfo->io->initializeBam();
 
 	for (i = procInfo->thread, s = 0; i < sz; i += (procInfo->opt)->nproc, s += 1)
 	{
 		if (debug_flag) cerr << "processing vntr: " << i << endl;
+		procInfo->io->readSeqFromBam(*procInfo->vntrs, i);
 		ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt), sdTables, *(procInfo->mismatchCI));
+		(*procInfo->vntrs)[i]->clearReads();		
 	}		
 	
 	procInfo->mtx->lock();
@@ -206,53 +208,53 @@ void printUsage(IO &io)
 int main (int argc, char **argv)
 {
   
-	int c;
-	IO io;
-	OPTION opt;
+  int c;
+  IO io;
+  OPTION opt;
 
-	const struct option long_options[] =
+  const struct option long_options[] =
+  {
+    /* These options set a flag. */
+    {"naive",               no_argument,             &naive_flag,                    1},
+    {"debug",               no_argument,             &debug_flag,                    1},
+    {"readanno",            no_argument,             &output_read_anno_flag,         1},
+    {"locuswise_prephase",  no_argument,             &locuswise_prephase_flag,       1},
+    {"contig",            no_argument,               &locuswise_prephase_flag,       1},		
+    {"locuswise",           no_argument,             &locuswise_flag,                1},
+    {"read",               no_argument,              &locuswise_flag,                1},		
+    {"single_seq",          no_argument,             &single_seq_flag,               1},
+    {"readwise",            no_argument,             &readwise_anno_flag,            1},
+    {"liftover",            no_argument,             &liftover_flag,                 1},
+    // {"clust",               no_argument,             &hclust_flag,                   1},
+    // {"seqan",         no_argument,             &seqan_flag,                    1},
+    // {"output_read",   no_argument,             &output_read_flag,              1},		
+
+
+    /* These options don’t set a flag. We distinguish them by their indices. */
+    {"bam",             required_argument,       0, 'b'},
+    {"region",          required_argument,       0, 'r'},						
+    {"vntr",            required_argument,       0, 'v'},
+    {"output",          required_argument,       0, 'o'},
+    {"out_fa",          required_argument,       0, 'x'},
+    {"sampleName",      required_argument,       0, 's'},
+    {"numThreads",      required_argument,       0, 't'},
+    {"filterNoisy",     required_argument,       0, 'f'},
+    {"penlaty_indel",   required_argument,       0, 'd'},
+    {"penlaty_mismatch",required_argument,       0, 'c'},
+    {"accuracy"        ,required_argument,       0, 'a'},
+    {"phase_flank"     ,required_argument,       0, 'p'},
+    {"download_db"     ,required_argument,       0, 'm'},
+    // {"input",           required_argument,       0, 'i'},
+    // {"motif",           required_argument,       0, 'm'},
+
+    {NULL, 0, 0, '\0'}
+  };
+  /* getopt_long stores the option index here. */
+  int option_index = 0;
+  while ((c = getopt_long (argc, argv, "b:r:a:o:s:t:f:d:c:x:v:m:p:h", long_options, &option_index)) != -1)
+    {
+      switch (c)
 	{
-		/* These options set a flag. */
-		{"naive",               no_argument,             &naive_flag,                    1},
-		{"debug",               no_argument,             &debug_flag,                    1},
-		{"readanno",            no_argument,             &output_read_anno_flag,         1},
-		{"locuswise_prephase",  no_argument,             &locuswise_prephase_flag,       1},
-		{"contig",            no_argument,               &locuswise_prephase_flag,       1},		
-		{"locuswise",           no_argument,             &locuswise_flag,                1},
-		{"read",               no_argument,              &locuswise_flag,                1},		
-		{"single_seq",          no_argument,             &single_seq_flag,               1},
-		{"readwise",            no_argument,             &readwise_anno_flag,            1},
-		{"liftover",            no_argument,             &liftover_flag,                 1},
-		// {"clust",               no_argument,             &hclust_flag,                   1},
-		// {"seqan",         no_argument,             &seqan_flag,                    1},
-		// {"output_read",   no_argument,             &output_read_flag,              1},		
-
-
-		/* These options don’t set a flag. We distinguish them by their indices. */
-		{"bam",             required_argument,       0, 'b'},
-		{"region",          required_argument,       0, 'r'},						
-		{"vntr",            required_argument,       0, 'v'},
-		{"output",          required_argument,       0, 'o'},
-		{"out_fa",          required_argument,       0, 'x'},
-		{"sampleName",      required_argument,       0, 's'},
-		{"numThreads",      required_argument,       0, 't'},
-		{"filterNoisy",     required_argument,       0, 'f'},
-		{"penlaty_indel",   required_argument,       0, 'd'},
-		{"penlaty_mismatch",required_argument,       0, 'c'},
-		{"accuracy"        ,required_argument,       0, 'a'},
-		{"phase_flank"     ,required_argument,       0, 'p'},
-        {"download_db"     ,required_argument,       0, 'm'},
-		// {"input",           required_argument,       0, 'i'},
-		// {"motif",           required_argument,       0, 'm'},
-
-		{NULL, 0, 0, '\0'}
-	};
-	/* getopt_long stores the option index here. */
-	int option_index = 0;
-	while ((c = getopt_long (argc, argv, "b:r:a:o:s:t:f:d:c:x:v:m:p:h", long_options, &option_index)) != -1)
-	{
-		switch (c)
-		{
 
         case 0:
           /* If this option set a flag, do nothing else now. */
@@ -261,306 +263,311 @@ int main (int argc, char **argv)
           if (optarg) fprintf (stderr, " with arg %s", optarg);
           break;
 
-		case 'b':
-			fprintf (stderr, "option -input with `%s'\n", optarg);
-			io.input_bam = (char *) malloc(strlen(optarg) + 1);
-			strcpy(io.input_bam, optarg);
-			io.input_bam[strlen(optarg)] = '\0';						
-			break;
+	case 'b':
+	  fprintf (stderr, "option -input with `%s'\n", optarg);
+	  io.input_bam = (char *) malloc(strlen(optarg) + 1);
+	  strcpy(io.input_bam, optarg);
+	  io.input_bam[strlen(optarg)] = '\0';						
+	  break;
 
-		case 'v':
-			fprintf (stderr, "option -vntr with `%s'\n", optarg);
-			io.vntr_bed = (char *) malloc(strlen(optarg) + 1);
-			strcpy(io.vntr_bed, optarg);
-			io.vntr_bed[strlen(optarg)] = '\0';			
-			break;
+	case 'v':
+	  fprintf (stderr, "option -vntr with `%s'\n", optarg);
+	  io.vntr_bed = (char *) malloc(strlen(optarg) + 1);
+	  strcpy(io.vntr_bed, optarg);
+	  io.vntr_bed[strlen(optarg)] = '\0';			
+	  break;
 
-		case 'r':
-			fprintf (stderr, "option -region with `%s'\n", optarg);
-			io.region_and_motifs = (char *) malloc(strlen(optarg) + 1);
-			strcpy(io.region_and_motifs, optarg);
-			io.region_and_motifs[strlen(optarg)] = '\0';
-			io.region_and_motifs[strlen(optarg)] = '\0';						
-			break;
+	case 'r':
+	  fprintf (stderr, "option -region with `%s'\n", optarg);
+	  io.region_and_motifs = (char *) malloc(strlen(optarg) + 1);
+	  strcpy(io.region_and_motifs, optarg);
+	  io.region_and_motifs[strlen(optarg)] = '\0';
+	  io.region_and_motifs[strlen(optarg)] = '\0';						
+	  break;
 
 
-		// case 'i':
-		// 	fprintf (stderr, "option -input with `%s'\n", optarg);
-		// 	io.input_bam = (char *) malloc(strlen(optarg) + 1);
-		// 	strcpy(io.input_bam, optarg);
-		// 	break;
+	  // case 'i':
+	  // 	fprintf (stderr, "option -input with `%s'\n", optarg);
+	  // 	io.input_bam = (char *) malloc(strlen(optarg) + 1);
+	  // 	strcpy(io.input_bam, optarg);
+	  // 	break;
 
-		// case 'm':
-		// 	fprintf (stderr, "option -motif with `%s'\n", optarg);
-		// 	io.motif_csv = (char *) malloc(strlen(optarg) + 1);
-		// 	strcpy(io.motif_csv, optarg);
-		// 	break;
+	  // case 'm':
+	  // 	fprintf (stderr, "option -motif with `%s'\n", optarg);
+	  // 	io.motif_csv = (char *) malloc(strlen(optarg) + 1);
+	  // 	strcpy(io.motif_csv, optarg);
+	  // 	break;
 
-		case 'o':
-			fprintf (stderr, "option -output with `%s'\n", optarg);
-			io.out_vcf = (char *) malloc(strlen(optarg) + 1);
-			strcpy(io.out_vcf, optarg);
-			io.out_vcf[strlen(optarg)] = '\0';						
-			break;
+	case 'o':
+	  fprintf (stderr, "option -output with `%s'\n", optarg);
+	  io.out_vcf = (char *) malloc(strlen(optarg) + 1);
+	  strcpy(io.out_vcf, optarg);
+	  io.out_vcf[strlen(optarg)] = '\0';						
+	  break;
 
-		case 's':
-			fprintf (stderr, "option -sampleName with `%s'\n", optarg);
-			io.sampleName = (char *) malloc(strlen(optarg) + 1);
-			strcpy(io.sampleName, optarg);
-			io.sampleName[strlen(optarg)] = '\0';						
-			break;
+	case 's':
+	  fprintf (stderr, "option -sampleName with `%s'\n", optarg);
+	  io.sampleName = (char *) malloc(strlen(optarg) + 1);
+	  strcpy(io.sampleName, optarg);
+	  io.sampleName[strlen(optarg)] = '\0';						
+	  break;
 
-		case 't':
-			fprintf (stderr, "option -numThreads with `%s'\n", optarg);
-			opt.nproc = atoi(optarg);
-			break;
+	case 't':
+	  fprintf (stderr, "option -numThreads with `%s'\n", optarg);
+	  opt.nproc = atoi(optarg);
+	  break;
 
-		case 'd':
-			opt.penalty_indel = stod(optarg);
-			fprintf (stderr, "option -penlaty_indel with `%f'\n", opt.penalty_indel);
-			break;
+	case 'd':
+	  opt.penalty_indel = stod(optarg);
+	  fprintf (stderr, "option -penlaty_indel with `%f'\n", opt.penalty_indel);
+	  break;
 
-		case 'c':
-			opt.penalty_mismatch = stod(optarg);
-			fprintf (stderr, "option -penlaty_mismatch with `%f'\n", opt.penalty_mismatch);
-			break;
+	case 'c':
+	  opt.penalty_mismatch = stod(optarg);
+	  fprintf (stderr, "option -penlaty_mismatch with `%f'\n", opt.penalty_mismatch);
+	  break;
 
-		case 'f':
-			fprintf (stderr, "option -filterNoisy\n");
-			opt.filterStrength = stod(optarg);
-			opt.filterNoisy = true;
-			break;
+	case 'f':
+	  fprintf (stderr, "option -filterNoisy\n");
+	  opt.filterStrength = stod(optarg);
+	  opt.filterNoisy = true;
+	  break;
 
-		case 'a':
- 		    opt.accuracy = stod(optarg);
-			fprintf (stderr, "option -accuracy with `%f'\n", opt.accuracy);
-			break;
+	case 'a':
+	  opt.accuracy = stod(optarg);
+	  fprintf (stderr, "option -accuracy with `%f'\n", opt.accuracy);
+	  break;
 			
-		case 'p':
-            opt.phaseFlank = atoi(optarg);
-            io.phaseFlank = opt.phaseFlank;
-            fprintf (stderr, "option -phase_flank with `%d'\n", opt.phaseFlank);
-            break;
+	case 'p':
+	  opt.phaseFlank = atoi(optarg);
+	  io.phaseFlank = opt.phaseFlank;
+	  fprintf (stderr, "option -phase_flank with `%d'\n", opt.phaseFlank);
+	  break;
 
         case 'm':
-            opt.download=optarg;
-			download_motifs=true;
-            break;
+	  opt.download=optarg;
+	  download_motifs=true;
+	  break;
 
-		case 'h':
-			printUsage(io);
-			exit(EXIT_SUCCESS);
+	case 'h':
+	  printUsage(io);
+	  exit(EXIT_SUCCESS);
 
-		case '?':
-			fprintf(stderr, "Unknown option: %c\n", optopt);
-			exit(EXIT_FAILURE);
+	case '?':
+	  fprintf(stderr, "Unknown option: %c\n", optopt);
+	  exit(EXIT_FAILURE);
 
-		case ':':
-			cerr << "[ERROR] missing option argument" << endl;
-			exit(EXIT_FAILURE);
+	case ':':
+	  cerr << "[ERROR] missing option argument" << endl;
+	  exit(EXIT_FAILURE);
 
-		default:
-			printUsage(io);
-			exit(EXIT_FAILURE);
-		}		
-	}
+	default:
+	  printUsage(io);
+	  exit(EXIT_FAILURE);
+	}		
+    }
 
-	if (locuswise_flag) io.phaseFlank = opt.phaseFlank;
+  if (locuswise_flag) io.phaseFlank = opt.phaseFlank;
 
-	if (download_motifs) {
-	  	PrintDownloadMotifs(opt);
-        exit(0);
-	}
+  if (download_motifs) {
+    PrintDownloadMotifs(opt);
+    exit(0);
+  }
 
-	/* Check mandatory parameters */
-	bool missingArg = false;
-	if (io.input_bam == NULL) 
-	{
-		fprintf(stderr, "ERROR: -b must be specified!\n");
-		missingArg = true;
-	}
-	if (!liftover_flag and io.region_and_motifs == NULL)
-	{
-		fprintf(stderr, "ERROR:-r must be specified!\n");
-		missingArg = true;
-	}
-	// if (io.motif_csv == NULL and (conseq_anno_flag or locuswise_prephase_flag))
-	// {
-	// 	fprintf(stderr, "-m is mandatory with conseq and locuswise!\n");
-	// 	missingArg = true;
-	// }
-	if (io.sampleName == NULL)
-	{
-		fprintf(stderr, "ERROR: -s must be specified!\n");
-		missingArg = true;
-	}
-	if (io.out_vcf == NULL)
-	{
-		fprintf(stderr, "ERROR: -o must be specified!\n");
-		missingArg = true;
-	}
+  /* Check mandatory parameters */
+  bool missingArg = false;
+  if (io.input_bam == NULL) 
+    {
+      fprintf(stderr, "ERROR: -b must be specified!\n");
+      missingArg = true;
+    }
+  if (!liftover_flag and io.region_and_motifs == NULL)
+    {
+      fprintf(stderr, "ERROR:-r must be specified!\n");
+      missingArg = true;
+    }
+  // if (io.motif_csv == NULL and (conseq_anno_flag or locuswise_prephase_flag))
+  // {
+  // 	fprintf(stderr, "-m is mandatory with conseq and locuswise!\n");
+  // 	missingArg = true;
+  // }
+  if (io.sampleName == NULL)
+    {
+      fprintf(stderr, "ERROR: -s must be specified!\n");
+      missingArg = true;
+    }
+  if (io.out_vcf == NULL)
+    {
+      fprintf(stderr, "ERROR: -o must be specified!\n");
+      missingArg = true;
+    }
 
-	if (missingArg)
-	{
-		printUsage(io);
-		exit(EXIT_FAILURE);
-	}
+  if (missingArg)
+    {
+      printUsage(io);
+      exit(EXIT_FAILURE);
+    }
 
-  	if (naive_flag) fprintf(stderr, "naive_flag is set. \n");
-  	if (debug_flag) fprintf(stderr, "debug_flag is set. \n");
-   	// if (hclust_flag) fprintf(stderr, "hclust_flag is set. \n");
-  	// if (seqan_flag) fprintf(stderr, "seqan_flag is set\n");
-   	if (output_read_anno_flag) fprintf(stderr, "output_read_anno_flag is set. \n");
-  	if (liftover_flag) fprintf(stderr, "liftover_flag is set\n");
-  	if (single_seq_flag) fprintf(stderr, "single_seq_flag is set\n");
-  	if (readwise_anno_flag) fprintf(stderr, "readwise_anno_flag is set. \n");
-  	if (locuswise_prephase_flag) fprintf(stderr, "locuswise_prephase_flag is set. \n");
-  	if (locuswise_flag) fprintf(stderr, "locuswise_flag is set. \n");
+  if (naive_flag) fprintf(stderr, "naive_flag is set. \n");
+  if (debug_flag) fprintf(stderr, "debug_flag is set. \n");
+  // if (hclust_flag) fprintf(stderr, "hclust_flag is set. \n");
+  // if (seqan_flag) fprintf(stderr, "seqan_flag is set\n");
+  if (output_read_anno_flag) fprintf(stderr, "output_read_anno_flag is set. \n");
+  if (liftover_flag) fprintf(stderr, "liftover_flag is set\n");
+  if (single_seq_flag) fprintf(stderr, "single_seq_flag is set\n");
+  if (readwise_anno_flag) fprintf(stderr, "readwise_anno_flag is set. \n");
+  if (locuswise_prephase_flag) fprintf(stderr, "locuswise_prephase_flag is set. \n");
+  if (locuswise_flag) fprintf(stderr, "locuswise_flag is set. \n");
 	
 
-	/* Print any remaining command line arguments (not options). */
-	if (optind < argc)
-	{
-		fprintf (stderr, "non-option ARGV-elements: ");
-		while (optind < argc) fprintf (stderr, "%s ", argv[optind++]);
-		putchar ('\n');
-	}
+  /* Print any remaining command line arguments (not options). */
+  if (optind < argc)
+    {
+      fprintf (stderr, "non-option ARGV-elements: ");
+      while (optind < argc) fprintf (stderr, "%s ", argv[optind++]);
+      putchar ('\n');
+    }
 
-	vector<VNTR *> vntrs;
-	gettimeofday(&pre_start_time, NULL);
+  vector<VNTR *> vntrs;
+  gettimeofday(&pre_start_time, NULL);
 
-	// read input_bam and region_and_motifs
-	vector< int> mismatchCI;	
-	if (io.region_and_motifs != NULL) {
-		io.readRegionAndMotifs(vntrs);
-		CreateAccLookupTable(vntrs, opt.accuracy, mismatchCI, 0.999);	  
-	}
-	if (liftover_flag) {
-		io.readVNTRFromBed(vntrs);
-	}
-	cerr << "finish reading " << vntrs.size() << " vntrs" << endl;
+  // read input_bam and region_and_motifs
+  vector< int> mismatchCI;	
+  if (io.region_and_motifs != NULL) {
+    io.readRegionAndMotifs(vntrs);
+    CreateAccLookupTable(vntrs, opt.accuracy, mismatchCI, 0.999);	  
+  }
+  if (liftover_flag) {
+    io.readVNTRFromBed(vntrs);
+  }
+  cerr << "finish reading " << vntrs.size() << " vntrs" << endl;
 	
-	/* set up out stream and write VCF header */
-	ofstream out;
-	out.open(io.out_vcf, ofstream::out);
-	if (out.fail()) 
+  /* set up out stream and write VCF header */
+  ofstream out;
+  out.open(io.out_vcf, ofstream::out);
+  if (out.fail()) 
+    {
+      cerr << "ERROR: Unable to open file " << io.out_vcf << endl;
+      exit(EXIT_FAILURE);
+    } 	
+  if (readwise_anno_flag)
+    io.writeBEDHeader_readwise(out);
+  else if (locuswise_prephase_flag or locuswise_flag or single_seq_flag)
+    io.writeVCFHeader_locuswise(out);
+
+  gettimeofday(&pre_stop_time, NULL);
+  timersub(&pre_stop_time, &pre_start_time, &pre_elapsed_time); 
+  long threads_elapsed_time = 0; 
+
+
+  /* Create threads */
+  int i;
+  if (opt.nproc > 1)
+    {
+      pthread_t *tid = new pthread_t[opt.nproc];
+
+      mutex mtx;
+      mutex ioLock;
+      vector<ProcInfo> procInfo(opt.nproc);
+      io.initializeBam();
+      for (i = 0; i < opt.nproc; i++){ 
+	procInfo[i].vntrs = &vntrs;
+	procInfo[i].thread = i;
+	procInfo[i].opt = &opt;
+	//	procInfo[i].io = &io;
+	procInfo[i].io = new IO;
+	procInfo[i].io->ioLock = &ioLock;
+	procInfo[i].io->bai = io.bai;
+	procInfo[i].io->fp_in = io.fp_in;
+	procInfo[i].io->bamHdr = io.bamHdr;
+	procInfo[i].io->idx = io.idx;
+	procInfo[i].io->numProcessed = &num_processed;
+	procInfo[i].mtx = &mtx;
+	procInfo[i].mismatchCI = &mismatchCI;
+	procInfo[i].out = &out;
+	// procInfo[i].out_nullAnno = &out_nullAnno;
+
+	if (pthread_create(&tid[i], NULL, ProcVNTRs, (void *) &procInfo[i]) )
 	  {
-	    cerr << "ERROR: Unable to open file " << io.out_vcf << endl;
+	    cerr << "ERROR: Cannot create thread" << endl;
 	    exit(EXIT_FAILURE);
-	  } 	
-	if (readwise_anno_flag)
-		io.writeBEDHeader_readwise(out);
-	else if (locuswise_prephase_flag or locuswise_flag or single_seq_flag)
-		io.writeVCFHeader_locuswise(out);
+	  }
+      }
 
-	gettimeofday(&pre_stop_time, NULL);
-	timersub(&pre_stop_time, &pre_start_time, &pre_elapsed_time); 
-	long threads_elapsed_time = 0; 
-
-
-	/* Create threads */
-	int i;
-	if (opt.nproc > 1)
-	{
-		pthread_t *tid = new pthread_t[opt.nproc];
-
-		mutex mtx; 
-		int numOfProcessed = 0;
-		vector<ProcInfo> procInfo(opt.nproc);		
-		for (i = 0; i < opt.nproc; i++){ 
-			procInfo[i].vntrs = &vntrs;
-			procInfo[i].thread = i;
-			procInfo[i].opt = &opt;
-			procInfo[i].io = &io;
-			procInfo[i].mtx = &mtx;
-			procInfo[i].mismatchCI = &mismatchCI;
-			procInfo[i].numOfProcessed = &numOfProcessed;
-			procInfo[i].out = &out;
-			// procInfo[i].out_nullAnno = &out_nullAnno;
-
-			if (pthread_create(&tid[i], NULL, ProcVNTRs, (void *) &procInfo[i]) )
-			{
-				cerr << "ERROR: Cannot create thread" << endl;
-				exit(EXIT_FAILURE);
-			}
-		}
-
-		for (i = 0; i < opt.nproc; i++) {
-			pthread_join(tid[i], NULL);
-		}
-		delete[] tid;
-
-		for (i = 1; i < opt.nproc; i++) 
-			threads_elapsed_time += procInfo[i].elapsed_time.tv_sec + procInfo[i].elapsed_time.tv_usec/1000000.0;
-	}
-	else 
-	{
-		gettimeofday(&single_start_time, NULL);
-
-		// read input bam/fasta
-		if (single_seq_flag)
-			io.readSeqFromFasta(vntrs);
-		else 
-			io.readSeqFromBam (vntrs, 1, 0, vntrs.size());
-
-		if (!liftover_flag) {
-			int s = 0;
-			SDTables sdTables;
-			for (auto &it: vntrs) 
-			{
-				ProcVNTR (s, it, opt, sdTables, mismatchCI);
-				s += 1;
-			}				
-		}
+      for (i = 0; i < opt.nproc; i++) {
+	pthread_join(tid[i], NULL);
+	delete procInfo[i].io;
+      }
+      delete[] tid;
 	
-		// output vcf or bed or fasta
-		if (readwise_anno_flag) 
-		 	io.writeBEDBody_readwise(out, vntrs, -1, 1);
-		else if (locuswise_prephase_flag or locuswise_flag or single_seq_flag) 
-			io.writeVCFBody_locuswise(out, vntrs, -1, 1);
-		else if (liftover_flag)
-			io.writeFa(out, vntrs);
+      for (i = 1; i < opt.nproc; i++) 
+	threads_elapsed_time += procInfo[i].elapsed_time.tv_sec + procInfo[i].elapsed_time.tv_usec/1000000.0;
+    }
+  else 
+    {
+      gettimeofday(&single_start_time, NULL);
+
+      // read input bam/fasta
+      if (single_seq_flag)
+	io.readSeqFromFasta(vntrs);
+
+      if (!liftover_flag) {
+	int s = 0;
+	SDTables sdTables;
+	io.initializeBam();
+	io.numProcessed  = &num_processed;
+	for (auto i=0; i < vntrs.size(); i++) { 
+	  io.readSeqFromBam (vntrs, i);
+	  ProcVNTR (s, vntrs[i], opt, sdTables, mismatchCI);
+	  vntrs[i]->clearReads();
+	  s += 1;
+	}				
+      }
+	
+      // output vcf or bed or fasta
+      if (readwise_anno_flag) 
+	io.writeBEDBody_readwise(out, vntrs, -1, 1);
+      else if (locuswise_prephase_flag or locuswise_flag or single_seq_flag) 
+	io.writeVCFBody_locuswise(out, vntrs, -1, 1);
+      else if (liftover_flag)
+	io.writeFa(out, vntrs);
 		
-		gettimeofday(&single_stop_time, NULL);
-		timersub(&single_stop_time, &single_start_time, &single_elapsed_time); 
-	}
+      gettimeofday(&single_stop_time, NULL);
+      timersub(&single_stop_time, &single_start_time, &single_elapsed_time); 
+    }
 
-	out.close();
-
-	/* output vntr sequences to stdout */
-	if (output_read_anno_flag)
+  out.close();
+	
+  /* output vntr sequences to stdout */
+  if (output_read_anno_flag)
+    {
+      for (auto &vntr : vntrs)
 	{
-	    for (auto &vntr : vntrs)
+	  for (auto &read : vntr->reads)
 	    {
-	        for (auto &read : vntr->reads)
-	        {
-	            cout << ">"; 
-	            cout.write(read->qname, read->l_qname);
-	            cout << "\n";
-	            cout.write(read->seq, read->len);
-	            cout << "\n";
-	        }
+	      cout << ">"; 
+	      cout.write(read->qname, read->l_qname);
+	      cout << "\n";
+	      cout.write(read->seq, read->len);
+	      cout << "\n";
 	    }
 	}
+    }
 
-	for (size_t i = 0; i < vntrs.size(); ++i) 
-	{
-		vntrs[i]->clearRead();
-		delete vntrs[i];
-	}
 	
-	if (opt.nproc > 1) {
-		printf("[CPU time: %.2f sec, ", threads_elapsed_time + pre_elapsed_time.tv_sec + pre_elapsed_time.tv_usec/1000000.0);
-	}
-	else {
-		printf("[CPU time: %.2f sec, ", single_elapsed_time.tv_sec + single_elapsed_time.tv_usec/1000000.0 + 
-										 pre_elapsed_time.tv_sec + pre_elapsed_time.tv_usec/1000000.0);
-	}
+  if (opt.nproc > 1) {
+    printf("[CPU time: %.2f sec, ", threads_elapsed_time + pre_elapsed_time.tv_sec + pre_elapsed_time.tv_usec/1000000.0);
+  }
+  else {
+    printf("[CPU time: %.2f sec, ", single_elapsed_time.tv_sec + single_elapsed_time.tv_usec/1000000.0 + 
+	   pre_elapsed_time.tv_sec + pre_elapsed_time.tv_usec/1000000.0);
+  }
 
-	double vm, rss;
-	process_mem_usage(vm, rss);
-	printf("RSS: %.2f G]\n", rss);
+  double vm, rss;
+  process_mem_usage(vm, rss);
+  printf("RSS: %.2f G]\n", rss);
 
-   	exit(EXIT_SUCCESS);
+  exit(EXIT_SUCCESS);
 }
 
+       

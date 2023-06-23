@@ -162,7 +162,7 @@ void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<
 	  int ms=0;
 	  if (motifs[m].seq[mi] == vntr[s]) { ms=0;} else { ms =-opt.penalty_mismatch;}	  
 	  diagScore= sdTables.scoreMat[m][s][mi-1] + ms;
-	  insScore = sdTables.scoreMat[m][s+1][mi-1] - opt.penalty_mismatch;
+	  insScore = sdTables.scoreMat[m][s+1][mi-1] - opt.penalty_indel;
 	}
 
 	int delScore = sdTables.scoreMat[m][s][mi] - opt.penalty_indel; //prev index =s, cur=s+1;

@@ -12,7 +12,7 @@
 #include "read.h"
 #include "vntr.h"
 #include "vcf.h"
-
+#include <mutex>    
 using namespace std;
 
 class IO
@@ -27,6 +27,13 @@ public:
 	char * sampleName;
 	char * version;
 	OutWriter outWriter;
+  char *bai;
+  samFile * fp_in;
+  bam_hdr_t * bamHdr;
+  hts_idx_t * idx;
+  mutex *ioLock;
+  int *numProcessed;
+
   // Not the best place to put this, but since the IO is batched and we
   // do not want to store the flanking sequences at each locus for
   // the duration of the run of the program, it's passed through
@@ -44,6 +51,7 @@ public:
 		out_vcf = NULL;
 		sampleName = NULL;
 		phaseFlank = 0;
+		ioLock = NULL;
 	};
 
 	~IO() 
@@ -66,7 +74,12 @@ public:
 	void readVNTRFromBed (vector<VNTR *> &vntrs);
 
 	/* get the sequences from input_bam_file that overlapping with chr:start-end */
-	void readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int sz);
+	//void readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int sz);
+  void initializeBam();
+  void closeBam();
+
+
+  void readSeqFromBam(vector<VNTR *>&vntrs, int pos);
 
 	// void readSeqFromBam (vector<READ*> &reads, string &chr, const uint32_t &ref_VNTR_start, 
  //                       const uint32_t &ref_VNTR_end, const uint32_t &VNTR_len, string &region);

@@ -20,6 +20,24 @@ public:
     uint8_t **bseqs;
     abpoa_t *ab;
     abpoa_para_t *abpt;
+  unsigned char ab_nt4_table[256] = {
+       0, 1, 2, 3,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+       4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+       4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4 /*'-'*/, 4, 4,
+       4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+       4, 0, 4, 1,  4, 4, 4, 2,  4, 4, 4, 4,  4, 4, 4, 4, 
+       4, 4, 4, 4,  3, 3, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+       4, 0, 4, 1,  4, 4, 4, 2,  4, 4, 4, 4,  4, 4, 4, 4, 
+       4, 4, 4, 4,  3, 3, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+       4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+       4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+       4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+       4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+       4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+       4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+       4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4, 
+       4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4,  4, 4, 4, 4
+	 };
 
     MSA () 
     {
@@ -33,8 +51,6 @@ public:
         msa_l = 0; 
         n_seqs = 0;
         // initialize variables
-        ab = abpoa_init();
-        abpt = abpoa_init_para();
     };
 
     MSA (const vector<vector<uint8_t>> &annos, int motifs_size)
@@ -82,19 +98,19 @@ public:
         abpt = abpoa_init_para();
 
         n_seqs = gp.size();
-        seq_lens = new int[n_seqs];
+        seq_lens = new int[n_seqs+1];
         bseqs = new uint8_t*[n_seqs];
         int i, j;
+	seq_lens[n_seqs]=0;//padding?
         for (i = 0; i < n_seqs; ++i) {
+	  assert(gp[i] <  reads.size());
             seq_lens[i] = reads[gp[i]]->len;
             bseqs[i] = new uint8_t[seq_lens[i] + 1];
-            
-            for (j = 0; j < seq_lens[i]; ++j)
-            {
-                bseqs[i][j] = reads[gp[i]]->seq[j];            
-            }
+            memcpy(bseqs[i], reads[gp[i]]->seq, seq_lens[i]);
+	    for (auto j=0; j < seq_lens[i]; j++) {
+	      bseqs[i][j] = ab_nt4_table[bseqs[i][j]];
+	    }
             bseqs[i][seq_lens[i]] = '\0';
-
         }
     };
 

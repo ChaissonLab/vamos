@@ -141,7 +141,7 @@ public:
 
 	~VNTR () {};
 
-	void clearRead ()
+	void clearReads ()
 	{
 		for (size_t i = 0; i < reads.size(); ++i) 
 		{ 

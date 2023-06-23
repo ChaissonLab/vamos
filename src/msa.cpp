@@ -6,7 +6,7 @@
 #include <utility>
 #include <numeric>
 #include <iostream>
-
+#include <fstream>
 #include "msa.h"
 #include "read.h"
 #include "abpoa.h"
@@ -77,7 +77,9 @@ void MSA::runConsensus ()
     int i, j;
 
     // alignment parameters
+
     abpt->align_mode = 2; // 0:global 1:local, 2:extension
+
     abpt->match = 1;      // match score
     abpt->mismatch = 1;   // mismatch penalty
     abpt->gap_mode = ABPOA_AFFINE_GAP; // gap penalty mode
@@ -86,20 +88,33 @@ void MSA::runConsensus ()
     abpt->gap_open2 = 1; // gap open penalty #2
     abpt->gap_ext2 = 1;   // gap extension penalty #2
                           // gap_penalty = min{gap_open1 + gap_len * gap_ext1, gap_open2 + gap_len * gap_ext2}
-    abpt->is_diploid = 0;
+    //    abpt->is_diploid = 0;
+
     abpt->out_msa = 0; // generate Row-Column multiple sequence alignment(RC-MSA), set 0 to disable
     abpt->out_cons = 1; // generate consensus sequence, set 0 to disable
+    abpt->use_qv = 0;
     abpt->progressive_poa = 1;
     abpt->ret_cigar = 0;
     abpt->rev_cigar = 0;
+
+
     abpt->out_pog = 0;
-    abpt->out_gfa = 0;
-    abpt->out_msa_header = 0;
+
+      abpt->out_gfa = 0;
+    //    abpt->out_msa_header = 0;
     abpt->use_read_ids = 0;
-
+    
     abpoa_post_set_para(abpt);
-
-    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
+    
+    //    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
+    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, NULL);
+    cons_seq = ab->abc->cons_base;
+    cons_cov = ab->abc->cons_cov;
+    cons_l   = ab->abc->cons_len;
+    cons_n   = ab->abc->n_cons;
+    msa_seq  = ab->abc->msa_base;
+    msa_l    = ab->abc->msa_len;
+    //      , &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);    
     //    abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, NULL);
 
     return;
@@ -123,6 +138,7 @@ void MSA::extractConsensusRawSeq (READ * Hap_seq)
 {
     assert((cons_n > 0) && "No consensus sequence exists!"); // cons_n == 0 means no consensus sequence exists
     Hap_seq->len = cons_l[0]; // read length
+    assert(Hap_seq->len < 1000000);
     Hap_seq->seq = (char *) malloc(Hap_seq->len + 1); // read sequence array
 
     for(int i = 0; i < Hap_seq->len; i++)
@@ -144,6 +160,9 @@ void MSA::MSA_anno_group (int motifs_size, const vector<vector<uint8_t>> &annos,
     }
     
     // encodeSeqsFromAnno(gp, annos, n_seqs, motifs_size);
+    ab = abpoa_init();
+    abpt = abpoa_init_para();
+    
     runConsensus ();
     extractConsensusAnno (consensus, motifs_size);
     cleanMSA();
@@ -157,6 +176,8 @@ Generate consensus sequence for a group of read sequences through abpoa
 void MSA::MSA_seq_group (const vector<int> &gp, const vector<READ *> &reads, READ * Hap_seq)
 {
     if (gp.empty()) return;
+    ab = abpoa_init();
+    abpt = abpoa_init_para();
 
     if (n_seqs == 1)
     {
@@ -175,6 +196,7 @@ void MSA::MSA_seq_group (const vector<int> &gp, const vector<READ *> &reads, REA
 
 void MSA::cleanMSA ()
 {
+  /*
 	int i;
     if (msa_l) 
     {
@@ -195,7 +217,8 @@ void MSA::cleanMSA ()
         free(cons_cov); 
         free(cons_l);
     }
-
+  */
+  int i;
 	for(i = 0; i < n_seqs; ++i) delete [] bseqs[i];
 	delete [] bseqs;
 	delete [] seq_lens;

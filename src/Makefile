@@ -17,7 +17,7 @@ asan  ?= ""
 tsan  ?= ""
 
 ifeq ("$(DEBUG)", "TRUE")
-  CFLAGS = -g #-fsanitize=address #-Wall -Wextra
+	  CFLAGS = -g #-fsanitize=address  -static-libasan -gdwarf-4  #-Wall -Wextra
 else
   CFLAGS = -O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
 endif
@@ -38,13 +38,13 @@ endif
 
 PROF = $(CONDA_PREFIX)/lib
 
-ABPOA_DIR = ../abPOA-v1.2.5
+ABPOA_DIR = ../abPOA
 
 all: $(PROG)
 
 
 $(ABPOA_DIR)/lib/libabpoa.a:
-	cd $(ABPOA_DIR) && make sse2=TRUE PREFIX=.
+	cd $(ABPOA_DIR) && make sse2=TRUE PREFIX=. CC=gcc gdb=TRUE
 
 vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o $(ABPOA_DIR)/lib/libabpoa.a
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -lrt

@@ -53,7 +53,10 @@ void VNTR::consensusReadForHapByABpoa (const OPTION &opt)
         if (reads[i]->haplotype == 1) h1_reads.push_back(i);
         else if (reads[i]->haplotype == 2) h2_reads.push_back(i);
     }
-
+    if ((h1_reads.size() == 0 and h2_reads.size() > 0) or
+	(h1_reads.size() > 0 and h2_reads.size() == 0) ) {
+      het = false;
+    }
     // hom, get the one consensus 
     if (!het) 
     {
@@ -69,7 +72,6 @@ void VNTR::consensusReadForHapByABpoa (const OPTION &opt)
 
         MSA * msa = new MSA(h1_reads, reads);
         msa->MSA_seq_group (h1_reads, reads, Hap_seqs[0]);
-
         delete msa;
 
         // cerr.write(Hap_seqs[0]->seq, Hap_seqs[0]->len);
@@ -78,29 +80,32 @@ void VNTR::consensusReadForHapByABpoa (const OPTION &opt)
     else
     {
         int motifs_size = motifs.size();
-        assert (h1_reads.size() > 0 and h2_reads.size() > 0);
-        READ * read_h1 = new READ();
-        READ * read_h2 = new READ();
+	if (h1_reads.size() > 0) {
+	  READ * read_h1 = new READ();
+	  char qname_1[] = "h1";	  
+	  read_h1->qname = (char *) malloc(2 + 1);
+	  strcpy(read_h1->qname, qname_1);
+	  read_h1->qname[2] = '\0';
+	  Hap_seqs.push_back(read_h1);
+	  MSA * msa_1 = new MSA(h1_reads, reads);
+	  msa_1->MSA_seq_group (h1_reads, reads, Hap_seqs[0]);
+	  delete msa_1;
+	}
+        if (h2_reads.size() > 0) {
 
-        char qname_1[] = "h1";
-        char qname_2[] = "h2";
-
-        read_h1->qname = (char *) malloc(2 + 1);
-        strcpy(read_h1->qname, qname_1);
-        read_h2->qname = (char *) malloc(2 + 1);
-        strcpy(read_h2->qname, qname_2);        
-
-        Hap_seqs.push_back(read_h1);
-        Hap_seqs.push_back(read_h2);
-
-        MSA * msa_1 = new MSA(h1_reads, reads);
-        MSA * msa_2 = new MSA(h2_reads, reads);
-
-        msa_1->MSA_seq_group (h1_reads, reads, Hap_seqs[0]);
-        msa_2->MSA_seq_group (h2_reads, reads, Hap_seqs[1]);
-
-        delete msa_1;
-        delete msa_2;
+	  READ * read_h2 = new READ();
+	  
+	  char qname_2[] = "h2";
+	  
+	  read_h2->qname = (char *) malloc(2 + 1);
+	  strcpy(read_h2->qname, qname_2);
+	  read_h2->qname[2] = '\0';
+	  Hap_seqs.push_back(read_h2);
+	  MSA * msa_2 = new MSA(h2_reads, reads);
+	  assert(1 < Hap_seqs.size());
+	  msa_2->MSA_seq_group (h2_reads, reads, Hap_seqs[1]);
+	  delete msa_2;
+	}
 
         // cerr.write(Hap_seqs[0]->seq, Hap_seqs[0]->len);
         // cerr.write(Hap_seqs[1]->seq, Hap_seqs[1]->len);
@@ -148,10 +153,11 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
 
         for (int i = 0; i < n_consensus; ++i)
         {
-
-            if (consensus[i].size() > 20000) {
+	  //
+	  // TODO: this statemnet should never be checked.
+	  if (Hap_seqs[i]->len == 0 or Hap_seqs[i]->len > 30000) { 
                 skip = true;
-                cerr << "skip the vntr" << endl;
+                cerr << "skip the vntr for hap " << i << ", the sequence length is " << Hap_seqs[i]->len << endl;
                 return;
             }    
             if (naive_flag) {
