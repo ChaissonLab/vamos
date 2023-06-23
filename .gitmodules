@@ -1,3 +1,6 @@
 [submodule "src/abpoa"]
 	path = src/abpoa
 	url = https://github.com/yangao07/abPOA.git
+[submodule "abPOA"]
+	path = abPOA
+	url = https://github.com/yangao07/abPOA.git
