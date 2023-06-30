@@ -33,7 +33,7 @@ ifneq ($(tsan), "")
 endif
 
 ifneq ($(OPT), "")
-  STATIC = -L $(PROF) -lprofiler
+  STATIC = -L $(PROF) -ltcmalloc
 endif
 
 PROF = $(CONDA_PREFIX)/lib
@@ -44,10 +44,10 @@ all: $(PROG)
 
 
 $(ABPOA_DIR)/lib/libabpoa.a:
-	cd $(ABPOA_DIR) && make sse2=TRUE PREFIX=. CC=gcc gdb=TRUE
+	cd $(ABPOA_DIR) && make sse2=TRUE PREFIX=. CC=gcc
 
 vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o $(ABPOA_DIR)/lib/libabpoa.a
-	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -lrt
+	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -lrt -L$(mchaisso)/software/lib
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include

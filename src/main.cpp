@@ -1,4 +1,4 @@
-#include <stdio.h>     
+#include <stdio.h>    
 #include <stdlib.h>   
 #include <getopt.h>
 #include <string>
@@ -25,6 +25,8 @@ int liftover_flag = false;
 int single_seq_flag = false;
 int locuswise_prephase_flag = false;
 int locuswise_flag = false;
+int read_flag = false;
+int contig_flag = false;
 int num_processed = 0;
 int download_motifs=false;
 // int seqan_flag = false;
@@ -219,9 +221,9 @@ int main (int argc, char **argv)
     {"debug",               no_argument,             &debug_flag,                    1},
     {"readanno",            no_argument,             &output_read_anno_flag,         1},
     {"locuswise_prephase",  no_argument,             &locuswise_prephase_flag,       1},
-    {"contig",            no_argument,               &locuswise_prephase_flag,       1},		
+    {"contig",            no_argument,               &contig_flag            ,       1},  // was locuswise_prephase_flag		
     {"locuswise",           no_argument,             &locuswise_flag,                1},
-    {"read",               no_argument,              &locuswise_flag,                1},		
+    {"read",               no_argument,              &read_flag,                     1},    // was locuswise
     {"single_seq",          no_argument,             &single_seq_flag,               1},
     {"readwise",            no_argument,             &readwise_anno_flag,            1},
     {"liftover",            no_argument,             &liftover_flag,                 1},
@@ -264,21 +266,21 @@ int main (int argc, char **argv)
           break;
 
 	case 'b':
-	  fprintf (stderr, "option -input with `%s'\n", optarg);
+	  fprintf (stderr, "option --bam with `%s'\n", optarg);
 	  io.input_bam = (char *) malloc(strlen(optarg) + 1);
 	  strcpy(io.input_bam, optarg);
 	  io.input_bam[strlen(optarg)] = '\0';						
 	  break;
 
 	case 'v':
-	  fprintf (stderr, "option -vntr with `%s'\n", optarg);
+	  fprintf (stderr, "option --vntr with `%s'\n", optarg);
 	  io.vntr_bed = (char *) malloc(strlen(optarg) + 1);
 	  strcpy(io.vntr_bed, optarg);
 	  io.vntr_bed[strlen(optarg)] = '\0';			
 	  break;
 
 	case 'r':
-	  fprintf (stderr, "option -region with `%s'\n", optarg);
+	  fprintf (stderr, "option --region with `%s'\n", optarg);
 	  io.region_and_motifs = (char *) malloc(strlen(optarg) + 1);
 	  strcpy(io.region_and_motifs, optarg);
 	  io.region_and_motifs[strlen(optarg)] = '\0';
@@ -299,36 +301,36 @@ int main (int argc, char **argv)
 	  // 	break;
 
 	case 'o':
-	  fprintf (stderr, "option -output with `%s'\n", optarg);
+	  fprintf (stderr, "option --output with `%s'\n", optarg);
 	  io.out_vcf = (char *) malloc(strlen(optarg) + 1);
 	  strcpy(io.out_vcf, optarg);
 	  io.out_vcf[strlen(optarg)] = '\0';						
 	  break;
 
 	case 's':
-	  fprintf (stderr, "option -sampleName with `%s'\n", optarg);
+	  fprintf (stderr, "option --sampleName with `%s'\n", optarg);
 	  io.sampleName = (char *) malloc(strlen(optarg) + 1);
 	  strcpy(io.sampleName, optarg);
 	  io.sampleName[strlen(optarg)] = '\0';						
 	  break;
 
 	case 't':
-	  fprintf (stderr, "option -numThreads with `%s'\n", optarg);
+	  fprintf (stderr, "option --numThreads with `%s'\n", optarg);
 	  opt.nproc = atoi(optarg);
 	  break;
 
 	case 'd':
 	  opt.penalty_indel = stod(optarg);
-	  fprintf (stderr, "option -penlaty_indel with `%f'\n", opt.penalty_indel);
+	  fprintf (stderr, "option --penlaty_indel with `%f'\n", opt.penalty_indel);
 	  break;
 
 	case 'c':
 	  opt.penalty_mismatch = stod(optarg);
-	  fprintf (stderr, "option -penlaty_mismatch with `%f'\n", opt.penalty_mismatch);
+	  fprintf (stderr, "option --penlaty_mismatch with `%f'\n", opt.penalty_mismatch);
 	  break;
 
 	case 'f':
-	  fprintf (stderr, "option -filterNoisy\n");
+	  fprintf (stderr, "option --filterNoisy\n");
 	  opt.filterStrength = stod(optarg);
 	  opt.filterNoisy = true;
 	  break;
@@ -367,6 +369,18 @@ int main (int argc, char **argv)
 	}		
     }
 
+  if (read_flag) {
+    locuswise_flag = true;
+  }
+  else if (contig_flag) {    
+    locuswise_prephase_flag = true;
+  }
+  else {
+    cerr << "Either -contig or -read must be specified for input that is aligned contigs or reads" << endl;
+    exit(1);
+  }
+
+  
   if (locuswise_flag) io.phaseFlank = opt.phaseFlank;
 
   if (download_motifs) {

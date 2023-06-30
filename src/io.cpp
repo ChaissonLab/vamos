@@ -223,22 +223,35 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGA
 {
     assert(read_aln_start <= (uint32_t) aln->core.l_qseq);
     /* trivial case: when ref_aln_start equals target_crd*/
-    if (target_crd == ref_aln_start) return make_pair(read_aln_start, 1);
-
     uint32_t cigar_start = CIGAR_start;
-    int op, type, len;
+    int op, type, len, opChar;
+    
+    if (target_crd == ref_aln_start) {
+      for (uint32_t k = cigar_start; k < aln->core.n_cigar && k < cigar_start + 1; k++) {
+	opChar = bam_cigar_opchr(cigar[k]);
+
+	// Consume the first softclip if present.
+	if (opChar == 'S') {
+	  read_aln_start+=bam_cigar_oplen(cigar[k]);
+	  CIGAR_start +=1;
+	}	
+      }
+      return make_pair(read_aln_start, 1);
+    }
+
 
     for (uint32_t k = cigar_start; k < aln->core.n_cigar; k++) 
     {
         op = bam_cigar_op(cigar[k]);
         type = bam_cigar_type(op);
         len = bam_cigar_oplen(cigar[k]);
-
+	
         if (ref_aln_start > target_crd) 
             return make_pair(read_aln_start, 0); // skip the out-of-range alignment
 
-        else if (ref_aln_start == target_crd)
-            return make_pair(read_aln_start, 1);
+        else if (ref_aln_start == target_crd) {
+	  return make_pair(read_aln_start, 1);
+	}
 
         else if (!(type & 1) and !(type & 2)) // Hard clip
             continue;
@@ -523,10 +536,12 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int j)
 	vector<bam1_t*> alns;
 	if (ioLock != NULL) { ioLock->lock(); }
 	
-        while(bam_itr_next(fp_in, itr, aln) >= 0)
-        {
-	  alns.push_back(aln);
-	  aln = bam_init1();
+        while(bam_itr_next(fp_in, itr, aln) >= 0) {
+	  if (aln->core.qual > 10 && ((aln->core.flag & 256) == 0) & ((aln->core.flag & 2048) == 0) ) {
+	    alns.push_back(aln);
+	    aln = bam_init1();
+	  }
+	  
 	}
 	// The last aln created is not used.
 	bam_destroy1(aln);

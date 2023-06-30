@@ -51,12 +51,14 @@ public:
       nMatchMat.resize(motifs.size());
       nDelMat.resize(motifs.size());    
       scoreMat.resize(motifs.size());
+      int totalSeqLen=0;
       for (auto m=0; m < motifs.size(); m++) {
 	pathMat[m].resize(seq.size()+1);
 	nMatchMat[m].resize(seq.size()+1);
 	nDelMat[m].resize(seq.size()+1);      
 	scoreMat[m].resize(seq.size()+1);
 	for (auto s=0; s < seq.size() + 1; s++ ) {
+	  totalSeqLen += motifs[m].len;
 	  pathMat[m][s].resize(motifs[m].len);
 	  nMatchMat[m][s].resize(motifs[m].len);
 	  nDelMat[m][s].resize(motifs[m].len);	

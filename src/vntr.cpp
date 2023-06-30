@@ -226,7 +226,7 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
 
             if (reads[i]->len > 20000) {
                 skip = true;
-                cerr << "skip the vntr" << endl;
+                cerr << "skip the vntr (length > " << reads[i]->len << ")" << endl;
                 return;
             }     
 
