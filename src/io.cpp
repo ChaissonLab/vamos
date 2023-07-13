@@ -495,7 +495,7 @@ void IO::closeBam() {
     sam_close(fp_in); 
 }
 
-void IO::readSeqFromBam (vector<VNTR *> &vntrs, int j) 
+void IO::readSeqFromBam (vector<VNTR *> &vntrs, int j, OPTION &opts) 
 {
   if (j >= vntrs.size()) return;
 
@@ -537,10 +537,26 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int j)
 	if (ioLock != NULL) { ioLock->lock(); }
 	
         while(bam_itr_next(fp_in, itr, aln) >= 0) {
-	  if (aln->core.qual > 10 && ((aln->core.flag & 256) == 0) & ((aln->core.flag & 2048) == 0) ) {
-	    alns.push_back(aln);
-	    aln = bam_init1();
+	  if (aln->core.qual <= 10) {
+	    continue;
 	  }
+	  
+	  if (opts.inputType == by_read) {
+	    if ( (aln->core.flag & 256) || (aln->core.flag & 2048) ) {
+	      // Skip supplental and secondary alignments for reads
+	      continue;
+	    }
+	  }
+	  else if (opts.inputType == by_contig) {
+	    if ( (aln->core.flag) & 256 ) {
+	      continue;
+	    }
+	  }
+ 
+	  //
+	  // Passed checks: is high quality, and input seq is read with high quality and not secondary+supplemental, or seq is contig and not supplemental
+	  alns.push_back(aln);
+	  aln = bam_init1();
 	  
 	}
 	// The last aln created is not used.

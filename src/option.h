@@ -2,7 +2,10 @@
 #define OPTION_H_
 
 // using namespace std;
-
+enum InputType {
+  by_read,
+  by_contig
+};
 class OPTION
 {
 public:
@@ -14,6 +17,8 @@ public:
         double accuracy;
         int phaseFlank;
         string download;
+   
+        InputType inputType;
 	OPTION ()
 	{
 		nproc = 1;
@@ -24,6 +29,7 @@ public:
 		accuracy=0.98;
 		phaseFlank=15000;
                 download="";
+		inputType=by_read;
 	};
 
 	~OPTION () {};

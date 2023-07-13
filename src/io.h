@@ -12,6 +12,7 @@
 #include "read.h"
 #include "vntr.h"
 #include "vcf.h"
+#include "option.h"
 #include <mutex>    
 using namespace std;
 
@@ -79,7 +80,7 @@ public:
   void closeBam();
 
 
-  void readSeqFromBam(vector<VNTR *>&vntrs, int pos);
+  void readSeqFromBam(vector<VNTR *>&vntrs, int pos, OPTION &opts);
 
 	// void readSeqFromBam (vector<READ*> &reads, string &chr, const uint32_t &ref_VNTR_start, 
  //                       const uint32_t &ref_VNTR_end, const uint32_t &VNTR_len, string &region);

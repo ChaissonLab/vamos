@@ -127,7 +127,7 @@ void ProcVNTR (int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector< 
 void *ProcVNTRs (void *procInfoValue)
 {
 
-	ProcInfo *procInfo = (ProcInfo *)procInfoValue;
+	ProcInfo *procInfo = (ProcInfo *) procInfoValue;
 	gettimeofday(&(procInfo->start_time), NULL);
 	cerr << "start thread: " << procInfo->thread << endl;
 	int i, s;
@@ -140,7 +140,7 @@ void *ProcVNTRs (void *procInfoValue)
 	for (i = procInfo->thread, s = 0; i < sz; i += (procInfo->opt)->nproc, s += 1)
 	{
 		if (debug_flag) cerr << "processing vntr: " << i << endl;
-		procInfo->io->readSeqFromBam(*procInfo->vntrs, i);
+		procInfo->io->readSeqFromBam(*procInfo->vntrs, i, *procInfo->opt);
 		ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt), sdTables, *(procInfo->mismatchCI));
 		(*procInfo->vntrs)[i]->clearReads();		
 	}		
@@ -380,6 +380,9 @@ int main (int argc, char **argv)
     exit(1);
   }
 
+  if (contig_flag) {
+    opt.inputType=by_contig;
+  }
   
   if (locuswise_flag) io.phaseFlank = opt.phaseFlank;
 
@@ -531,7 +534,7 @@ int main (int argc, char **argv)
 	io.initializeBam();
 	io.numProcessed  = &num_processed;
 	for (auto i=0; i < vntrs.size(); i++) { 
-	  io.readSeqFromBam (vntrs, i);
+	  io.readSeqFromBam (vntrs, i, opt);
 	  ProcVNTR (s, vntrs[i], opt, sdTables, mismatchCI);
 	  vntrs[i]->clearReads();
 	  s += 1;
