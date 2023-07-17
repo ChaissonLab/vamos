@@ -7,7 +7,7 @@ import re
 """
 This snakefile generate emotifs for vntr loci
 
-Needs update: 
+Needs update in the config file before run: 
 
 "numOfSplits" : "10000",
 "delta_threshold" : ["0.1", "0.2", "0.3"],
@@ -18,7 +18,7 @@ Needs update:
 SD = os.path.dirname(workflow.snakefile)
 
 # Config
-configfile: "/project/mchaisso_100/cmb-16/jingwenr/trfCall/vamos/snakefile/configs/snakefile.json"
+configfile: "/project/mchaisso_100/cmb-16/jingwenr/trfCall/vamos/snakefile/configs/emotif_ILP.json"
 
 input_path = config["input_path"]
 numOfSplits = int(config["numOfSplits"])
@@ -35,6 +35,9 @@ rule all:
 		emo=expand("{input_path}/emotifs/{mode}/out-{genomes_index}-delta-{delta_threshold}/emotifs.tsv", mode = mode, input_path = input_path, genomes_index = genomes_index, delta_threshold = delta_threshold),
 		vm=expand("{input_path}/emotifs/{mode}/out-{genomes_index}-delta-{delta_threshold}/vntrs_motifs.bed", mode = mode, input_path = input_path, genomes_index = genomes_index, delta_threshold = delta_threshold)
 
+"""
+This function evenly splits VNTR loci into {numOfSplits} files 
+"""
 rule splitSeq:
 	input:
 		"{input_path}/emotifs/{mode}/aggregate.{genomes_index}.tsv"
@@ -48,6 +51,9 @@ rule splitSeq:
 		awk '{{split($2, a, ","); if ((NR >= 2) && ((NR - 1) % {params.numOfSplits} == {wildcards.splits_index}) && (length(a) <= 1000)) {{print $0;}} }}' {input} > {output}
 	"""
 
+"""
+This function applies ILP solver to calculate efficient motif set
+"""
 rule runILP_solver:
 	input:
 		"{input_path}/emotifs/{mode}/split_{genomes_index}/seq/vntr_motif.{splits_index}.tsv"
@@ -61,6 +67,10 @@ rule runILP_solver:
 		time python3 {params.ILP_Solver_py} {input} {output} 9 {wildcards.delta_threshold}
 	"""
 
+
+"""
+This function aggregates {numOfSplits} splited files into one 
+"""
 rule combineResult:
 	input:
 		split_file = expand("{input_path}/emotifs/{mode}/initial-{genomes_index}-delta-{delta_threshold}/emotifs.{splits_index}.tsv", splits_index=splits_index, allow_missing=True),
@@ -72,6 +82,9 @@ rule combineResult:
 		cat {input.header} {input.split_file} > {output}
 	"""
 
+"""
+This function post-processes the aggregated emotifs.ts
+"""
 rule getVNTRBed:
 	input:
 		"{input_path}/emotifs/{mode}/out-{genomes_index}-delta-{delta_threshold}/emotifs.tsv"

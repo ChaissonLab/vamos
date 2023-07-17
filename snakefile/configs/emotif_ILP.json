@@ -4,23 +4,9 @@
 "genomes_index" : ["64"],
 "mode" : ["summary_2023-03-31"],
 
-"ILP_Solver_py" : "/project/mchaisso_100/cmb-16/jingwenr/trfCall/vamos/snakefile/py/ILP_Solver.ray.fast.py",
-"compare_with_greedy_py" : "/project/mchaisso_100/cmb-16/jingwenr/trfCall/script/CompareWithGreedy_new.py",
-
-"lra" : "~/.conda/envs/lra/bin/lra",
-"mm2" : "/project/mchaisso_100/cmb-16/jingwenr/software/minimap2",
-"samtools" : "~/.conda/envs/lra/bin/samtools",
-"vamos" : "/project/mchaisso_100/cmb-16/jingwenr/trfCall/vamos/src/vamos",
-
-"asm_path" : "/project/mchaisso_100/cmb-16/bidagu/working/trfCall/data/hgsvc",
-"input_path" : "/project/mchaisso_100/cmb-16/jingwenr/trfCall",
-"emotif_path" : "/project/mchaisso_100/cmb-16/jingwenr/trfCall/emotifs",
-
-
 "header" : "/project/mchaisso_100/cmb-16/jingwenr/trfCall/header.tsv",
-"ref_mm2" : "/project/mchaisso_100/cmb-16/jingwenr/reference/hg38.fa.asm.mmi",
-"ref" : "/project/mchaisso_100/cmb-16/jingwenr/reference/hg38.no_alts.fasta",
-
+"ILP_Solver_py" : "/project/mchaisso_100/cmb-16/jingwenr/trfCall/vamos/snakefile/py/ILP_Solver.ray.fast.py",
+"input_path" : "/project/mchaisso_100/cmb-16/jingwenr/trfCall",
 
 "grid_ILP" : "sbatch -c 24 --mem=50G --time=24:00:00 -p qcb --output=/project/mchaisso_100/cmb-16/jingwenr/trfCall/script/run_emotifs/slurm_ilp_out/%j.out",
 "grid_split" : "sbatch -c 1 --mem=1G --time=24:00:00 -p qcb --output=/project/mchaisso_100/cmb-16/jingwenr/trfCall/script/run_emotifs/slurm_split_out/%j.out",
