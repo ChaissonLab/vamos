@@ -14,7 +14,7 @@ import random
 import traceback
 import time 
 
-os.chdir(r"/project/mchaisso_100/cmb-16/jingwenr/trfCall")
+#os.chdir(r"/project/mchaisso_100/cmb-16/jingwenr/trfCall")
 random.seed(0)
 
 if len(sys.argv) == 5:
