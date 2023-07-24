@@ -1,6 +1,7 @@
 #ifndef VNTR_H_
 #define VNTR_H_
 
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -12,221 +13,234 @@
 #include "read.h"
 #include "option.h"
 
-
 using namespace std;
 
-/*
-class MOTIF contains:
-@seq: the sequence of the motif
-@len: the lenght of the motif
-*/
 
 
 
+/**
+ * @brief class for one vntr motif
+ */
 class MOTIF
 {
 public:
-	string seq;
-	int len;
-	MOTIF () {};
-	MOTIF(string &Seq) : seq(Seq) { len = Seq.length();};
-	~MOTIF() {};
+    string seq;     // the sequence of the motif
+    int len;        // the lenght of the motif
+
+    /// @brief Construct a new MOTIF object
+    MOTIF() {};
+    /**
+     * @brief Construct a new MOTIF object
+     * @param Seq input motif sequence
+     */
+    MOTIF(string &Seq) : seq(Seq) { len = Seq.length();};
+    /// @brief Destroy the MOTIF object
+    ~MOTIF() {};
 };
 
 
+
+
+/**
+ * @brief class for the stringDecomposer dynamic programming tables (i.e., book)
+ */
 class SDTables
 {
 public:
-  vector<vector<vector< int > > > pathMat;
-  vector<vector<vector< int > > > nMatchMat;
-  vector<vector<vector< int > > > nDelMat;  
-  vector<vector<vector< int > > > scoreMat;
-  vector<int> pathRow0;
-  vector<int> scoreRow0;
-  vector<vector<int > > nMatchOnOptPath;
-  vector<vector<int > > nDelOnOptPath;  
-  void Init(vector<MOTIF> &motifs, string &seq) {
-    try {    
-      pathMat.resize(motifs.size());
-      nMatchMat.resize(motifs.size());
-      nDelMat.resize(motifs.size());    
-      scoreMat.resize(motifs.size());
-      int totalSeqLen=0;
-      for (auto m=0; m < motifs.size(); m++) {
-	pathMat[m].resize(seq.size()+1);
-	nMatchMat[m].resize(seq.size()+1);
-	nDelMat[m].resize(seq.size()+1);      
-	scoreMat[m].resize(seq.size()+1);
-	for (auto s=0; s < seq.size() + 1; s++ ) {
-	  totalSeqLen += motifs[m].len;
-	  pathMat[m][s].resize(motifs[m].len);
-	  nMatchMat[m][s].resize(motifs[m].len);
-	  nDelMat[m][s].resize(motifs[m].len);	
-	  scoreMat[m][s].resize(motifs[m].len);
-	  fill(pathMat[m][s].begin(), pathMat[m][s].end(), 0);
-	  fill(nMatchMat[m][s].begin(), nMatchMat[m][s].end(), 0);
-	  fill(nDelMat[m][s].begin(), nDelMat[m][s].end(), 0);	
-	  fill(scoreMat[m][s].begin(), scoreMat[m][s].end(), 0);	
-	}
-      }
-      pathRow0.resize(seq.size() + 1);
-      scoreRow0.resize(seq.size() + 1);
-    } catch (std::exception const & e ) {
-      cerr << "Exception allocating tables " << e.what() << endl;
-      assert(0);
+    vector<vector<vector<int> > > pathMat;      // DP path book (outer: motif, middle: motif len, inner: vntr len)
+    vector<vector<vector<int> > > nMatchMat;    // # of match book (outer: motif, middle: motif len, inner: vntr len)
+    vector<vector<vector<int> > > nDelMat;      // # of del book (outer: motif, middle: motif len, inner: vntr len)
+    vector<vector<vector<int> > > scoreMat;     // DP score book (outer: motif, middle: motif len, inner: vntr len)
+    vector<int> pathRow0;                       // DP path book general first row (length: vntr len)
+    vector<int> scoreRow0;                      // DP score book general first row (length: vntr len)
+    vector<vector<int> > nMatchOnOptPath;       //
+    vector<vector<int> > nDelOnOptPath;         //
+
+    /**
+     * @brief Initialize and size all DP records
+     * @param motifs input vector of all motifs
+     * @param seq input vntr sequence
+     */
+    void Init(vector<MOTIF> &motifs, string &seq)
+    {
+        try
+        {
+            // each motif has one table (outer layer indexed by motif)
+            pathMat.resize(motifs.size());
+            nMatchMat.resize(motifs.size());
+            nDelMat.resize(motifs.size());
+            scoreMat.resize(motifs.size());
+            int totalSeqLen=0; // maintain a total motif length
+
+            for (auto m=0; m < motifs.size(); m++)
+            {
+                // middle layer (col index) by vntr seq length (1 addition)
+                pathMat[m].resize(seq.size()+1);
+                nMatchMat[m].resize(seq.size()+1);
+                nDelMat[m].resize(seq.size()+1);
+                scoreMat[m].resize(seq.size()+1);
+
+                for (auto s=0; s < seq.size() + 1; s++) 
+                {
+                    // inner layer (row index) indexced by motif length
+                    totalSeqLen += motifs[m].len;
+                    pathMat[m][s].resize(motifs[m].len);
+                    nMatchMat[m][s].resize(motifs[m].len);
+                    nDelMat[m][s].resize(motifs[m].len);
+                    scoreMat[m][s].resize(motifs[m].len);
+
+                    // fill all cells with 0
+                    fill(pathMat[m][s].begin(), pathMat[m][s].end(), 0);
+                    fill(nMatchMat[m][s].begin(), nMatchMat[m][s].end(), 0);
+                    fill(nDelMat[m][s].begin(), nDelMat[m][s].end(), 0);
+                    fill(scoreMat[m][s].begin(), scoreMat[m][s].end(), 0);
+                }
+            }
+
+            // DP book general first row records
+            pathRow0.resize(seq.size() + 1);
+            scoreRow0.resize(seq.size() + 1);
+        }
+        catch (std::exception const & e)
+        {
+            cerr << "Exception allocating tables " << e.what() << endl;
+            assert(0);
+        }
     }
-  }
-
 };
-  
 
-/*
-class VNTR contains:
-@chr: the chromosome 
-@start: the chromosome start coordinate
-@end: the chromosome end coordinate
-@reads: a group of sequences overlapping with the current VNTR locus
-@annos: the index of the motifs annotation for each sequence, 
-	 with function `commaSeparatedStringannotation`, you can get a string annotation
-@consensus;: the index of the consensus; motifs annotation for the current VNTR locus
-*/
 
+
+
+/**
+ * @brief class for one vntr sequence
+ * @note annotations are string of motif indeces
+ */
 class VNTR
 {
-public: 
-	uint32_t ref_start;
-	uint32_t ref_end;
-	int len; // the ref len
-	int cur_len; // the sample seq len
-	string chr;
-	string region;
-	vector<MOTIF> motifs;
-	vector<READ *> reads; 
-	vector<vector<uint8_t>> annos; // the motif annotation for each read sequence
-	// vector<string> annoStrs; 
-	int nreads;
-	vector<vector<double>> edist;
-
-	// vector<READ *> clean_reads; 
-	// vector<vector<uint8_t>> clean_annos; 
-	// vector<string> clean_annoStrs;
-	// int ncleanreads; 
-	// vector<vector<double>> clean_edist;
-
-	vector<int> h1_reads;
-	vector<int> h2_reads;
-	vector<READ *> Hap_seqs;
-
-	vector<vector<uint8_t>> consensus; 
-	bool het;
-	bool skip;
-	bool nullAnno;
-	vector<bool> nullAnnos;
-
-	int len_h1;
-	int len_h2;
-        bool readsArePhased;
-        VNTR () { het = false; nreads = 0; skip = false; nullAnno = false; readsArePhased = false; };
-
-	VNTR (string Chr, uint32_t Start, uint32_t End, uint32_t Len) : chr(Chr), ref_start(Start), ref_end(End), len(Len) 
-	{
-		string s = ":" + to_string(ref_start);
-		string e = "-" + to_string(ref_end);
-		region = Chr + s + e;
-		het = false; 
-		nreads = 0;
-		skip = false;
-		nullAnno = false;
-		len_h1 = 0;
-		len_h2 =0;
-	};
-
-	~VNTR () {};
-
-	void clearReads ()
-	{
-		for (size_t i = 0; i < reads.size(); ++i) 
-		{ 
-			delete reads[i];
-		}
-		reads.clear();
-
-		if (!het and nreads == 1) return;
-
-		// for (size_t i = 0; i < Hap_seqs.size(); ++i) 
-		// { 
-		// 	delete Hap_seqs[i];
-		// }
-		Hap_seqs.clear();
-
-		return;
-	}
-
-	/* for each sequence, get the annotation of motifs */
-    void motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<int > &mismatchCI);
-	// string * getAnnoStr (int i);
-
-	size_t getAnnoStrLen (int i);
-
-	void annoTostring (const OPTION &opt);
-
-	void consensusReadForHapByABpoa (const OPTION &opt);
-	
-	/* for all the sequences at the current VNTR locus, get the consensus; annotation */
-	void consensusMotifAnnoForOneVNTRByClustering (const OPTION &opt);
-
-	void consensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt);
-
-	// void consensusMotifAnnoForOneVNTRBySeqan (const OPTION &opt);
-
-	int hClust (vector<int> &gp1, vector<int> &gp2, double dists []);
-
-	/* for one consensus; annotation, output the comma-delimited annotation */
-	void commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_rep);
-
-	// int cleanNoiseAnno(const OPTION &opt);
-};
-
-
-void outputConsensus (vector<uint8_t> &consensus);
-
-
-class Order {
 public:
-	vector<double> *dist;
-	vector<int> index;
 
-	Order() {dist = NULL;};
-	Order(vector<double> *a): dist(a) {};
+    string chr;                             // the VNTR reference chromosome
+    uint32_t ref_start;                     // the VNTR reference start coordinate
+    uint32_t ref_end;                       // the VNTR reference end coordinate
+    int len;                                // the VNTR reference length
+    string region;                          // the VNTR reference region in format: "chr:ref_start:ref_end"
+    vector<MOTIF> motifs;                   // the pre-configured motifs for this VNTR
 
-	void Update(vector<double> *a) 
-	{
-		dist = a;
-		index.resize(a->size());
-		for (int i = 0; i < index.size(); i++) index[i] = i;
-		Sort();
-	}
+    vector<READ *> reads;                   // all reads overlapping this VNTR
+    int nreads;                             // number of reads
+    int cur_len;                            // the sample sequence length (averaged over all reads)
+    vector<vector<uint8_t> > annos;         // the motif annotations for each read
+    vector<vector<uint8_t> > consensus;     // the final consensus annotation
+    vector<vector<double> > edist;          // 
 
-	int operator()(const int i, const int j) 
-	{
-		return (*dist)[i] < (*dist)[j];
-	}
+    vector<int> h1_reads;                   // index of all haplotype1 reads (manipulated in consensusReadForHapByABpoa)
+    vector<int> h2_reads;                   // index of all haplotype2 reads (manipulated in consensusReadForHapByABpoa)
+    vector<READ *> Hap_seqs;
+    bool het;                               // if the VNTR is heterozygous
+    bool skip;                              // if skip the VNTR
+    bool nullAnno;                          // if the annotation can't be generated
+    vector<bool> nullAnnos;
+    int len_h1;                             // 
+    int len_h2;                             // 
+    bool readsArePhased;                    // 
 
-	void Sort() 
-	{
-		std::sort(index.begin(), index.end(), *this);
-	}
 
-	double & operator[](int i) 
-	{
-		return (*dist)[index[i]];
-	}
+    /// @brief Construct a new VNTR object
+    VNTR()
+    {
+        het = false;
+        nreads = 0;
+        skip = false;
+        nullAnno = false;
+        readsArePhased = false;
+    };
 
-	int size() 
-	{
-		return index.size();
-	}
+
+    /**
+     * @brief Construct a new VNTR object
+     * @param Chr VNTR reference chromosome
+     * @param Start VNTR reference start coordinate
+     * @param End VNTR reference end coordinate
+     * @param Len VNTR reference length
+     */
+    VNTR(string Chr, uint32_t Start, uint32_t End, uint32_t Len)
+    :chr(Chr), ref_start(Start), ref_end(End), len(Len) 
+    {
+        string s = ":" + to_string(ref_start);
+        string e = "-" + to_string(ref_end);
+        region = Chr + s + e;
+        het = false;
+        nreads = 0;
+        skip = false;
+        nullAnno = false;
+        len_h1 = 0;
+        len_h2 = 0;
+    };
+
+
+    /// @brief Destroy the VNTR object
+    ~VNTR() {};
+
+
+    /**
+     * @brief Clear reads and haplotype sequences to free up memory
+     */
+    void clearReads()
+    {
+        for (size_t i = 0; i < reads.size(); ++i) 
+        { 
+            delete reads[i];
+        }
+        reads.clear();
+
+        if (!het and nreads == 1) return;
+
+        Hap_seqs.clear();
+
+        return;
+    }
+
+
+    /**
+     * @brief Annotate each sequence by motifs
+     * @param opt general options
+     * @param sdTables stringDecomposer tables
+     * @param mismatchCI mismatch confidence intervals
+     */
+    void motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int> &mismatchCI);
+
+
+    /**
+     * @brief Get the reads consensus (nt sequence) of one/two haplotypes by abpoa msa
+     * @param opt general options
+     */
+    void consensusReadForHapByABpoa (const OPTION &opt);
+
+
+    /**
+     * @brief Get the consensus of all annotated strings by abpoa msa
+     * @param opt general options
+     */
+    void consensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt);
+
+
+    /**
+     * @brief Get the comma seperated motif annotation string for the vcf output
+     * @param h1 if this is haplotype 1 consensus
+     * @param motif_rep the output comma seperated motif annotation string
+     */
+    void commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_rep);
 };
+
+
+
+
+/**
+ * @brief debug function to print the consensus
+ * @param consensus 
+ */
+void outputConsensus (vector<uint8_t> &consensus);
 
 
 #endif

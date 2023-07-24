@@ -22,7 +22,7 @@ extern int subseq_flag;
 extern int locuswise_flag;
 
 
-void outputConsensus (vector<uint8_t> &consensus, const OPTION &opt)
+void outputConsensus(vector<uint8_t> &consensus, const OPTION &opt)
 {
     size_t i = 0;
     for (auto &it : consensus)
@@ -32,7 +32,7 @@ void outputConsensus (vector<uint8_t> &consensus, const OPTION &opt)
             if (i < consensus.size() - 1)
                 cerr << to_string(it) << ",";
             else
-                cerr << to_string(it);          
+                cerr << to_string(it);
         }
         i += 1;
     }
@@ -41,7 +41,7 @@ void outputConsensus (vector<uint8_t> &consensus, const OPTION &opt)
 }
 
 
-void VNTR::consensusReadForHapByABpoa (const OPTION &opt) 
+void VNTR::consensusReadForHapByABpoa(const OPTION &opt) 
 {
     if (skip) return;
     if (nreads == 0) return;
@@ -53,12 +53,13 @@ void VNTR::consensusReadForHapByABpoa (const OPTION &opt)
         if (reads[i]->haplotype == 1) h1_reads.push_back(i);
         else if (reads[i]->haplotype == 2) h2_reads.push_back(i);
     }
-    if ((h1_reads.size() == 0 and h2_reads.size() > 0) or
-	(h1_reads.size() > 0 and h2_reads.size() == 0) ) {
-      het = false;
-    }
-    // hom, get the one consensus 
-    if (!het) 
+
+    // if all reads to one hap, take as homozygous
+    if ( (h1_reads.size() == 0 and h2_reads.size() > 0) or
+        (h1_reads.size() > 0 and h2_reads.size() == 0) ) {het = false;}
+
+    // homozygous, get the one consensus
+    if (!het)
     {
         int motifs_size = motifs.size();
         h1_reads.resize(nreads);
@@ -70,42 +71,50 @@ void VNTR::consensusReadForHapByABpoa (const OPTION &opt)
         strcpy(read->qname, qname_1);
         Hap_seqs.push_back(read);
 
+        // msa to get the consensus
         MSA * msa = new MSA(h1_reads, reads);
-        msa->MSA_seq_group (h1_reads, reads, Hap_seqs[0]);
+        msa->MSA_seq_group(h1_reads, reads, Hap_seqs[0]);
         delete msa;
 
         // cerr.write(Hap_seqs[0]->seq, Hap_seqs[0]->len);
         // cerr << endl;
     }
+    // heterozygous, get the two consensuses
     else
     {
         int motifs_size = motifs.size();
-	if (h1_reads.size() > 0) {
-	  READ * read_h1 = new READ();
-	  char qname_1[] = "h1";	  
-	  read_h1->qname = (char *) malloc(2 + 1);
-	  strcpy(read_h1->qname, qname_1);
-	  read_h1->qname[2] = '\0';
-	  Hap_seqs.push_back(read_h1);
-	  MSA * msa_1 = new MSA(h1_reads, reads);
-	  msa_1->MSA_seq_group (h1_reads, reads, Hap_seqs[0]);
-	  delete msa_1;
-	}
-        if (h2_reads.size() > 0) {
 
-	  READ * read_h2 = new READ();
-	  
-	  char qname_2[] = "h2";
-	  
-	  read_h2->qname = (char *) malloc(2 + 1);
-	  strcpy(read_h2->qname, qname_2);
-	  read_h2->qname[2] = '\0';
-	  Hap_seqs.push_back(read_h2);
-	  MSA * msa_2 = new MSA(h2_reads, reads);
-	  assert(1 < Hap_seqs.size());
-	  msa_2->MSA_seq_group (h2_reads, reads, Hap_seqs[1]);
-	  delete msa_2;
-	}
+        if (h1_reads.size() > 0)
+        {
+
+            READ * read_h1 = new READ();
+            char qname_1[] = "h1";      
+            read_h1->qname = (char *) malloc(2 + 1);
+            strcpy(read_h1->qname, qname_1);
+            read_h1->qname[2] = '\0';
+            Hap_seqs.push_back(read_h1);
+
+            // msa to get the consensus
+            MSA * msa_1 = new MSA(h1_reads, reads);
+            msa_1->MSA_seq_group(h1_reads, reads, Hap_seqs[0]);
+            delete msa_1;
+        }
+        if (h2_reads.size() > 0)
+        {
+
+            READ * read_h2 = new READ();
+            char qname_2[] = "h2";
+            read_h2->qname = (char *) malloc(2 + 1);
+            strcpy(read_h2->qname, qname_2);
+            read_h2->qname[2] = '\0';
+            Hap_seqs.push_back(read_h2);
+
+            // msa to get the consensus
+            MSA * msa_2 = new MSA(h2_reads, reads);
+            assert(1 < Hap_seqs.size());
+            msa_2->MSA_seq_group(h2_reads, reads, Hap_seqs[1]);
+            delete msa_2;
+        }
 
         // cerr.write(Hap_seqs[0]->seq, Hap_seqs[0]->len);
         // cerr.write(Hap_seqs[1]->seq, Hap_seqs[1]->len);
@@ -116,7 +125,7 @@ void VNTR::consensusReadForHapByABpoa (const OPTION &opt)
 }
 
 
-void VNTR::consensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
+void VNTR::consensusMotifAnnoForOneVNTRByABpoa(const OPTION &opt)
 {
     if (skip) return;
     int n_seqs = annos.size();
@@ -130,15 +139,16 @@ void VNTR::consensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt)
         return;
     }
 
-    MSA * msa = new MSA(annos, motifs_size);   
-    msa->MSA_anno_group (motifs.size(), annos, consensus[0]);
+    MSA * msa = new MSA(annos, motifs_size);
+    msa->MSA_anno_group(motifs.size(), annos, consensus[0]);
     assert(consensus[0].size() > 0);
     delete msa;
 
     return;
 }
 
-void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<int > &mismatchCI) 
+
+void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int> &mismatchCI) 
 {
     if (skip) return;
 
@@ -153,19 +163,21 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
 
         for (int i = 0; i < n_consensus; ++i)
         {
-	  //
-	  // TODO: this statemnet should never be checked.
-	  if (Hap_seqs[i]->len == 0 or Hap_seqs[i]->len > 30000) { 
+            // TODO: this statemnet should never be checked.
+            if (Hap_seqs[i]->len == 0 or Hap_seqs[i]->len > 30000)
+            {
                 skip = true;
                 cerr << "skip the vntr for hap " << i << ", the sequence length is " << Hap_seqs[i]->len << endl;
                 return;
-            }    
-            if (naive_flag) {
-	      cerr << "This option is no longer supported" << endl;
-	      exit(0);
-	    }
-	      //                naive_anno(consensus[i], motifs, Hap_seqs[i]->seq, Hap_seqs[i]->len);
-            else {
+            }
+            if (naive_flag)
+            {
+                cerr << "This option is no longer supported" << endl;
+                exit(0);
+            }
+            // naive_anno(consensus[i], motifs, Hap_seqs[i]->seq, Hap_seqs[i]->len);
+            else
+            {
                 vector<int> starts, ends, sdAnnos, sdQV;
                 vector<vector<int > > motifNMatch;
                 // cout << "decomposing " << region << " " << i << " " << reads[i]->len << " " << motifs.size() << endl;
@@ -194,7 +206,8 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
                 nullAnno = true;
                 nullAnnos[i] = true;
             } 
-            else if (debug_flag) {
+            else if (debug_flag)
+            {
                 cerr << endl;
                 cerr.write(Hap_seqs[i]->qname, Hap_seqs[i]->l_qname);
                 cerr << endl;
@@ -211,37 +224,36 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
         // annotate for consensus read
         annos.resize(nreads);
         nullAnnos.resize(nreads, false);
-        if (nreads > 200) {
+        if (nreads > 200)
+        {
           cerr << "WARNING, skipping locus " << region << " because it may be a centromeric tandem repeat" << endl;
           return;
         }
 
         for (int i = 0; i < nreads; ++i)
         {
-            /* 
-                apply Bida's code here
-                input:   string : reads[i].seq; vector<MOTIF> : motifs
-                output:  vector<vector<int>> annos[i]
-            */
 
-            if (reads[i]->len > 20000) {
+            if (reads[i]->len > 20000)
+            {
                 skip = true;
                 cerr << "skip the vntr (length > " << reads[i]->len << ")" << endl;
                 return;
             }     
 
-            if (naive_flag) {
-	      cerr << "Naive annotation is not supported" << endl;
-	      exit(0);
-	    }//                naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
-            else {
+            if (naive_flag)
+            {
+                cerr << "Naive annotation is not supported" << endl;
+                exit(0);
+            }// naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
+            else
+            {
                 // bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len, opt);
                 vector<int> starts, ends, sdAnnos, sdQV;
-                vector<vector<int > > motifNMatch;
+                vector<vector<int> > motifNMatch;
                 // cout << "decomposing " << region << " " << i << " " << reads[i]->len << " " << motifs.size() << endl;
                 string_decomposer(annos[i], sdQV, starts, ends, motifNMatch,
                         motifs, reads[i]->seq,  reads[i]->len, opt, sdTables, mismatchCI);
-                
+
                 /*
                 cout << "heuristic: " << annos[i].size() << " sd " << sdAnnos.size() << endl;
                 for (auto j=0; j< annos[i].size(); j++) 
@@ -264,7 +276,8 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
                 nullAnno = true;
                 nullAnnos[i] = true;
             } 
-            else if (debug_flag) {
+            else if (debug_flag)
+            {
                 cerr << endl;
                 cerr.write(reads[i]->qname, reads[i]->l_qname);
                 cerr << endl;
@@ -274,35 +287,41 @@ void VNTR::motifAnnoForOneVNTR (const OPTION &opt, SDTables &sdTables, vector<in
                 for (auto &idx : annos[i]) cerr << int(idx) << ",";
                 cerr << endl;
             }
-        }        
+        }
     }
-
 
     if (skip) cerr << "skip the vntr" << endl;
     return;
 }
 
-void VNTR::commaSeparatedMotifAnnoForConsensus (bool h1, string &motif_anno)
+
+void VNTR::commaSeparatedMotifAnnoForConsensus(bool h1, string &motif_anno)
 {
-	if (h1) {
-        for (auto &it : consensus[0]) { 
+    if (h1)
+    {
+        for (auto &it : consensus[0])
+        {
             motif_anno += to_string(it) + ",";
             len_h1 += 1;
-        }        
+        }
     }
-	else if (het) {
-        for (auto &it : consensus[1]) { 
+    else if (het)
+    {
+        for (auto &it : consensus[1])
+        {
             motif_anno += to_string(it) + ",";
             len_h2 += 1;
-        }       
+        }
     }
-	else {
-        for (auto &it : consensus[0]) { 
+    else
+    {
+        for (auto &it : consensus[0])
+        {
             motif_anno += to_string(it) + ",";
             len_h2 += 1;
-        }        
+        }
     }
 
-	if (!motif_anno.empty()) motif_anno.pop_back();
-	return;
+    if (!motif_anno.empty()) motif_anno.pop_back();
+    return;
 }
