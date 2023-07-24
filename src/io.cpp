@@ -189,7 +189,7 @@ void StoreReadSeqAtRefCoord(bam1_t *aln, uint32_t refRangeStart, uint32_t refRan
             for (int i=0; i < len; i++ ) 
             {
                 if (refPos >= refRangeStart and refPos < refRangeEnd) 
-                {	  
+                {
                   seq.push_back(nucSeq[readPos]);
                 }
                 readPos++;
@@ -200,7 +200,7 @@ void StoreReadSeqAtRefCoord(bam1_t *aln, uint32_t refRangeStart, uint32_t refRan
             for (int i=0; i < len; i++) 
             {
                 if (refPos >= refRangeStart and refPos < refRangeEnd) 
-                {	  	
+                {
                   seq.push_back('F');
                 }
                 refPos +=1;
@@ -228,13 +228,13 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGA
     
     if (target_crd == ref_aln_start) {
       for (uint32_t k = cigar_start; k < aln->core.n_cigar && k < cigar_start + 1; k++) {
-	opChar = bam_cigar_opchr(cigar[k]);
+    opChar = bam_cigar_opchr(cigar[k]);
 
-	// Consume the first softclip if present.
-	if (opChar == 'S') {
-	  read_aln_start+=bam_cigar_oplen(cigar[k]);
-	  CIGAR_start +=1;
-	}	
+    // Consume the first softclip if present.
+    if (opChar == 'S') {
+      read_aln_start+=bam_cigar_oplen(cigar[k]);
+      CIGAR_start +=1;
+    }
       }
       return make_pair(read_aln_start, 1);
     }
@@ -245,13 +245,13 @@ pair<uint32_t, bool> processCigar(bam1_t * aln, uint32_t * cigar, uint32_t &CIGA
         op = bam_cigar_op(cigar[k]);
         type = bam_cigar_type(op);
         len = bam_cigar_oplen(cigar[k]);
-	
+    
         if (ref_aln_start > target_crd) 
             return make_pair(read_aln_start, 0); // skip the out-of-range alignment
 
         else if (ref_aln_start == target_crd) {
-	  return make_pair(read_aln_start, 1);
-	}
+      return make_pair(read_aln_start, 1);
+    }
 
         else if (!(type & 1) and !(type & 2)) // Hard clip
             continue;
@@ -422,7 +422,7 @@ void SimpleSNV(VNTR *vntr, uint32_t start, uint32_t end, int side=0) {
             }
             if (suffIdx.size() == 2 and cluster[j] == false) 
             {
-                /*	for (int k=0; k < vntr->nreads; k++) {
+                /*    for (int k=0; k < vntr->nreads; k++) {
                 cout << vntr->reads[k]->upstream[j];
                 }
                 cout << endl;*/
@@ -445,13 +445,13 @@ void SimpleSNV(VNTR *vntr, uint32_t start, uint32_t end, int side=0) {
                         vntr->reads[ri]->snvs.push_back(snv);
                     }
                 }      
-                //	cout << "*";
+                //cout << "*";
                 //
                 // Found a het site
-                //	cout << "HET: " << vntr->chr << ":" << start + j << "-" << start + j + 1 << " " << "ACGT"[suffIdx[0]] << " " << counts[suffIdx[0]][j] << " " << "ACGT"[suffIdx[1]] << " " << counts[suffIdx[1]][j] << endl;
+                //cout << "HET: " << vntr->chr << ":" << start + j << "-" << start + j + 1 << " " << "ACGT"[suffIdx[0]] << " " << counts[suffIdx[0]][j] << " " << "ACGT"[suffIdx[1]] << " " << counts[suffIdx[1]][j] << endl;
             }
             else {
-            //	cout << " ";
+            //cout << " ";
             }
         }
     }
@@ -520,57 +520,57 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int j, OPTION &opts)
     uint32_t origPhaseFlank = phaseFlank;
 
         vntr = vntrs[j];
-	// Initialize phase state, to be set later.
-	vntr->readsArePhased=false;
+    // Initialize phase state, to be set later.
+    vntr->readsArePhased=false;
         // set phaseFlank
-	int upstreamFlank, downstreamFlank;
+    int upstreamFlank, downstreamFlank;
         upstreamFlank = ( origPhaseFlank > vntr->ref_start) ? vntr->ref_start : origPhaseFlank;
-	int targetId = sam_hdr_name2tid(bamHdr, vntr->chr.c_str());
-	ref_len = bamHdr->target_len[aln->core.tid];
-	downstreamFlank = (ref_len - vntr->ref_end < origPhaseFlank) ? ref_len - vntr->ref_end : origPhaseFlank;
-	
+    int targetId = sam_hdr_name2tid(bamHdr, vntr->chr.c_str());
+    ref_len = bamHdr->target_len[aln->core.tid];
+    downstreamFlank = (ref_len - vntr->ref_end < origPhaseFlank) ? ref_len - vntr->ref_end : origPhaseFlank;
+    
         total_len = 0;
         itr = bam_itr_querys(idx, bamHdr, vntr->region.c_str());
-	int readInRegion=0;
+    int readInRegion=0;
 
-	vector<bam1_t*> alns;
-	if (ioLock != NULL) { ioLock->lock(); }
-	
+    vector<bam1_t*> alns;
+    if (ioLock != NULL) { ioLock->lock(); }
+    
         while(bam_itr_next(fp_in, itr, aln) >= 0) {
-	  if (aln->core.qual <= 10) {
-	    continue;
-	  }
-	  
-	  if (opts.inputType == by_read) {
-	    if ( (aln->core.flag & 256) || (aln->core.flag & 2048) ) {
-	      // Skip supplental and secondary alignments for reads
-	      continue;
-	    }
-	  }
-	  else if (opts.inputType == by_contig) {
-	    if ( (aln->core.flag) & 256 ) {
-	      continue;
-	    }
-	  }
+      if (aln->core.qual <= 10) {
+        continue;
+      }
+      
+      if (opts.inputType == by_read) {
+        if ( (aln->core.flag & 256) || (aln->core.flag & 2048) ) {
+          // Skip supplental and secondary alignments for reads
+          continue;
+        }
+      }
+      else if (opts.inputType == by_contig) {
+        if ( (aln->core.flag) & 256 ) {
+          continue;
+        }
+      }
  
-	  //
-	  // Passed checks: is high quality, and input seq is read with high quality and not secondary+supplemental, or seq is contig and not supplemental
-	  alns.push_back(aln);
-	  aln = bam_init1();
-	  
-	}
-	// The last aln created is not used.
-	bam_destroy1(aln);
-	(*numProcessed)++;
-	if (*numProcessed % 1000 == 0) {
-	  cerr << "Processed " << *numProcessed << " loci." << endl;
-	}
-	if (ioLock != NULL) { ioLock->unlock(); }
+      //
+      // Passed checks: is high quality, and input seq is read with high quality and not secondary+supplemental, or seq is contig and not supplemental
+      alns.push_back(aln);
+      aln = bam_init1();
+      
+    }
+    // The last aln created is not used.
+    bam_destroy1(aln);
+    (*numProcessed)++;
+    if (*numProcessed % 1000 == 0) {
+      cerr << "Processed " << *numProcessed << " loci." << endl;
+    }
+    if (ioLock != NULL) { ioLock->unlock(); }
 
-	for (auto alnIndex=0; alnIndex < alns.size(); alnIndex++ ) {
-	  aln = alns[alnIndex];
+    for (auto alnIndex=0; alnIndex < alns.size(); alnIndex++ ) {
+      aln = alns[alnIndex];
             rev = bam_is_rev(aln);
-	    readInRegion++;
+        readInRegion++;
             if (aln->core.flag & BAM_FSECONDARY or aln->core.flag & BAM_FUNMAP) 
                 continue; // skip secondary alignment / unmapped reads
 
@@ -629,10 +629,10 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int j, OPTION &opts)
                 read->len = liftover_read_e - liftover_read_s; // read length
                 read->seq = (char *) malloc(read->len + 1); // read sequence array
                 read->rev = rev;
-		bool readIsPhased = QueryAndSetReadPhase(aln, read);
-		if (readIsPhased) {
-		  vntr->readsArePhased = true;
-		}
+        bool readIsPhased = QueryAndSetReadPhase(aln, read);
+        if (readIsPhased) {
+          vntr->readsArePhased = true;
+        }
 
                 if (locuswise_flag) {
                     StoreReadSeqAtRefCoord(aln, vntr->ref_start - upstreamFlank, vntr->ref_start, read->upstream);
@@ -650,26 +650,26 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int j, OPTION &opts)
                 read->seq[read->len] = '\0';
                 vntr->reads.push_back(read); 
                 total_len += read->len;
-		
-		char *qname=bam_get_qname(aln);
+        
+        char *qname=bam_get_qname(aln);
                 if (debug_flag)
-		  {
-		    cerr << "region: " << vntr->region << " # " << readInRegion << endl;
+          {
+            cerr << "region: " << vntr->region << " # " << readInRegion << endl;
                      cerr << "read_name: " << bam_get_qname(aln) << endl; 
                      cerr << "vntr->ref_start: " << vntr->ref_start << " vntr->ref_end: " << vntr->ref_end << endl;
                      cerr << "liftover_read_s: " << liftover_read_s << " liftover_read_e: " << liftover_read_e << endl;
                      cerr << "read length: " << read_len << endl;
                      cerr << "read strand: " <<  read->rev << endl;
-		     //                     cerr.write(read->seq, read->len);
+             //                     cerr.write(read->seq, read->len);
                      cerr << endl; 
                 }
             }
-	    bam_destroy1(aln);
-	    aln=NULL;
+        bam_destroy1(aln);
+        aln=NULL;
         }
 
         vntr->nreads = vntr->reads.size();
-	
+    
         sort(vntr->reads.begin(), vntr->reads.end(), []( READ * read1, READ * read2) {
           return read1->len > read2->len;
         });
@@ -679,18 +679,18 @@ void IO::readSeqFromBam (vector<VNTR *> &vntrs, int j, OPTION &opts)
         {
           vntr->skip = true;
         }
-	else {
-	  // phasing
-	  bool readIsPhased;
-	  if (locuswise_flag) {	  
-	    if (vntr->readsArePhased == false) 
-	      {
-		SimpleSNV(vntr, vntr->ref_start - upstreamFlank, vntr->ref_start, 0);
-		SimpleSNV(vntr, vntr->ref_end, vntr->ref_end + downstreamFlank, 1);
-		MaxCutPhase(vntr);          
-	      }
-	    }
-	  }
+    else {
+      // phasing
+      bool readIsPhased;
+      if (locuswise_flag) {
+        if (vntr->readsArePhased == false) 
+          {
+        SimpleSNV(vntr, vntr->ref_start - upstreamFlank, vntr->ref_start, 0);
+        SimpleSNV(vntr, vntr->ref_end, vntr->ref_end + downstreamFlank, 1);
+        MaxCutPhase(vntr);          
+          }
+        }
+      }
     hts_itr_destroy(itr);
     return;  
 }

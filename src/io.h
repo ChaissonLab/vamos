@@ -16,88 +16,104 @@
 #include <mutex>    
 using namespace std;
 
+
 class IO
 {
 public:
     char * region_and_motifs;
     char * input_fasta;
-	char * input_bam;
-	char * vntr_bed;
-	char * motif_csv;
-	char * out_vcf;
-	char * sampleName;
-	char * version;
-	OutWriter outWriter;
-  char *bai;
-  samFile * fp_in;
-  bam_hdr_t * bamHdr;
-  hts_idx_t * idx;
-  mutex *ioLock;
-  int *numProcessed;
+    char * input_bam;
+    char * vntr_bed;
+    char * motif_csv;
+    char * out_vcf;
+    char * sampleName;
+    char * version;
+    OutWriter outWriter;
+    char *bai;
+    samFile * fp_in;
+    bam_hdr_t * bamHdr;
+    hts_idx_t * idx;
+    mutex *ioLock;
+    int *numProcessed;
 
-  // Not the best place to put this, but since the IO is batched and we
-  // do not want to store the flanking sequences at each locus for
-  // the duration of the run of the program, it's passed through
-  // to here for now. Eventually if sites are processed immediately
-  // after overlapping reads are read, this can move.
-  int phaseFlank;
-	IO () 
-	{
-		version = (char *) malloc(7);
-		strcpy(version, "1.2.8");
-		region_and_motifs = NULL;
-		input_bam = NULL;
-		vntr_bed = NULL;
-		motif_csv = NULL;
-		out_vcf = NULL;
-		sampleName = NULL;
-		phaseFlank = 0;
-		ioLock = NULL;
-	};
 
-	~IO() 
-	{
+    // Not the best place to put this, but since the IO is batched and we
+    // do not want to store the flanking sequences at each locus for
+    // the duration of the run of the program, it's passed through
+    // to here for now. Eventually if sites are processed immediately
+    // after overlapping reads are read, this can move.
+    int phaseFlank;
+    IO() 
+    {
+        version = (char *) malloc(7);
+        strcpy(version, "1.2.8");
+        region_and_motifs = NULL;
+        input_bam = NULL;
+        vntr_bed = NULL;
+        motif_csv = NULL;
+        out_vcf = NULL;
+        sampleName = NULL;
+        phaseFlank = 0;
+        ioLock = NULL;
+    };
+
+
+    ~IO() 
+    {
         free(region_and_motifs);
         free(version);
         free(input_bam);
-		free(vntr_bed);
-		free(motif_csv);
-		free(out_vcf);
-		free(sampleName);
-	};
+        free(vntr_bed);
+        free(motif_csv);
+        free(out_vcf);
+        free(sampleName);
+    };
+
 
     int readRegionAndMotifs (vector<VNTR*> &vntrs);
-  
-	int readMotifsFromCsv (vector<VNTR *> &vntrs);
-
-	int read_tsv(vector<vector<string>> &items);
-
-	void readVNTRFromBed (vector<VNTR *> &vntrs);
-
-	/* get the sequences from input_bam_file that overlapping with chr:start-end */
-	//void readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int sz);
-  void initializeBam();
-  void closeBam();
 
 
-  void readSeqFromBam(vector<VNTR *>&vntrs, int pos, OPTION &opts);
+    int readMotifsFromCsv (vector<VNTR *> &vntrs);
 
-	// void readSeqFromBam (vector<READ*> &reads, string &chr, const uint32_t &ref_VNTR_start, 
- //                       const uint32_t &ref_VNTR_end, const uint32_t &VNTR_len, string &region);
-	
-	// int outputVCF (vector<VNTR *> &vntrs);
 
-	int writeVCFHeader_locuswise(ofstream& out);
+    int read_tsv(vector<vector<string>> &items);
 
-	int writeVCFBody_locuswise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc);
 
-	int writeBEDHeader_readwise(ofstream& out);
+    void readVNTRFromBed (vector<VNTR *> &vntrs);
 
-	int writeBEDBody_readwise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc);
 
-	void writeFa(ofstream& out, vector<VNTR *> &vntrs);
+    /* get the sequences from input_bam_file that overlapping with chr:start-end */
+    //void readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int sz);
+    void initializeBam();
 
-	void readSeqFromFasta(vector<VNTR *> &vntrs);
+
+    void closeBam();
+
+
+    void readSeqFromBam(vector<VNTR *>&vntrs, int pos, OPTION &opts);
+
+    // void readSeqFromBam (vector<READ*> &reads, string &chr, const uint32_t &ref_VNTR_start, 
+    //    const uint32_t &ref_VNTR_end, const uint32_t &VNTR_len, string &region);
+    
+    // int outputVCF (vector<VNTR *> &vntrs);
+
+
+    int writeVCFHeader_locuswise(ofstream& out);
+
+
+    int writeVCFBody_locuswise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc);
+
+
+    int writeBEDHeader_readwise(ofstream& out);
+
+
+    int writeBEDBody_readwise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc);
+
+
+    void writeFa(ofstream& out, vector<VNTR *> &vntrs);
+
+
+    void readSeqFromFasta(vector<VNTR *> &vntrs);
 };
 
 #endif
