@@ -61,7 +61,7 @@ phase.o: phase.cpp phase.h read.h
 vcf.o: vcf.cpp vcf.h 
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include
 
-vntr.o: vntr.cpp bounded_anno.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h msa.h
+vntr.o: vntr.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h msa.h
 	$(CXX) $(CFLAGS) -c $< -I $(ABPOA_DIR)/include -I ../alglib/src -I ../edlib/include -I $(CONDA_PREFIX)/include
 
 msa.o: msa.cpp msa.h read.h option.h
