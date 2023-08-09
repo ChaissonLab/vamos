@@ -112,18 +112,21 @@ int IO::readRegionAndMotifs (vector<VNTR*> &vntrs)
     while (getline(ifs, line)) 
     {
         stringstream ss(line);
+        string motifs;
         string tmp;
-        string tmp_r;
+        // string tmp_r;
         string chrom;
         int start;
         int end;
-        ss >> chrom >> start >> end;
+        ss >> chrom >> start >> end >> motifs;
         VNTR * vntr = new VNTR(chrom, start, end, end-start);
         vntrs.push_back(vntr);
-        while(getline(ss, tmp, ',')) 
+
+        stringstream mm(motifs);
+        while(getline(mm, tmp, ',')) 
         {
-            tmp_r = regex_replace(tmp, std::regex("^\\t+"), std::string(""));
-            vntrs[numOfLine]->motifs.push_back(MOTIF(tmp_r));
+            // tmp_r = regex_replace(tmp, std::regex("^\\t+"), std::string(""));
+            vntrs[numOfLine]->motifs.push_back(MOTIF(tmp));
             // cerr << vntrs[numOfLine]->motifs.back().seq << endl;
         }
         numOfLine += 1; // 0-indexed
