@@ -1,5 +1,0 @@
-all: sdpoa
-
-CC=g++
-sdpoa: sdpoa.cpp
-	$(CC) -g sdpoa.cpp -o sdpoa
