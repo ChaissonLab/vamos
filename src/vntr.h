@@ -10,6 +10,7 @@
 #include <iostream>
 #include <cassert>
 #include <algorithm>
+#include <map>
 #include "read.h"
 #include "option.h"
 
@@ -120,13 +121,14 @@ class VNTR
 {
 public:
 
-    string chr;                             // the VNTR reference chromosome
-    uint32_t ref_start;                     // the VNTR reference start coordinate
-    uint32_t ref_end;                       // the VNTR reference end coordinate
-    int len;                                // the VNTR reference length
-    string region;                          // the VNTR reference region in format: "chr:ref_start:ref_end"
-    vector<MOTIF> motifs;                   // the pre-configured motifs for this VNTR
-
+    string chr;                             // The VNTR reference chromosome
+    uint32_t ref_start;                     // The VNTR reference start coordinate
+    uint32_t ref_end;                       // The VNTR reference end coordinate
+    int len;                                // The VNTR reference length
+    string region;                          // The VNTR reference region in format: "chr:ref_start:ref_end"
+    vector<MOTIF> motifs;                   // The pre-configured motifs for this VNTR
+    int mappedContigLength;                 // The length of the contig that mapped this sequence.
+                                            // When mapping from contigs, keep annotation from the longer contig, if multiple overlap.
     vector<READ *> reads;                   // all reads overlapping this VNTR
     int nreads;                             // number of reads
     int cur_len;                            // the sample sequence length (averaged over all reads)
@@ -154,6 +156,7 @@ public:
         skip = false;
         nullAnno = false;
         readsArePhased = false;
+	mappedContigLength = 0;
     };
 
 
@@ -242,5 +245,24 @@ public:
  */
 void outputConsensus (vector<uint8_t> &consensus);
 
+
+class CompareVNTRPos {
+public:
+  vector<VNTR*>* vntrs;
+  bool operator()(const int &a, const int &b) const {
+    return (*vntrs)[a]->ref_start < (*vntrs)[b]->ref_start;
+  }
+};
+
+class SearchVNTRPos {
+public:
+  vector<VNTR*>* vntrs;
+  bool operator()(const int &a, const int &b) const {
+    return a < (*vntrs)[b]->ref_start;
+  }
+};
+
+void SortVNTRIndexByPos(vector<VNTR*> &vntrs, vector<int> &idx);
+void ChromToVNTRMap(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap);
 
 #endif

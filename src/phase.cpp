@@ -31,6 +31,9 @@ int  CountDiff(READ* r1, READ* r2) {
 }
 
 void MaxCutPhase(VNTR *vntr) {
+  if (vntr->reads.size() == 0) {
+    return;
+  }
   vector<READ*> &reads = vntr->reads;
   vector<vector<int> > diffs;
   int maxDiff=-1;
