@@ -36,8 +36,8 @@ public:
     string upstream, downstream;    // 
     vector<SNV> snvs;               // vector of all SNVs of this read/contig
     uint16_t flag=0;                // sam flag of this read/contig
-
-
+    bool phased;
+    
     /// @brief Construct a new READ object
     READ()
     {
@@ -47,6 +47,7 @@ public:
         seq = NULL;
         rev = false;
         haplotype = 0;
+	phased=false;
     };
     READ(char * Qname, char * Chr, uint32_t Len) : qname(Qname), chr(Chr), len(Len) { seq = NULL;};
 

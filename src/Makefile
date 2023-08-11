@@ -7,17 +7,17 @@ ifeq ($(CC),"cc")
 	CC=gcc
 endif
 
-CXX ?= g++ -std=c++17
+CXX ?= g++ -std=c++11
 
 CCFLAGS = -Wall -O3 -Wno-unused-function -Wno-misleading-indentation
 
-DEBUG ?= "-g "
+DEBUG ?= "-g2 -std=c++11 "
 OPT   ?= ""
 asan  ?= ""
 tsan  ?= ""
 
 ifeq ("$(DEBUG)", "TRUE")
-	  CFLAGS = -g #-fsanitize=address  -static-libasan -gdwarf-4  #-Wall -Wextra
+	  CFLAGS = -g -std=c++14 #-fsanitize=address  -static-libasan -gdwarf-4  #-Wall -Wextra
 else
   CFLAGS = -O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
 endif

@@ -1,4 +1,4 @@
-#include <stdio.h>    
+#include <stdio.h>
 #include <stdlib.h>   
 #include <getopt.h>
 #include <string>
@@ -90,24 +90,23 @@ void ProcVNTR(int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector<in
     //     return;
     // }
 
-    if (it->nreads == 0)
+  if (it->reads.size() == 0)
     {
         it->skip = true;
-        if (debug_flag and it->nreads == 0) cerr << "no reads" << endl;
+        if (debug_flag and it->reads.size() == 0) cerr << "no reads" << endl;
         return;
     }
 
     if (debug_flag) cerr << "start to do the annotation: " << s << endl;
 
-    if (!locuswise_flag)
-    {
+    if (contig_flag) {
         it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI); 
-
+	/*
         if (!readwise_anno_flag)     
-            it->consensusMotifAnnoForOneVNTRByABpoa(opt);    
+            it->consensusMotifAnnoForOneVNTRByABpoa(opt);
+	*/
     }
-    else
-    {
+    else if (read_flag) {
         it->consensusReadForHapByABpoa(opt);
         it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI);      
     }
@@ -115,9 +114,40 @@ void ProcVNTR(int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector<in
     return;
 }
 
+
+
+void *CallSNVs (void *procInfoValue) {
+  ProcInfo *procInfo = (ProcInfo *) procInfoValue;
+  gettimeofday(&(procInfo->start_time), NULL);
+  int curReadingChrom = procInfo->thread;
+  if (curReadingChrom < (*(procInfo->procChrom)).size()) {
+    procInfo->mtx->lock();    
+    (*(procInfo->procChrom))[curReadingChrom] = true;
+    procInfo->mtx->unlock();    
+  }
+  while (curReadingChrom < (*(procInfo->procChrom)).size()) {
+    cerr << "start reading thread: " << procInfo->thread << " chrom " << (*(procInfo->io)).chromosomeNames[curReadingChrom] << endl;
+    (procInfo->io)->curChromosome = curReadingChrom;
+    (procInfo->io)->CallSNVs((*(procInfo->io)).chromosomeNames[curReadingChrom],
+			     *(procInfo->vntrs),
+			     *(procInfo->vntrMap),
+			     (*(procInfo->pileups))[curReadingChrom]);
+    
+    procInfo->mtx->lock();
+    curReadingChrom++;
+    while (curReadingChrom < (procInfo->procChrom)->size() and
+	   (*(procInfo->procChrom))[curReadingChrom] == false ) {
+      ++curReadingChrom;
+    }
+    procInfo->mtx->unlock();    
+  }
+  cerr << "Done reading " << procInfo->thread << endl;
+  pthread_exit(NULL);     /* Thread exits (dies) */      
+}
+
 void *ProcVNTRs (void *procInfoValue)
 {
-
+  /*
     ProcInfo *procInfo = (ProcInfo *) procInfoValue;
     gettimeofday(&(procInfo->start_time), NULL);
     cerr << "start thread: " << procInfo->thread << endl;
@@ -146,7 +176,8 @@ void *ProcVNTRs (void *procInfoValue)
 
     cerr << "finish thread: " << procInfo->thread << endl;
     gettimeofday(&(procInfo->stop_time), NULL);
-    timersub(&(procInfo->stop_time), &(procInfo->start_time), &(procInfo->elapsed_time)); 
+    timersub(&(procInfo->stop_time), &(procInfo->start_time), &(procInfo->elapsed_time));
+  */
     pthread_exit(NULL);     /* Thread exits (dies) */    
 }
 
@@ -361,8 +392,9 @@ int main (int argc, char **argv)
     if (read_flag) {
         locuswise_flag = true;
     }
-    else if (contig_flag) {    
-        locuswise_prephase_flag = true;
+    else if (contig_flag) {
+      locuswise_flag = true;
+      locuswise_prephase_flag = true;
     }
     else {
         cerr << "Either --contig or --read must be specified for input that is aligned contigs or reads" << endl;
@@ -438,10 +470,13 @@ int main (int argc, char **argv)
     gettimeofday(&pre_start_time, NULL);
 
     // read input_bam and region_and_motifs
-    vector< int> mismatchCI;    
+    vector< int> mismatchCI;
+    std::map<string, vector<int> > vntrMap;
+    io.vntrMap = &vntrMap;
     if (io.region_and_motifs != NULL)
     {
         io.readRegionAndMotifs(vntrs);
+	ChromToVNTRMap(vntrs, vntrMap);
         CreateAccLookupTable(vntrs, opt.accuracy, mismatchCI, 0.999);      
     }
     if (liftover_flag)
@@ -449,6 +484,7 @@ int main (int argc, char **argv)
         io.readVNTRFromBed(vntrs);
     }
     cerr << "finish reading " << vntrs.size() << " vntrs" << endl;
+
     
     /* set up out stream and write VCF header */
     ofstream out;
@@ -468,6 +504,73 @@ int main (int argc, char **argv)
     long threads_elapsed_time = 0; 
 
 
+    //
+    // Read input.
+    //
+    if (contig_flag) {
+      io.StoreAllContigs(vntrs, vntrMap);
+    }
+    else {
+      //
+      // Need to read all reads, do parallel processing of contigs.
+      //
+      io.initializeBam();	
+      
+      int maxIOThread=opt.nproc;
+      if (maxIOThread > 1) {
+	  pthread_t *tid = new pthread_t[maxIOThread];
+	  vector<ProcInfo> procInfo(maxIOThread);	  
+	  vector<bool> procChrom(io.chromosomeNames.size(), false);
+	  vector<Pileup> pileups(io.chromosomeNames.size());
+	  mutex ioLock, mtx;
+	  for (int i = 0; i < maxIOThread; i++) { 
+            procInfo[i].vntrs = &vntrs;
+            procInfo[i].vntrMap = &vntrMap;
+	    procInfo[i].pileups = &pileups;
+            procInfo[i].thread = i;
+            procInfo[i].opt = &opt;
+	    procInfo[i].procChrom = &procChrom;
+            procInfo[i].io = new IO;
+            procInfo[i].io->input_bam = io.input_bam;
+	    procInfo[i].io->initializeBam();
+	    procInfo[i].io->chromosomeNames = io.chromosomeNames;
+            procInfo[i].io->ioLock = &ioLock;
+            procInfo[i].io->idx = io.idx;
+            procInfo[i].io->numProcessed = &num_processed;
+	    procInfo[i].io->thread = i;
+            procInfo[i].mtx = &mtx;
+            procInfo[i].mismatchCI = &mismatchCI;
+            procInfo[i].out = &out;
+            // procInfo[i].out_nullAnno = &out_nullAnno;
+            if (pthread_create(&tid[i], NULL, CallSNVs, (void *) &procInfo[i]) )
+            {
+                cerr << "ERROR: Cannot create thread" << endl;
+                exit(EXIT_FAILURE);
+            }
+	    
+	  }
+	  for (int i = 0; i < maxIOThread; i++)
+	    {
+	      pthread_join(tid[i], NULL);
+	      delete procInfo[i].io;
+	    }	  
+      }
+      else {
+        io.initializeBam();	
+	for (int i=0; i < io.chromosomeNames.size(); i++ ) {
+	  Pileup pileup;
+	  io.CallSNVs(io.chromosomeNames[i], vntrs, vntrMap, pileup);
+	  for (int j =0; j < pileup.hetSNVs.size(); j++ ) {
+	    cout << "chr1\t" << pileup.hetSNVs[j].pos << "\t" << pileup.hetSNVs[j].pos+1 << "\t" << pileup.hetSNVs[j].a << "\t" << pileup.hetSNVs[j].b << endl;
+	  }
+	  exit(0);
+	  
+	  io.ProcessReadsOnChrom(io.chromosomeNames[i], vntrs, vntrMap);
+	}
+      }
+    }
+
+    
     /* Create threads */
     int i;
     if (opt.nproc > 1)
@@ -477,7 +580,7 @@ int main (int argc, char **argv)
         mutex mtx;
         mutex ioLock;
         vector<ProcInfo> procInfo(opt.nproc);
-        io.initializeBam();
+
         for (i = 0; i < opt.nproc; i++)
         { 
             procInfo[i].vntrs = &vntrs;
@@ -521,20 +624,13 @@ int main (int argc, char **argv)
         if (single_seq_flag)
             io.readSeqFromFasta(vntrs);
 
-        if (!liftover_flag)
-        {
-            int s = 0;
-            SDTables sdTables;
-            io.initializeBam();
-            io.numProcessed  = &num_processed;
-            for (auto i=0; i < vntrs.size(); i++)
-            { 
-                io.readSeqFromBam (vntrs, i, opt);
-                ProcVNTR (s, vntrs[i], opt, sdTables, mismatchCI);
-                vntrs[i]->clearReads();
-                s += 1;
-            }                
-        }
+	int s = 0;
+	SDTables sdTables;
+	for (auto i=0; i < vntrs.size(); i++)  { 
+	    ProcVNTR (s, vntrs[i], opt, sdTables, mismatchCI);
+	    vntrs[i]->clearReads();	    
+	  }
+
       
         // output vcf or bed or fasta
         if (readwise_anno_flag) 

@@ -44,10 +44,10 @@ void outputConsensus(vector<uint8_t> &consensus, const OPTION &opt)
 void VNTR::consensusReadForHapByABpoa(const OPTION &opt) 
 {
     if (skip) return;
-    if (nreads == 0) return;
+    if (reads.size() == 0) return;
 
     het = false;
-    for (int i = 0; i < nreads; ++i) 
+    for (int i = 0; i < reads.size(); ++i) 
     {
         if (reads[i]->haplotype != 0) het = true;
         if (reads[i]->haplotype == 1) h1_reads.push_back(i);
@@ -62,7 +62,7 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
     if (!het)
     {
         int motifs_size = motifs.size();
-        h1_reads.resize(nreads);
+        h1_reads.resize(reads.size());
         iota (begin(h1_reads), end(h1_reads), 0); // 0 to n_seqs - 1
 
         READ * read = new READ();
@@ -180,24 +180,9 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
             {
                 vector<int> starts, ends, sdAnnos, sdQV;
                 vector<vector<int > > motifNMatch;
-                // cout << "decomposing " << region << " " << i << " " << reads[i]->len << " " << motifs.size() << endl;
+
                 string_decomposer(consensus[i], sdQV, starts, ends, motifNMatch,
                         motifs, Hap_seqs[i]->seq, Hap_seqs[i]->len, opt, sdTables, mismatchCI);
-                
-                /*
-                cout << "heuristic: " << annos[i].size() << " sd " << sdAnnos.size() << endl;
-                for (auto j=0; j< annos[i].size(); j++) 
-                    cout << std::setw(3) << (int)annos[i][j] << ",";
-                cout << endl;
-
-                for (auto j=0; j < sdQV.size(); j++) 
-                    cout << std::setw(3) << sdQV[j] << ",";
-                cout << endl;
-
-                for (auto j=0; j < sdAnnos.size(); j++) 
-                    cout << std::setw(3) << sdAnnos[j] << ",";
-                cout << endl;
-                */
             }
             
             if (consensus[i].size() == 0) 
@@ -222,15 +207,15 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
     else  
     {
         // annotate for consensus read
-        annos.resize(nreads);
-        nullAnnos.resize(nreads, false);
-        if (nreads > 200)
+        annos.resize(reads.size());
+        nullAnnos.resize(reads.size(), false);
+        if (reads.size() > 200)
         {
           cerr << "WARNING, skipping locus " << region << " because it may be a centromeric tandem repeat" << endl;
           return;
         }
 
-        for (int i = 0; i < nreads; ++i)
+        for (int i = 0; i < reads.size(); ++i)
         {
 
             if (reads[i]->len > 20000)
@@ -244,30 +229,13 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
             {
                 cerr << "Naive annotation is not supported" << endl;
                 exit(0);
-            }// naive_anno(annos[i], motifs, reads[i]->seq, reads[i]->len);
+            }
             else
             {
-                // bounded_anno(annos[i], motifs, reads[i]->seq, reads[i]->len, opt);
                 vector<int> starts, ends, sdAnnos, sdQV;
                 vector<vector<int> > motifNMatch;
-                // cout << "decomposing " << region << " " << i << " " << reads[i]->len << " " << motifs.size() << endl;
                 string_decomposer(annos[i], sdQV, starts, ends, motifNMatch,
                         motifs, reads[i]->seq,  reads[i]->len, opt, sdTables, mismatchCI);
-
-                /*
-                cout << "heuristic: " << annos[i].size() << " sd " << sdAnnos.size() << endl;
-                for (auto j=0; j< annos[i].size(); j++) 
-                    cout << std::setw(3) << (int)annos[i][j] << ",";
-                cout << endl;
-
-                for (auto j=0; j < sdQV.size(); j++) 
-                    cout << std::setw(3) << sdQV[j] << ",";
-                cout << endl;
-
-                for (auto j=0; j < sdAnnos.size(); j++) 
-                    cout << std::setw(3) << sdAnnos[j] << ",";
-                cout << endl;
-                */
             }
             
             if (annos[i].size() == 0) 
@@ -324,4 +292,23 @@ void VNTR::commaSeparatedMotifAnnoForConsensus(bool h1, string &motif_anno)
 
     if (!motif_anno.empty()) motif_anno.pop_back();
     return;
+}
+
+void SortVNTRIndexByPos(vector<VNTR*> &vntrs, vector<int> &idx) {
+  CompareVNTRPos comp;
+  comp.vntrs = &vntrs;
+  sort(idx.begin(), idx.end(), comp);
+}
+
+void ChromToVNTRMap(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap) {
+  for (int i=0; i < vntrs.size(); i++ ){
+    if (vntrMap.find(vntrs[i]->chr) == vntrMap.end()) {
+      vntrMap[vntrs[i]->chr] = vector<int>();
+    }
+    vntrMap[vntrs[i]->chr].push_back(i);
+  }
+
+  for (auto it = vntrMap.begin(); it != vntrMap.end(); it++ ) {
+    SortVNTRIndexByPos(vntrs, it->second);
+  }
 }
