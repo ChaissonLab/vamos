@@ -67,13 +67,15 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 
         READ * read = new READ();
         char qname_1[] = "h1";
-        read->qname = (char *) malloc(2 + 1);
-        strcpy(read->qname, qname_1);
+        read->qname = "h1"; //(char *) malloc(2 + 1);
+	//        strcpy(read->qname, qname_1);
         Hap_seqs.push_back(read);
-
         // msa to get the consensus
         MSA * msa = new MSA(h1_reads, reads);
         msa->MSA_seq_group(h1_reads, reads, Hap_seqs[0]);
+	cerr << ">h1" << endl;
+	cerr << read->seq <<endl;
+	
         delete msa;
 
         // cerr.write(Hap_seqs[0]->seq, Hap_seqs[0]->len);
@@ -89,14 +91,16 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 
             READ * read_h1 = new READ();
             char qname_1[] = "h1";      
-            read_h1->qname = (char *) malloc(2 + 1);
-            strcpy(read_h1->qname, qname_1);
-            read_h1->qname[2] = '\0';
+            read_h1->qname = "h1"; //(char *) malloc(2 + 1);
+	    //            strcpy(read_h1->qname, qname_1);
+	    //            read_h1->qname[2] = '\0';
             Hap_seqs.push_back(read_h1);
 
             // msa to get the consensus
             MSA * msa_1 = new MSA(h1_reads, reads);
             msa_1->MSA_seq_group(h1_reads, reads, Hap_seqs[0]);
+	    cerr << ">H1" << endl;
+	    cerr << Hap_seqs[0]->seq << endl;
             delete msa_1;
         }
         if (h2_reads.size() > 0)
@@ -104,15 +108,16 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 
             READ * read_h2 = new READ();
             char qname_2[] = "h2";
-            read_h2->qname = (char *) malloc(2 + 1);
-            strcpy(read_h2->qname, qname_2);
-            read_h2->qname[2] = '\0';
+	    read_h2->qname = "h2"; //(char *) malloc(2 + 1);
+	    //            strcpy(read_h2->qname, qname_2);
+	    //            read_h2->qname[2] = '\0';
             Hap_seqs.push_back(read_h2);
 
             // msa to get the consensus
             MSA * msa_2 = new MSA(h2_reads, reads);
             assert(1 < Hap_seqs.size());
             msa_2->MSA_seq_group(h2_reads, reads, Hap_seqs[1]);
+	    
             delete msa_2;
         }
 
@@ -182,7 +187,7 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
                 vector<vector<int > > motifNMatch;
 
                 string_decomposer(consensus[i], sdQV, starts, ends, motifNMatch,
-                        motifs, Hap_seqs[i]->seq, Hap_seqs[i]->len, opt, sdTables, mismatchCI);
+				  motifs, Hap_seqs[i]->seq.c_str(), Hap_seqs[i]->len, opt, sdTables, mismatchCI);
             }
             
             if (consensus[i].size() == 0) 
@@ -194,9 +199,9 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
             else if (debug_flag)
             {
                 cerr << endl;
-                cerr.write(Hap_seqs[i]->qname, Hap_seqs[i]->l_qname);
+		cerr << Hap_seqs[i]->qname;
                 cerr << endl;
-                cerr.write(Hap_seqs[i]->seq, Hap_seqs[i]->len);
+		cerr << Hap_seqs[i]->seq;
                 cerr << endl;
                 cerr << Hap_seqs[i]->len << "  " << i << endl;
                 for (auto &idx : consensus[i]) cerr << int(idx) << ",";
@@ -235,7 +240,7 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
                 vector<int> starts, ends, sdAnnos, sdQV;
                 vector<vector<int> > motifNMatch;
                 string_decomposer(annos[i], sdQV, starts, ends, motifNMatch,
-                        motifs, reads[i]->seq,  reads[i]->len, opt, sdTables, mismatchCI);
+				  motifs, reads[i]->seq.c_str(),  reads[i]->len, opt, sdTables, mismatchCI);
             }
             
             if (annos[i].size() == 0) 
@@ -247,9 +252,9 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
             else if (debug_flag)
             {
                 cerr << endl;
-                cerr.write(reads[i]->qname, reads[i]->l_qname);
-                cerr << endl;
-                cerr.write(reads[i]->seq, reads[i]->len);
+		cerr << reads[i]->qname;
+                cerr << endl;		
+                cerr << reads[i]->seq;
                 cerr << endl;
                 cerr << reads[i]->len << "  " << i << endl;
                 for (auto &idx : annos[i]) cerr << int(idx) << ",";

@@ -99,12 +99,12 @@ void MSA::extractConsensusRawSeq(READ * Hap_seq)
     assert((cons_n > 0) && "No consensus sequence exists!"); // cons_n == 0 means no consensus sequence exists
     Hap_seq->len = cons_l[0]; // read length
     assert(Hap_seq->len < 1000000);
-    Hap_seq->seq = (char *) malloc(Hap_seq->len + 1); // read sequence array
-
+    //    Hap_seq->seq = (char *) malloc(Hap_seq->len + 1); // read sequence array
+    Hap_seq->seq.resize(Hap_seq->len);
     for(int i = 0; i < Hap_seq->len; i++)
         Hap_seq->seq[i] = nt256_table[cons_seq[0][i]]; // get nucleotide id and convert them into IUPAC id.
 
-    Hap_seq->seq[Hap_seq->len] = '\0';
+    //    Hap_seq->seq[Hap_seq->len] = '\0';
 }
 
 

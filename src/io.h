@@ -63,8 +63,6 @@ class Consensus {
 public:
   vector<int> counts;
   int operator[](int i) { return counts[i];}
-  static int minCov;
-  static char*nucIndex;
   char a,b;
   bool isCluster;
   int pos;
@@ -75,15 +73,18 @@ public:
     isCluster=false;
     cov=0;
   }
-  int Inc(char c) {
+  int Inc(char c, char nucIndex[]) {
     cov++;
+    assert(counts.size() == 6);
+    assert(c <= 255 && c >= 0);
+    assert(nucIndex[c] < 6);
     counts[nucIndex[c]]++;
     return counts[nucIndex[c]];
   }
   void Dec() {
     cov--;
   }
-  int Calc() {
+  int Calc(int minCov) {
     int colSum=0;    
     for (auto i=0; i < 5; i++) {
 	colSum += counts[i];
@@ -118,6 +119,16 @@ class HetSNV {
 public:
   int pos;
   char a, b;
+  HetSNV() {}
+  HetSNV(int initPos) { pos=initPos;}
+};
+
+
+class CompPosWithSNV {
+public:
+  bool operator()(const HetSNV &lhs, const HetSNV &rhs ) {
+    return lhs.pos < rhs.pos;
+  }
 };
 
 class EndPosPair {
@@ -147,9 +158,7 @@ public:
   vector<HetSNV> hetSNVs;
   priority_queue< EndPosPair, vector<EndPosPair>, SortEndPosPair>  endPosPQueue;
   Pileup() {
-    Consensus::nucIndex = new char[256];
-    InitNucIndex(Consensus::nucIndex);
-    Consensus::minCov = 10;
+    InitNucIndex(nucIndex);
     consensusStart=-1;
   }
   
@@ -182,7 +191,7 @@ public:
     for (int i=0; i < read.readToRefSeq.size(); i++) {
       int alignedPos = i + read.refStartPos;
       //      assert(consensus.find(alignedPos) != consensus.end());
-      consensus[alignedPos].Inc(read.readToRefSeq[i]);
+      consensus[alignedPos].Inc(read.readToRefSeq[i], nucIndex);
     }
     auto it=reads.end();
     it--;
@@ -208,7 +217,7 @@ public:
   void ProcessUntil(int pos) {
     while (consensusStart < pos) {
       Consensus& cons=consensus[consensusStart];
-      if (consensus[consensusStart].Calc()) {
+      if (consensus[consensusStart].Calc(3)) {
 	HetSNV snv;
 	snv.pos = consensusStart;
 	snv.a = consensus[consensusStart].a;
@@ -259,6 +268,7 @@ public:
     ioLock = initIoLock;
     buffSize=initBuffSize;
     nRead=0;
+    curAln=0;
   }
   int GetNext(bam1_t* &next) {
     if (curAln >= 0 and curAln < nRead ) {
@@ -300,24 +310,25 @@ public:
 class IO
 {
 public:
-    char * region_and_motifs;
-    char * input_fasta;
-    char * input_bam;
-    char * vntr_bed;
-    char * motif_csv;
-    char * out_vcf;
-    char * sampleName;
-    char * version;
+    string region_and_motifs;
+    string input_fasta;
+    string input_bam;
+    string vntr_bed;
+    string motif_csv;
+    string out_vcf;
+    string sampleName;
+    string version;
     OutWriter outWriter;
-    char *bai;
+    string bai;
     samFile * fp_in;
     bam_hdr_t * bamHdr;
     hts_idx_t * idx;
     mutex *ioLock;
     int *numProcessed;
     int thread;
-    int curChromosome;
+    string curChromosome;
     vector<string> chromosomeNames;
+    vector<int> chromosomeLengths;  
     std::map<string, vector<int> > *vntrMap;
 
     // Not the best place to put this, but since the IO is batched and we
@@ -328,30 +339,22 @@ public:
     int phaseFlank;
     IO() 
     {
-        version = (char *) malloc(7);
-        strcpy(version, "1.2.8");
-        region_and_motifs = NULL;
-        input_bam = NULL;
-        vntr_bed = NULL;
-        motif_csv = NULL;
-        out_vcf = NULL;
-        sampleName = NULL;
+      version = "1.2.8";
+        region_and_motifs = "";
+        input_bam = "";
+        vntr_bed = "";
+        motif_csv = "";
+        out_vcf = "";
+        sampleName = "";
         phaseFlank = 0;
         ioLock = NULL;
 	thread = 0;
-	curChromosome=0;
+	curChromosome="";
     };
 
 
     ~IO() 
     {
-        free(region_and_motifs);
-        free(version);
-        free(input_bam);
-        free(vntr_bed);
-        free(motif_csv);
-        free(out_vcf);
-        free(sampleName);
     };
 
 
@@ -402,13 +405,18 @@ public:
 
   void StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrIndex, Pileup &pileup, int &refAlignPos, int &curVNTR);
 
-  void ProcessReadsOnChrom(string &chrom, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap);
-  void CallSNVs(string &chrom, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup);  
+  void CallSNVs(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup);  
+  void StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup);
 
   void StoreReadSeqAtRefCoord(bam1_t *aln, string &seq, string &toRef, vector<int> &map);
   void ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrIndex);
   void StoreAllContigs(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrIndex);
   void StoreSeq(bam1_t *aln, string &seq);
+  string MakeRegion(string chrom, int start, int end) {
+    stringstream sstrm;
+    sstrm << chrom << ":" << start << "-" << end;
+    return sstrm.str();
+  }
 };
 
 #endif

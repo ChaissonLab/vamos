@@ -9,22 +9,23 @@
 #include <stdlib.h> 
 #include "vntr.h"
 #include "htslib/sam.h"
+#include <string>
 
 using namespace std;
 
 class OutWriter
 {
 public:
-	char * sampleName;
-	char * version;
+	string sampleName;
+	string version;
 	vector<string> target_names; // reference names
 	vector<uint32_t> contigLengths;
 	int32_t ncontigs;
 	bool set;
 
 	OutWriter () {
-		sampleName = NULL;
-		version = NULL;
+		sampleName = "";
+		version = "";
 		set = 0;
 		ncontigs = 0;
 	};
@@ -35,7 +36,7 @@ public:
 		// free(sampleName);
 	};
 
-	void init (char * input_bam_file, char * Version, char * SampleName);
+	void init (string input_bam_file, string Version, string SampleName);
 
     void writeHeader_locuswise(ofstream &out);
 

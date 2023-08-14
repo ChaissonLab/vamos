@@ -17,7 +17,8 @@ class ProcInfo
 public:
 	vector<VNTR *> * vntrs;
         map<string, vector<int > > *vntrMap;
-        vector<bool> *procChrom;
+        map<string, vector<char > > *processed;
+        map<string, vector<int > > *bucketEndPos;
 	int thread;
 	OPTION * opt;
 	IO * io;

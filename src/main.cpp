@@ -114,32 +114,114 @@ void ProcVNTR(int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector<in
     return;
 }
 
+void SetEndPos(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, map<string, vector<int> > &endPos, int bufferNLoc) {
+  for (auto mapIt : vntrMap) {
+    string chrom=mapIt.first;
+    //
+    // Add the chromosome to the map of buckets.
+    //
+    if (endPos.find(chrom) == endPos.end()) {
+      endPos[chrom] = vector<int>(1,1);
+    }
+    //
+    // Skip empty buckets.
+    //
+    if (mapIt.second.size() == 0) {
+      continue;
+    }
 
+    //
+    // Create windows with bufferNLoc vntr loci per window.
+    //
+    int start=vntrs[mapIt.second[0]]->ref_start;
+    endPos[chrom][0] = start;
+    int cur = 0;
+    while (cur < mapIt.second.size()) {
+      int next = min(((int) mapIt.second.size())-1, cur+bufferNLoc);
+      int nextEndPos = vntrs[mapIt.second[next]]->ref_end;
+      endPos[chrom].push_back(nextEndPos);
+      cur+=bufferNLoc;
+    }
+  }
+}
+
+
+void InitProcessed(map<string, vector<int> > &endPos, map<string, vector<char > > &processed) {
+  for (auto epIt : endPos) {
+    processed[epIt.first] = vector<char>(epIt.second.size()-1, false);
+  }
+}
+
+bool GetNextUnprocessedRegion(int &curRegion, string &curChrom, map<string, vector<char> > &processed) {
+  auto curChromIt = processed.find(curChrom);
+  bool foundNext = false;
+  while (curChromIt != processed.end() and foundNext == false) {
+    //
+    // First make sure this isn't pointing past the end of a region.
+    // Exit early if so.
+    while(curRegion < curChromIt->second.size() and
+	  curChromIt->second[curRegion] == 1 ) {
+      ++curRegion;
+    }
+    if (curRegion < curChromIt->second.size() and
+	curChromIt->second[curRegion] == 0) {
+      //
+      // Mark this as being processed.
+      //
+      curChromIt->second[curRegion] = 1;
+      curChrom = curChromIt->first;
+      return true;
+    }
+    else {
+      //
+      // Start search at the beginning of the next region
+      //
+      curChromIt++;
+      curRegion=0;
+    }
+  }
+  return false;
+}
 
 void *CallSNVs (void *procInfoValue) {
   ProcInfo *procInfo = (ProcInfo *) procInfoValue;
   gettimeofday(&(procInfo->start_time), NULL);
-  int curReadingChrom = procInfo->thread;
-  if (curReadingChrom < (*(procInfo->procChrom)).size()) {
-    procInfo->mtx->lock();    
-    (*(procInfo->procChrom))[curReadingChrom] = true;
-    procInfo->mtx->unlock();    
+
+  int curRegion = procInfo->thread;
+  if (  (*(procInfo->processed)).size() == 0) {
+    pthread_exit(NULL);    
   }
-  while (curReadingChrom < (*(procInfo->procChrom)).size()) {
-    cerr << "start reading thread: " << procInfo->thread << " chrom " << (*(procInfo->io)).chromosomeNames[curReadingChrom] << endl;
-    (procInfo->io)->curChromosome = curReadingChrom;
-    (procInfo->io)->CallSNVs((*(procInfo->io)).chromosomeNames[curReadingChrom],
+  string curChrom = (*(procInfo->processed)).begin()->first;
+  
+  while (true) {
+    procInfo->mtx->lock();
+    bool foundNextRegion = false;
+    foundNextRegion = GetNextUnprocessedRegion(curRegion, curChrom, (*(procInfo->processed)));
+    if (foundNextRegion) {
+      (*(procInfo->processed))[curChrom][curRegion] = 1;
+    }
+    procInfo->mtx->unlock();
+    if (foundNextRegion == false) {
+      pthread_exit(NULL);
+    }
+    Pileup pileup;
+    cerr << "start reading thread: " << procInfo->thread << " chrom " << curChrom << endl;
+    (procInfo->io)->curChromosome = curChrom;
+    (procInfo->io)->CallSNVs(curChrom,
+			     (*(procInfo->bucketEndPos))[curChrom][curRegion],
+			     (*(procInfo->bucketEndPos))[curChrom][curRegion+1],
 			     *(procInfo->vntrs),
 			     *(procInfo->vntrMap),
-			     (*(procInfo->pileups))[curReadingChrom]);
+			     pileup);
+
+
+    (procInfo->io)->StoreReadsOnChrom(curChrom,
+				      (*(procInfo->bucketEndPos))[curChrom][curRegion],
+				      (*(procInfo->bucketEndPos))[curChrom][curRegion+1],
+				      *(procInfo->vntrs),
+				      *(procInfo->vntrMap),
+				      pileup);
     
-    procInfo->mtx->lock();
-    curReadingChrom++;
-    while (curReadingChrom < (procInfo->procChrom)->size() and
-	   (*(procInfo->procChrom))[curReadingChrom] == false ) {
-      ++curReadingChrom;
-    }
-    procInfo->mtx->unlock();    
   }
   cerr << "Done reading " << procInfo->thread << endl;
   pthread_exit(NULL);     /* Thread exits (dies) */      
@@ -147,7 +229,7 @@ void *CallSNVs (void *procInfoValue) {
 
 void *ProcVNTRs (void *procInfoValue)
 {
-  /*
+
     ProcInfo *procInfo = (ProcInfo *) procInfoValue;
     gettimeofday(&(procInfo->start_time), NULL);
     cerr << "start thread: " << procInfo->thread << endl;
@@ -161,23 +243,14 @@ void *ProcVNTRs (void *procInfoValue)
     for (i = procInfo->thread, s = 0; i < sz; i += (procInfo->opt)->nproc, s += 1)
     {
         if (debug_flag) cerr << "processing vntr: " << i << endl;
-        procInfo->io->readSeqFromBam(*procInfo->vntrs, i, *procInfo->opt);
         ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt), sdTables, *(procInfo->mismatchCI));
         (*procInfo->vntrs)[i]->clearReads();        
     }        
     
-    procInfo->mtx->lock();
-    cerr << "outputing vcf" << endl;    
-    if (locuswise_prephase_flag or locuswise_flag) 
-        (procInfo->io)->writeVCFBody_locuswise(*(procInfo->out), (*(procInfo->vntrs)), procInfo->thread, (procInfo->opt)->nproc);    
-    else if (readwise_anno_flag) 
-        (procInfo->io)->writeBEDBody_readwise(*(procInfo->out), (*(procInfo->vntrs)), procInfo->thread, (procInfo->opt)->nproc);    
-    procInfo->mtx->unlock();
-
     cerr << "finish thread: " << procInfo->thread << endl;
     gettimeofday(&(procInfo->stop_time), NULL);
     timersub(&(procInfo->stop_time), &(procInfo->start_time), &(procInfo->elapsed_time));
-  */
+
     pthread_exit(NULL);     /* Thread exits (dies) */    
 }
 
@@ -288,24 +361,17 @@ int main (int argc, char **argv)
 
             case 'b':
                 fprintf (stderr, "option --bam with `%s'\n", optarg);
-                io.input_bam = (char *) malloc(strlen(optarg) + 1);
-                strcpy(io.input_bam, optarg);
-                io.input_bam[strlen(optarg)] = '\0';                        
+		io.input_bam = optarg;
                 break;
 
             case 'v':
                 fprintf (stderr, "option --vntr with `%s'\n", optarg);
-                io.vntr_bed = (char *) malloc(strlen(optarg) + 1);
-                strcpy(io.vntr_bed, optarg);
-                io.vntr_bed[strlen(optarg)] = '\0';            
+                io.vntr_bed = optarg;
                 break;
 
             case 'r':
                 fprintf (stderr, "option --region with `%s'\n", optarg);
-                io.region_and_motifs = (char *) malloc(strlen(optarg) + 1);
-                strcpy(io.region_and_motifs, optarg);
-                io.region_and_motifs[strlen(optarg)] = '\0';
-                io.region_and_motifs[strlen(optarg)] = '\0';                        
+                io.region_and_motifs = optarg;
                 break;
 
             // case 'i':
@@ -322,16 +388,12 @@ int main (int argc, char **argv)
 
             case 'o':
                 fprintf (stderr, "option --output with `%s'\n", optarg);
-                io.out_vcf = (char *) malloc(strlen(optarg) + 1);
-                strcpy(io.out_vcf, optarg);
-                io.out_vcf[strlen(optarg)] = '\0';                        
+                io.out_vcf = optarg;
                 break;
 
             case 's':
                 fprintf (stderr, "option --sampleName with `%s'\n", optarg);
-                io.sampleName = (char *) malloc(strlen(optarg) + 1);
-                strcpy(io.sampleName, optarg);
-                io.sampleName[strlen(optarg)] = '\0';                        
+                io.sampleName = optarg;
                 break;
 
             case 't':
@@ -414,12 +476,12 @@ int main (int argc, char **argv)
 
     /* Check mandatory parameters */
     bool missingArg = false;
-    if (io.input_bam == NULL) 
+    if (io.input_bam == "") 
     {
         fprintf(stderr, "ERROR: -b must be specified!\n");
         missingArg = true;
     }
-    if (!liftover_flag and io.region_and_motifs == NULL)
+    if (!liftover_flag and io.region_and_motifs == "")
     {
         fprintf(stderr, "ERROR:-r must be specified!\n");
         missingArg = true;
@@ -429,12 +491,12 @@ int main (int argc, char **argv)
     //     fprintf(stderr, "-m is mandatory with conseq and locuswise!\n");
     //     missingArg = true;
     // }
-    if (io.sampleName == NULL)
+    if (io.sampleName == "")
     {
         fprintf(stderr, "ERROR: -s must be specified!\n");
         missingArg = true;
     }
-    if (io.out_vcf == NULL)
+    if (io.out_vcf == "")
     {
         fprintf(stderr, "ERROR: -o must be specified!\n");
         missingArg = true;
@@ -473,7 +535,7 @@ int main (int argc, char **argv)
     vector< int> mismatchCI;
     std::map<string, vector<int> > vntrMap;
     io.vntrMap = &vntrMap;
-    if (io.region_and_motifs != NULL)
+    if (io.region_and_motifs != "")
     {
         io.readRegionAndMotifs(vntrs);
 	ChromToVNTRMap(vntrs, vntrMap);
@@ -522,6 +584,13 @@ int main (int argc, char **argv)
 	  vector<ProcInfo> procInfo(maxIOThread);	  
 	  vector<bool> procChrom(io.chromosomeNames.size(), false);
 	  vector<Pileup> pileups(io.chromosomeNames.size());
+
+	  map<string, vector<int> > bucketEndPos;
+	  map<string, vector<char> > processed;
+	  
+	  SetEndPos(vntrs, vntrMap, bucketEndPos, 1000);
+	  InitProcessed(bucketEndPos, processed);
+	  
 	  mutex ioLock, mtx;
 	  for (int i = 0; i < maxIOThread; i++) { 
             procInfo[i].vntrs = &vntrs;
@@ -529,11 +598,12 @@ int main (int argc, char **argv)
 	    procInfo[i].pileups = &pileups;
             procInfo[i].thread = i;
             procInfo[i].opt = &opt;
-	    procInfo[i].procChrom = &procChrom;
             procInfo[i].io = new IO;
             procInfo[i].io->input_bam = io.input_bam;
 	    procInfo[i].io->initializeBam();
 	    procInfo[i].io->chromosomeNames = io.chromosomeNames;
+	    procInfo[i].bucketEndPos = &bucketEndPos;
+	    procInfo[i].processed    = &processed;	    
             procInfo[i].io->ioLock = &ioLock;
             procInfo[i].io->idx = io.idx;
             procInfo[i].io->numProcessed = &num_processed;
@@ -559,13 +629,12 @@ int main (int argc, char **argv)
         io.initializeBam();	
 	for (int i=0; i < io.chromosomeNames.size(); i++ ) {
 	  Pileup pileup;
-	  io.CallSNVs(io.chromosomeNames[i], vntrs, vntrMap, pileup);
-	  for (int j =0; j < pileup.hetSNVs.size(); j++ ) {
-	    cout << "chr1\t" << pileup.hetSNVs[j].pos << "\t" << pileup.hetSNVs[j].pos+1 << "\t" << pileup.hetSNVs[j].a << "\t" << pileup.hetSNVs[j].b << endl;
+	  if ( vntrMap.find(io.chromosomeNames[i] ) != vntrMap.end() ) {
+	    int start = vntrs[vntrMap[io.chromosomeNames[i]][0]]->ref_start;
+	    int end   = vntrs[vntrMap[io.chromosomeNames[i]][vntrMap[io.chromosomeNames[i]].size()-1]]->ref_end;
+	    io.CallSNVs(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup);
+	    io.StoreReadsOnChrom(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup);
 	  }
-	  exit(0);
-	  
-	  io.ProcessReadsOnChrom(io.chromosomeNames[i], vntrs, vntrMap);
 	}
       }
     }
@@ -632,20 +701,22 @@ int main (int argc, char **argv)
 	  }
 
       
-        // output vcf or bed or fasta
-        if (readwise_anno_flag) 
-            io.writeBEDBody_readwise(out, vntrs, -1, 1);
-        else if (locuswise_prephase_flag or locuswise_flag or single_seq_flag) 
-            io.writeVCFBody_locuswise(out, vntrs, -1, 1);
-        else if (liftover_flag)
-            io.writeFa(out, vntrs);
           
         gettimeofday(&single_stop_time, NULL);
         timersub(&single_stop_time, &single_start_time, &single_elapsed_time); 
     }
 
+
+        // output vcf or bed or fasta
+    if (readwise_anno_flag) 
+      io.writeBEDBody_readwise(out, vntrs, -1, 1);
+    else if (locuswise_prephase_flag or locuswise_flag or single_seq_flag) 
+      io.writeVCFBody_locuswise(out, vntrs, -1, 1);
+    else if (liftover_flag)
+      io.writeFa(out, vntrs);
+    
     out.close();
-      
+
     /* output vntr sequences to stdout */
     if (output_read_anno_flag)
     {
@@ -653,11 +724,8 @@ int main (int argc, char **argv)
         {
             for (auto &read : vntr->reads)
             {
-                cout << ">"; 
-                cout.write(read->qname, read->l_qname);
-                cout << "\n";
-                cout.write(read->seq, read->len);
-                cout << "\n";
+	      cout << ">" << read->qname << endl;
+	      cout << read->seq << endl;
             }
         }
     }

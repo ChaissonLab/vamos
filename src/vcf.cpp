@@ -17,7 +17,7 @@ extern int output_read_anno_flag;
 extern int readwise_anno_flag;
 extern int single_seq_flag;
 
-void OutWriter::init (char * input_bam_file, char * Version, char * SampleName)
+void OutWriter::init (string input_bam_file, string Version, string SampleName)
 {
 	version = Version;
 	sampleName = SampleName;
@@ -25,7 +25,7 @@ void OutWriter::init (char * input_bam_file, char * Version, char * SampleName)
 	if (single_seq_flag) 
 		return;
 
-    samFile * fp_in = hts_open(input_bam_file, "r"); //open bam file
+	samFile * fp_in = hts_open(input_bam_file.c_str(), "r"); //open bam file
     bam_hdr_t * bamHdr = sam_hdr_read(fp_in); //read header
     ncontigs = bamHdr->n_targets;
 
@@ -122,7 +122,7 @@ void writeSingleBody_locuswise(VNTR * it, ofstream &out)
 		for (int i = 0; i < it->nreads; ++i) 
 		{
 			out << "READANNO_";
-			out.write((it->reads[i])->qname, (it->reads[i])->l_qname);
+			out << it->reads[i]->qname;
 			out << "=" + readAnnos[i] + ";";
 		}
 	}
@@ -226,7 +226,7 @@ void writeSingleNullAnno(VNTR * it, ofstream &out_nullAnno)
 		if (na)
 		{
 			out_nullAnno << it->region << "\t";
-			out_nullAnno.write(it->reads[t]->seq, it->reads[t]->len);
+			out_nullAnno << it->reads[t]->seq;
 			out_nullAnno << "\t"; 
 			size_t t = 0;
 			for (auto &mt : it->motifs)
