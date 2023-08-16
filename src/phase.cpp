@@ -50,14 +50,17 @@ void MaxCutPhase(VNTR *vntr) {
     return;
   }
   vector<int> totDiffs(reads.size(), 0);
-    
-  diffs.resize(reads.size());
-  for (auto i=0; i < reads.size(); i++) {
-    diffs[i].resize(reads.size());
+  int nReads = reads.size();
+  diffs.resize(nReads);
+  for (auto i=0; i < nReads; i++) {
+    diffs[i].resize(nReads);
+    assert(diffs[i].size() == nReads);
   }
-  for (auto i=0; i < reads.size()-1; i++) {
+  for (auto i=0; i + 1 < nReads; i++) {
     diffs[i][i] = 0;
-    for (auto j=i+1; j< reads.size(); j++ ) {
+    for (auto j=i+1; j< nReads; j++ ) {
+      assert(i < nReads);
+      assert(j < nReads);			  
       diffs[i][j] = CountDiff(reads[i], reads[j]);
       totDiffs[i] += diffs[i][j];
       totDiffs[j] += diffs[i][j];

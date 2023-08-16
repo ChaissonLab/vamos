@@ -36,27 +36,15 @@ struct timeval pre_start_time, pre_stop_time, pre_elapsed_time;
 struct timeval single_start_time, single_stop_time, single_elapsed_time;
 
 
-void PrintDownloadMotifs(OPTION &opts) {
-    if (opts.download == "original") {  
-        fprintf(stdout, "please run:\ncurl \"https://zenodo.org/record/7155334/files/processed_vntrs.tsv?download=1\" > original_motifs.bed\n");
-    }
-    else if (opts.download == "q10") {
-        fprintf(stdout,"please run:\ncurl \"https://zenodo.org/record/7155329/files/vntrs_motifs_delta_0.1.bed?download=1\"  > vntrs_motifs_delta_0.1.bed\n");
-    }
-    else if (opts.download == "q20") {
-        fprintf(stdout,"please run:\ncurl \"https://zenodo.org/record/7155329/files/vntrs_motifs_delta_0.2.bed?download=1\"  > vntrs_motifs_delta_0.2.bed\n");
-    }
-    else if (opts.download == "q30") {
-        fprintf(stdout,"please run:\ncurl \"https://zenodo.org/record/7155329/files/vntrs_motifs_delta_0.3.bed?download=1\"  > vntrs_motifs_delta_0.3.bed\n");
-    }
-    else {
-        fprintf(stderr, "download option '%s' is not supported. Please use one of:\n"
-            "   original q=0, 64-haplotypes (Ebert 2021).\n"
-            "   q10   q=0.10, 64-haplotypes (Ebert 2021).\n" 
-            "   q20   q=0.20, 64-haplotypes (Ebert 2021).\n" 
-            "   q30   q=0.30, 64-haplotypes (Ebert 2021).\n", opts.download.c_str());      
-        exit(1);
-    }
+void PrintDownloadMotifs() {
+  cout << "Original (no filtering) " <<endl
+       << "   curl \"https://zenodo.org/record/7155334/files/processed_vntrs.tsv?download=1\" > original_motifs.bed" << endl
+       << "q10:" << endl
+       << "   curl \"https://zenodo.org/record/7155329/files/vntrs_motifs_delta_0.1.bed?download=1\"  > vntrs_motifs_delta_0.1.bed" << endl
+       << "q20:" << endl
+       << "   curl \"https://zenodo.org/record/7155329/files/vntrs_motifs_delta_0.2.bed?download=1\"  > vntrs_motifs_delta_0.2.bed" << endl
+       << "q30:" << endl
+       << "   curl \"https://zenodo.org/record/7155329/files/vntrs_motifs_delta_0.3.bed?download=1\"  > vntrs_motifs_delta_0.3.bed" << endl << endl;
 }
 
 void process_mem_usage(double &vm_usage, double &resident_set)
@@ -205,7 +193,7 @@ void *CallSNVs (void *procInfoValue) {
       pthread_exit(NULL);
     }
     Pileup pileup;
-    cerr << "start reading thread: " << procInfo->thread << " chrom " << curChrom << endl;
+    cerr << "start reading thread: " << procInfo->thread << " chrom " << curChrom << " cur region " << curRegion << endl;
     (procInfo->io)->curChromosome = curChrom;
     (procInfo->io)->CallSNVs(curChrom,
 			     (*(procInfo->bucketEndPos))[curChrom][curRegion],
@@ -220,7 +208,7 @@ void *CallSNVs (void *procInfoValue) {
 				      (*(procInfo->bucketEndPos))[curChrom][curRegion+1],
 				      *(procInfo->vntrs),
 				      *(procInfo->vntrMap),
-				      pileup);
+				      pileup, procInfo->thread);
     
   }
   cerr << "Done reading " << procInfo->thread << endl;
@@ -258,7 +246,7 @@ void printUsage(IO &io)
 {
 
     printf("Usage: vamos [subcommand] [options] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
-    printf("Version: %s\n", io.version);
+    printf("Version: %s\n", io.version.c_str());
     printf("subcommand:\n");
     
     // printf("vamos --liftover   [-i in.bam] [-v vntrs.bed] [-o output.fa] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
@@ -289,9 +277,7 @@ void printUsage(IO &io)
     printf("   Phase reads: \n");
     printf("       -p   INT            Range of flanking sequences which is used in the phasing step. DEFAULT: 15000 bps. \n");
     printf("   Downloading motifs:\n");
-    printf("       -m  MOTIF         Prints a command to download a particular motif set. Current supported motif set is: q20. \n"
-           "                         This motif set is selected at a level of Delta=20 from 64 haplotype-resolvd assemblies (Ebert et al., 2021)\n"
-           "                         This may be copied and pasted in the command line, or executed as: vamos -m q20\n");
+    PrintDownloadMotifs();
     printf("   Others: \n");
     printf("       -t   INT          Number of threads, DEFAULT: 1. \n");
     printf("       --debug           Print out debug information. \n");
@@ -470,7 +456,7 @@ int main (int argc, char **argv)
     if (locuswise_flag) io.phaseFlank = opt.phaseFlank;
 
     if (download_motifs) {
-        PrintDownloadMotifs(opt);
+        PrintDownloadMotifs();
         exit(0);
     }
 
@@ -633,7 +619,7 @@ int main (int argc, char **argv)
 	    int start = vntrs[vntrMap[io.chromosomeNames[i]][0]]->ref_start;
 	    int end   = vntrs[vntrMap[io.chromosomeNames[i]][vntrMap[io.chromosomeNames[i]].size()-1]]->ref_end;
 	    io.CallSNVs(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup);
-	    io.StoreReadsOnChrom(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup);
+	    io.StoreReadsOnChrom(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup, 1);
 	  }
 	}
       }

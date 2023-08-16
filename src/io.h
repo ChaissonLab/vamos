@@ -406,7 +406,7 @@ public:
   void StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrIndex, Pileup &pileup, int &refAlignPos, int &curVNTR);
 
   void CallSNVs(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup);  
-  void StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup);
+  void StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup, int thread);
 
   void StoreReadSeqAtRefCoord(bam1_t *aln, string &seq, string &toRef, vector<int> &map);
   void ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrIndex);

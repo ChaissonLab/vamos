@@ -254,11 +254,19 @@ public:
   }
 };
 
-class SearchVNTRPos {
+class UpperBoundSearchVNTRPos {
 public:
   vector<VNTR*>* vntrs;
   bool operator()(const int &a, const int &b) const {
     return a < (*vntrs)[b]->ref_start;
+  }
+};
+
+class LowerBoundSearchVNTRPos {
+public:
+  vector<VNTR*>* vntrs;
+  bool operator()(const int &a, const int &b) const {
+    return  (*vntrs)[a]->ref_start < b;
   }
 };
 

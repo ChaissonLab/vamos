@@ -17,7 +17,7 @@ asan  ?= ""
 tsan  ?= ""
 
 ifeq ("$(DEBUG)", "TRUE")
-	  CFLAGS = -g3 -std=c++14 #-fsanitize=address  -static-libasan -gdwarf-4  #-Wall -Wextra
+	  CFLAGS = -g -std=c++14 # -fsanitize=address # -static-libasan -gdwarf-4  #-Wall -Wextra
 else
   CFLAGS = -O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
 endif
