@@ -14,6 +14,7 @@ extern int debug_flag;
 extern int hclust_flag;
 extern int seqan_flag;
 extern int output_read_anno_flag;
+extern int output_read_seq_flag;
 extern int readwise_anno_flag;
 extern int single_seq_flag;
 
@@ -116,7 +117,6 @@ void writeSingleBody_locuswise(VNTR * it, ofstream &out)
 		out << "ALTANNO_H2=" + motif_anno_h2 + ";";
 		out	<< "LEN_H2=" + to_string(it->len_h2) + ";";
 	}
-
 	if (output_read_anno_flag)
 	{
 		for (int i = 0; i < it->nreads; ++i) 
@@ -130,7 +130,17 @@ void writeSingleBody_locuswise(VNTR * it, ofstream &out)
 
 	out	<< "\t";
 	out	<< "GT\t";
-	out << GT + "\n";
+	out << GT;
+	if (output_read_seq_flag) {
+	  if (GT == "1/2") {
+	    assert(it->Hap_seqs.size() == 2);
+	    out << ":" << it->Hap_seqs[0]->seq << ":" << it->Hap_seqs[1]->seq;
+	  }
+	  else {
+	    out << ":" << it->Hap_seqs[0]->seq ;
+	  }
+	}
+	out << endl;       
 	return;
 }
 

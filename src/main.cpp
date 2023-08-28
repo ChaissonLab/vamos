@@ -29,6 +29,7 @@ int read_flag = false;
 int contig_flag = false;
 int num_processed = 0;
 int download_motifs=false;
+int output_read_seq_flag=false;
 // int seqan_flag = false;
 // int output_read_flag = false;
 
@@ -278,6 +279,7 @@ void printUsage(IO &io)
     printf("       -s   CHAR         Sample name. \n");
     printf("   Output: \n");
     printf("       -o   FILE         Output vcf file. \n");
+    printf("       -S                Output assembly/read consensus sequence in each call.\n");
     printf("   Dynamic Programming: \n");
     printf("       -d   DOUBLE       Penalty of indel in dynamic programming (double) DEFAULT: 1.0. \n");
     printf("       -c   DOUBLE       Penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. \n");
@@ -322,6 +324,7 @@ int main (int argc, char **argv)
         {"single_seq",          no_argument,        &single_seq_flag,               1},
         {"readwise",            no_argument,        &readwise_anno_flag,            1},
         {"liftover",            no_argument,        &liftover_flag,                 1},
+        {"output_seq",          no_argument,        &output_read_seq_flag,          1},	
         // {"clust",               no_argument,        &hclust_flag,                   1},
         // {"seqan",               no_argument,        &seqan_flag,                    1},
         // {"output_read",         no_argument,        &output_read_flag,              1},
@@ -347,7 +350,7 @@ int main (int argc, char **argv)
     };
     /* getopt_long stores the option index here. */
     int option_index = 0;
-    while ((c = getopt_long (argc, argv, "b:r:a:o:s:t:f:d:c:x:v:m:p:h", long_options, &option_index)) != -1)
+    while ((c = getopt_long (argc, argv, "Sb:r:a:o:s:t:f:d:c:x:v:m:p:h", long_options, &option_index)) != -1)
     {
         switch (c)
         {
@@ -358,7 +361,10 @@ int main (int argc, char **argv)
                 fprintf (stderr, "option %s", long_options[option_index].name);
                 if (optarg) fprintf (stderr, " with arg %s", optarg);
                 break;
-
+            case 'S':
+	        fprintf (stderr, "option --output_seq '\n", optarg);
+	        output_read_seq_flag = true;
+		break;
             case 'b':
                 fprintf (stderr, "option --bam with `%s'\n", optarg);
 		io.input_bam = optarg;

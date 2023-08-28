@@ -249,6 +249,7 @@ void IO::StoreAllContigs(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMa
     aln=bam_init1();    
   }
   bam_destroy1(aln);
+  /*
   for (auto vntrIndex : vntrMap) {
     for (int i=0; i< vntrIndex.second.size(); i++) {
       if (vntrs[vntrIndex.second[i]]->reads.size() > 0) {
@@ -256,7 +257,7 @@ void IO::StoreAllContigs(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMa
 	cerr << vntrs[vntrIndex.second[i]]->reads[0]->seq << endl;
       }
     }
-  }  
+    } */ 
 }
 
 
@@ -291,10 +292,11 @@ void IO::ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<
     return;
   }
   int i=it-vntrMap[refName].begin();
-  
+
   while (i < vntrMap[refName].size() and
 	 vntrs[vntrMap[refName][i]]->ref_start >= refAlnStart and
 	 vntrs[vntrMap[refName][i]]->ref_end < refAlnEnd) {
+
     int idx= vntrMap[refName][i];
     if (vntrs[idx]->mappedContigLength < refAlnEnd - refAlnStart) {
       int readStart = MappedStartPosInRead(readMap, refAlnStart, vntrs[idx]->ref_start-1);
@@ -310,17 +312,20 @@ void IO::ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<
       //      read->qname[refName.size()]='\0';
       read->l_qname = read->qname.size();
       read->seq = vntrSeq;
-      read->seq = new char[vntrSeq.size()+1];
       read->len = vntrSeq.size();
       read->flag = aln->core.flag;
       if (vntrs[idx]->reads.size() == 0) {      
 	vntrs[idx]->reads.push_back(read);
-	vntrs[idx]->Hap_seqs.push_back(read);	
+	READ *hsRead = new READ;
+	*hsRead = *read;
+	vntrs[idx]->Hap_seqs.push_back(hsRead);	
       }
       else {
-	delete vntrs[idx]->reads[0];
+	delete vntrs[idx]->reads[0];	
 	vntrs[idx]->reads[0] = read;
-	vntrs[idx]->Hap_seqs[0] = read;	
+	READ *hsRead = new READ;
+	*hsRead = *read;
+	vntrs[idx]->Hap_seqs[0] = hsRead;	
       }
       assert(vntrs[idx]->reads.size() == 1);
 

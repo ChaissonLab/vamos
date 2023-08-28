@@ -73,8 +73,8 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
         // msa to get the consensus
         MSA * msa = new MSA(h1_reads, reads);
         msa->MSA_seq_group(h1_reads, reads, Hap_seqs[0]);
-	cerr << ">h1" << endl;
-	cerr << read->seq <<endl;
+	//	cerr << ">h1" << endl;
+	//	cerr << read->seq <<endl;
 	
         delete msa;
 

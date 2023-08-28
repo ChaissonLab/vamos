@@ -179,6 +179,7 @@ public:
         nullAnno = false;
         len_h1 = 0;
         len_h2 = 0;
+	mappedContigLength = 0;
     };
 
 
@@ -199,7 +200,7 @@ public:
 
         if (!het and nreads == 1) return;
 
-        Hap_seqs.clear();
+	Hap_seqs.clear();
 
         return;
     }
