@@ -39,13 +39,13 @@ struct timeval single_start_time, single_stop_time, single_elapsed_time;
 
 void PrintDownloadMotifs() {
   cout << "Original (no filtering) " <<endl
-       << "   curl \"https://zenodo.org/record/7155334/files/processed_vntrs.tsv?download=1\" > original_motifs.bed" << endl
+       << "   curl \"https://zenodo.org/record/8357361/files/original_motifs.set148.bed.gz?download=1\" > original_motifs.set148.bed.gz" << endl
        << "q10:" << endl
-       << "   curl \"https://zenodo.org/record/7155329/files/vntrs_motifs_delta_0.1.bed?download=1\"  > vntrs_motifs_delta_0.1.bed" << endl
+       << "   curl \"https://zenodo.org/record/8357361/files/q-0.1_motifs.set148.bed.gz?download=1\"  > q-0.1_motifs.set148.bed.gz" << endl
        << "q20:" << endl
-       << "   curl \"https://zenodo.org/record/7155329/files/vntrs_motifs_delta_0.2.bed?download=1\"  > vntrs_motifs_delta_0.2.bed" << endl
+       << "   curl \"https://zenodo.org/record/8357361/files/q-0.2_motifs.set148.bed.gz?download=1\"  > q-0.2_motifs.set148.bed.gz" << endl
        << "q30:" << endl
-       << "   curl \"https://zenodo.org/record/7155329/files/vntrs_motifs_delta_0.3.bed?download=1\"  > vntrs_motifs_delta_0.3.bed" << endl << endl;
+       << "   curl \"https://zenodo.org/record/8357361/files/q-0.3_motifs.set148.bed.gz?download=1\"  > q-0.3_motifs.set148.bed.gz" << endl << endl;
 }
 
 void process_mem_usage(double &vm_usage, double &resident_set)
