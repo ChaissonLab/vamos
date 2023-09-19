@@ -15,6 +15,11 @@ class SNV {
 public:
     int pos;        // position of this SNV
     int nuc;        // nucleotide base of this SNV
+  SNV(int initPos, int initNuc) {
+    pos = initPos;
+    nuc = initNuc;
+  }
+  SNV() {}
 };
 
 
@@ -26,11 +31,11 @@ public:
 class READ
 {
 public: 
-    char * qname;                   // query name of this read/contig
+    string qname;                   // query name of this read/contig
     uint16_t l_qname;               // 
-    char * chr;                     // aligned reference chromosome of this read/contig
+    string chr;                     // aligned reference chromosome of this read/contig
     uint32_t len;                   // length of this read/contig
-    char * seq;                     // sequence of this read/contig
+    string seq;                     // sequence of this read/contig
     bool rev;                       // if this read/contig is reverse aligned
     int haplotype;                  // haplotype of this read/contig, 0 for homo, 1/2 for heter hap1/hap2
     string upstream, downstream;    // 
@@ -41,22 +46,19 @@ public:
     /// @brief Construct a new READ object
     READ()
     {
-        qname = NULL;
+      qname = "";
         l_qname = 0;
-        chr = NULL;
-        seq = NULL;
+        chr = "";
+        seq = "";
         rev = false;
         haplotype = 0;
 	phased=false;
     };
-    READ(char * Qname, char * Chr, uint32_t Len) : qname(Qname), chr(Chr), len(Len) { seq = NULL;};
-
+    READ(char * Qname, char * Chr, uint32_t Len) : qname(Qname), chr(Chr), len(Len) { seq = "";};
 
     /// @brief Destroy the READ object
     ~READ() 
     {
-        free(seq);
-        free(qname);
     };
 };
 

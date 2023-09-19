@@ -14,10 +14,11 @@ extern int debug_flag;
 extern int hclust_flag;
 extern int seqan_flag;
 extern int output_read_anno_flag;
+extern int output_read_seq_flag;
 extern int readwise_anno_flag;
 extern int single_seq_flag;
 
-void OutWriter::init (char * input_bam_file, char * Version, char * SampleName)
+void OutWriter::init (string input_bam_file, string Version, string SampleName)
 {
 	version = Version;
 	sampleName = SampleName;
@@ -25,7 +26,7 @@ void OutWriter::init (char * input_bam_file, char * Version, char * SampleName)
 	if (single_seq_flag) 
 		return;
 
-    samFile * fp_in = hts_open(input_bam_file, "r"); //open bam file
+	samFile * fp_in = hts_open(input_bam_file.c_str(), "r"); //open bam file
     bam_hdr_t * bamHdr = sam_hdr_read(fp_in); //read header
     ncontigs = bamHdr->n_targets;
 
@@ -66,7 +67,6 @@ void OutWriter::writeHeader_locuswise(ofstream &out)
 		<< "##ALT=<ID=VNTR,Description=\"Allele comprised of VNTR repeat units\">" << "\n";
 
     out << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" << sampleName << "\n";
-    cerr << "finish writing the header" << endl;
     return;
 }
 
@@ -116,13 +116,12 @@ void writeSingleBody_locuswise(VNTR * it, ofstream &out)
 		out << "ALTANNO_H2=" + motif_anno_h2 + ";";
 		out	<< "LEN_H2=" + to_string(it->len_h2) + ";";
 	}
-
 	if (output_read_anno_flag)
 	{
 		for (int i = 0; i < it->nreads; ++i) 
 		{
 			out << "READANNO_";
-			out.write((it->reads[i])->qname, (it->reads[i])->l_qname);
+			out << it->reads[i]->qname;
 			out << "=" + readAnnos[i] + ";";
 		}
 	}
@@ -130,7 +129,17 @@ void writeSingleBody_locuswise(VNTR * it, ofstream &out)
 
 	out	<< "\t";
 	out	<< "GT\t";
-	out << GT + "\n";
+	out << GT;
+	if (output_read_seq_flag) {
+	  if (GT == "1/2") {
+	    assert(it->Hap_seqs.size() == 2);
+	    out << ":" << it->Hap_seqs[0]->seq << ":" << it->Hap_seqs[1]->seq;
+	  }
+	  else {
+	    out << ":" << it->Hap_seqs[0]->seq ;
+	  }
+	}
+	out << endl;       
 	return;
 }
 
@@ -226,7 +235,7 @@ void writeSingleNullAnno(VNTR * it, ofstream &out_nullAnno)
 		if (na)
 		{
 			out_nullAnno << it->region << "\t";
-			out_nullAnno.write(it->reads[t]->seq, it->reads[t]->len);
+			out_nullAnno << it->reads[t]->seq;
 			out_nullAnno << "\t"; 
 			size_t t = 0;
 			for (auto &mt : it->motifs)

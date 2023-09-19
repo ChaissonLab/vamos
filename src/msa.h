@@ -124,7 +124,7 @@ public:
             assert(gp[i] < reads.size());
             seq_lens[i] = reads[gp[i]]->len;
             bseqs[i] = new uint8_t[seq_lens[i] + 1];
-            memcpy(bseqs[i], reads[gp[i]]->seq, seq_lens[i]);
+            memcpy(bseqs[i], reads[gp[i]]->seq.c_str(), seq_lens[i]);
 
             for (auto j=0; j < seq_lens[i]; j++)
             {

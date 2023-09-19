@@ -46,7 +46,7 @@ static int scoring(vector<MOTIF> &motifs, vector<int> &matches, int top, double 
 
 
 void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<int> &starts, vector<int> &ends,
-    vector<vector<int> > &motifNMatches, vector<MOTIF> &motifs, char *vntr, int N, const OPTION &opt,
+    vector<vector<int> > &motifNMatches, vector<MOTIF> &motifs, const char *vntr, int N, const OPTION &opt,
     SDTables &sdTables, vector<int > &mismatchCI)
 {
 

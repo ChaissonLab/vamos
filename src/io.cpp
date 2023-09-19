@@ -226,7 +226,16 @@ int MappedStartPosInRead(vector<int> &refIndex, int refStart, int refPos) {
     //    cerr << "skipping a gap character at " << i << endl;
     i++;
   }
-  return(refIndex[i]);
+  //
+  // Check to see if there was an insertion right before the matched pos. If so, return the
+  // start of the insertion.
+  // The case for an insertion is the two adjacent mapped positions have a larger gap than a single base.
+  if (i > 0 and refIndex[i-1] + 1  < refIndex[i]) {
+    return(refIndex[i-1]+1);
+  }
+  else {
+    return(refIndex[i]);
+  }
 }
 
 int MappedEndPosInRead(vector<int> &refIndex, int refStart, int refPos) {
@@ -236,19 +245,35 @@ int MappedEndPosInRead(vector<int> &refIndex, int refStart, int refPos) {
     //    cerr << "skipping a gap character at end " << i << endl;    
     i--;
   }
-  return(refIndex[i]);
+  //
+  // Check for an inserted sequence at the end of the match
+  if (i + 1 < refIndex.size() and refIndex[i] + 1 < refIndex[i+1]) {
+    return refIndex[i+1]-1;
+  }
+  else {
+    return(refIndex[i]);
+  }
 }
 
-void IO::StoreAllContigs(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrIndex) {
+void IO::StoreAllContigs(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap) {
   initializeBam();
   bam1_t * aln = bam_init1(); //initialize an alignment
   while (sam_read1(fp_in, bamHdr, aln) >= 0) {
-    cerr << "Processing name: " << bam_get_qname(aln) << " " << aln->core.l_qseq << endl;
-    ProcessOneContig(aln, vntrs, vntrIndex);
+    //    cerr << "Processing name: " << bam_get_qname(aln) << " " << aln->core.l_qseq << endl;
+    ProcessOneContig(aln, vntrs, vntrMap);
     bam_destroy1(aln);
     aln=bam_init1();    
   }
-  bam_destroy1(aln);  
+  bam_destroy1(aln);
+  /*
+  for (auto vntrIndex : vntrMap) {
+    for (int i=0; i< vntrIndex.second.size(); i++) {
+      if (vntrs[vntrIndex.second[i]]->reads.size() > 0) {
+	cerr << ">" << vntrs[vntrIndex.second[i]]->region << endl;
+	cerr << vntrs[vntrIndex.second[i]]->reads[0]->seq << endl;
+      }
+    }
+    } */ 
 }
 
 
@@ -269,12 +294,12 @@ void IO::ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<
   if (vntrMap.find(refName) == vntrMap.end()) {
     return;
   }
-  SearchVNTRPos comp;
-  comp.vntrs=&vntrs;
+  UpperBoundSearchVNTRPos ubComp;
+  ubComp.vntrs=&vntrs;
   int refAlnStart = aln->core.pos;
   int refAlnEnd = bam_endpos(aln);
   vector<int> &vntrIndex=vntrMap[refName];
-  vector<int>::iterator it = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), refAlnStart, comp);
+  vector<int>::iterator it = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), refAlnStart, ubComp);
 
   //
   // Second check if any mapped by this contig.
@@ -283,41 +308,45 @@ void IO::ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<
     return;
   }
   int i=it-vntrMap[refName].begin();
-  
+
   while (i < vntrMap[refName].size() and
 	 vntrs[vntrMap[refName][i]]->ref_start >= refAlnStart and
 	 vntrs[vntrMap[refName][i]]->ref_end < refAlnEnd) {
+
     int idx= vntrMap[refName][i];
     if (vntrs[idx]->mappedContigLength < refAlnEnd - refAlnStart) {
-      int readStart = MappedStartPosInRead(readMap, refAlnStart, vntrs[idx]->ref_start);
-      int readEnd   = MappedEndPosInRead(readMap, refAlnStart, vntrs[idx]->ref_end);
+      int readStart = MappedStartPosInRead(readMap, refAlnStart, vntrs[idx]->ref_start-1);
+      int readEnd   = MappedEndPosInRead(readMap, refAlnStart, vntrs[idx]->ref_end-1);
       string vntrSeq;
-      vntrSeq = readSeq.substr(readStart, readEnd-readStart);
-      /*      cerr << "got vntr seq " << i << "/" << vntrMap[refName].size() << endl;
-	      cerr << vntrSeq << endl;*/
 
-	READ *read = new READ;
-	read->qname = new char[refName.size()+1];
-	memcpy(read->qname, refName.c_str(), refName.size());
-	read->qname[refName.size()]='\0';
-	read->l_qname = refName.size();
-	read->seq = new char[vntrSeq.size()+1];
-	memcpy(read->seq, vntrSeq.c_str(), vntrSeq.size());
-	read->seq[vntrSeq.size()] = '\0';
+      vntrSeq = readSeq.substr(readStart, readEnd-readStart);
+      /*
+      cerr << "got vntr seq " << i << "/" << vntrMap[refName].size() << endl;
+      cerr << vntrSeq << endl;
+      */
+
+      READ *read = new READ;
+      read->qname = refName; //new char[refName.size()+1];
+      //      memcpy(read->qname, refName.c_str(), refName.size());
+      //      read->qname[refName.size()]='\0';
+      read->l_qname = read->qname.size();
+      read->seq = vntrSeq;
       read->len = vntrSeq.size();
       read->flag = aln->core.flag;
       if (vntrs[idx]->reads.size() == 0) {      
 	vntrs[idx]->reads.push_back(read);
-	vntrs[idx]->Hap_seqs.push_back(read);	
+	READ *hsRead = new READ;
+	*hsRead = *read;
+	vntrs[idx]->Hap_seqs.push_back(hsRead);	
       }
       else {
-	delete vntrs[idx]->reads[0];
+	delete vntrs[idx]->reads[0];	
 	vntrs[idx]->reads[0] = read;
-	vntrs[idx]->Hap_seqs[0] = read;	
+	READ *hsRead = new READ;
+	*hsRead = *read;
+	vntrs[idx]->Hap_seqs[0] = hsRead;	
       }
       assert(vntrs[idx]->reads.size() == 1);
-
-
     }
     i++;
   }
@@ -360,7 +389,7 @@ void IO::StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrMap, Pileup &pileu
   int offset=0;
   vector<int> snpOffset;
   for (auto & consIt : pileup.consensus) {    
-    if (consIt.second.Calc()) {
+    if (consIt.second.Calc(3)) {
       snpOffset.push_back(offset);
       //      cerr << "added snp at " << offset + pileup.consensusStart << " " << consIt.second.a << " " << consIt.second.b << endl;
     }
@@ -398,9 +427,9 @@ void IO::StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrMap, Pileup &pileu
       string readLocusSeq;
       if (pread.GetSubstr(vntr->ref_start, vntr->ref_end, readLocusSeq)) {
 	READ *read = new READ;
-	read->seq = new char[readLocusSeq.size() + 1];
-	memcpy(read->seq, readLocusSeq.c_str(), readLocusSeq.size());
-	read->seq[readLocusSeq.size()] = '\0';
+	read->seq = readLocusSeq; // new char[readLocusSeq.size() + 1];
+	//	memcpy(read->seq, readLocusSeq.c_str(), readLocusSeq.size());
+	//	read->seq[readLocusSeq.size()] = '\0';
 	read->len =readLocusSeq.size();
 	read->flag = pread.flag;
 	vntr->reads.push_back(read);
@@ -411,8 +440,8 @@ void IO::StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrMap, Pileup &pileu
 	  readsArePhased = true;
 	}
 	else {
-	  for (auto offset : snpOffset ) {
-	    if (offset + pileup.consensusStart >= pread.refStartPos and
+	  for (auto offset : snpOffset ) {	
+    if (offset + pileup.consensusStart >= pread.refStartPos and
 		offset + pileup.consensusStart < pread.refEndPos) {
 	      SNV snv;
 	      snv.nuc = '-';
@@ -432,8 +461,6 @@ void IO::StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrMap, Pileup &pileu
 	    }
 	  }
 	}
-	cerr << "read " << pread.readName << " added snps: " << read->snvs.size() << endl;
-	
       }
     }
 
@@ -453,9 +480,150 @@ void IO::StoreSeq(bam1_t *aln, string &readSeq) {
   }
 }
 
-void IO::CallSNVs(string &chrom, vector<VNTR*> &vntrs,
+void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs,
+			   map<string, vector<int> > &vntrMap,
+			   Pileup &pileup, int thread) {
+
+   bam1_t * aln = bam_init1(); //initialize an alignment
+   hts_itr_t * itr;
+
+   uint32_t isize; // observed template size
+   uint32_t * cigar;
+   uint8_t * s; // pointer to the read sequence
+   bool rev;
+   char * name;
+
+   uint32_t ref_aln_start, ref_aln_end;
+   uint32_t read_aln_start, read_len;
+   uint32_t ref_len;
+   uint32_t VNTR_s, VNTR_e;
+   unsigned char base;
+   uint32_t total_len;
+
+   int i;
+   VNTR * vntr = NULL;
+   uint32_t origPhaseFlank = phaseFlank;
+   //   cerr << "Storing reads on " << chrom << " " << regionStart << " " << regionEnd << endl;
+   if (vntrMap.find(chrom) == vntrMap.end()) {
+     return;
+   }
+   // For now process all reads on chrom
+
+   string region=MakeRegion(chrom, regionStart, regionEnd);
+   itr = bam_itr_querys(idx, bamHdr, region.c_str());
+   
+   IOAlignBuff alignBuff(fp_in, itr, ioLock, 1000);
+   int curVNTR=0;
+
+   vector<int> &vntrIndex=vntrMap[chrom];
+   LowerBoundSearchVNTRPos lbComp;
+   UpperBoundSearchVNTRPos ubComp;   
+   lbComp.vntrs = &vntrs;
+   ubComp.vntrs = &vntrs;
+   int nRead=0;
+   CompPosWithSNV posSnvComp;
+   bool readsArePhased=false;
+   while (alignBuff.GetNext(aln) > 0) {
+     string readSeq, readToRef;
+     vector<int> readMap;
+     StoreSeq(aln, readSeq);     
+     StoreReadSeqAtRefCoord(aln, readSeq, readToRef, readMap);
+     PiledRead read(aln->core.pos, readToRef);
+     read.flag = aln->core.flag;
+     int hap;
+     bool readIsPhased = QueryAndSetPhase(aln, hap);
+
+     int refAlnStart = aln->core.pos;
+     int refAlnEnd = bam_endpos(aln);
+     vector<SNV> snvs;
+     if (readIsPhased == false ) {
+       auto snvIt = lower_bound(pileup.hetSNVs.begin(), pileup.hetSNVs.end(), HetSNV(refAlnStart), posSnvComp);
+       auto snvEnd = upper_bound(pileup.hetSNVs.begin(), pileup.hetSNVs.end(), HetSNV(refAlnEnd), posSnvComp);
+
+       // Collect a list of snvs for this read.
+       
+       for (; snvIt != snvEnd; snvIt++) {
+	 if (readToRef[snvIt->pos - refAlnStart] == snvIt->a) {
+	   snvs.push_back(SNV(snvIt->pos, snvIt->a));
+	 }
+	 else if (readToRef[snvIt->pos - refAlnStart] == snvIt->b) {
+	   snvs.push_back(SNV(snvIt->pos, snvIt->b));
+	 }
+       }
+     }
+     else {
+       readsArePhased = true;
+     }
+     //
+     // For each vntr that overlaps this read, add the read to the VNTR.
+     //
+     vector<int>::iterator it = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), refAlnStart, ubComp);
+     while(it != vntrIndex.end() and vntrs[*it]->ref_end <= refAlnEnd) {
+       //
+       // Need to skip this vntr since it is outside the region.
+       //
+       if (vntrs[*it]->ref_end < regionStart or vntrs[*it]->ref_start > regionEnd ) {
+	 break;
+       }
+       int readStart = MappedStartPosInRead(readMap, refAlnStart, vntrs[*it]->ref_start-1);
+       int readEnd   = MappedEndPosInRead(readMap, refAlnStart, vntrs[*it]->ref_end-1);
+       string vntrSeq;
+       vntrSeq = readSeq.substr(readStart, readEnd-readStart);
+
+       READ *read = new READ;
+       read->qname = bam_get_qname(aln);//refName; //new char[refName.size()+1];
+       //       memcpy(read->qname, refName.c_str(), refName.size());
+       //       read->qname[refName.size()]='\0';
+       read->l_qname = read->qname.size();
+       read->seq = vntrSeq; //new char[vntrSeq.size()+1];
+       //       memcpy(read->seq, vntrSeq.c_str(), vntrSeq.size());
+       //       read->seq[vntrSeq.size()] = '\0';
+       read->len = vntrSeq.size();
+       read->flag = aln->core.flag;
+       //       cerr << "STORE VNTR " << vntrs[*it]->region << "\t" << read->qname << "\t" << thread << endl;       
+       //
+       // Copy over all snvs
+       //
+       read->snvs = snvs;
+       vntrs[*it]->reads.push_back(read);
+       if (readIsPhased) {
+	 read->haplotype=hap;
+       }
+       ++it;
+     } // End looping over vntr loci
+     bam_destroy1(aln);
+     aln=bam_init1();     
+   } // End looping over reads.
+   if ( readsArePhased == false) {
+     vector<int>::iterator it = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), regionStart, ubComp);
+     vector<int>::iterator end = std::lower_bound(vntrIndex.begin(), vntrIndex.end(), regionEnd, lbComp);
+     int nProc=0;
+     int total=end-it;
+     int itPos = *it;
+     int endPos= *end;
+     int sz = vntrIndex.size();
+     if (total < 0 ){
+       int endSearch=itPos;
+       while (endSearch < vntrs.size() and vntrs[endSearch]->ref_start < regionEnd) {
+	 endSearch++;
+       }
+       //       cerr << "Ended search from " << itPos << " at " << endSearch << endl;
+       return;
+     }
+     assert(total >=0);
+     
+     while (it != end ) {
+       MaxCutPhase(vntrs[*it]);
+       ++it;
+       ++nProc;
+     }
+   }
+   bam_destroy1(aln);   
+}
+void IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> &vntrs,
 		  map<string, vector<int> > &vntrMap,
 		  Pileup &pileup) {
+   cerr << "Calling SNVS " << chrom << ":" << regionStart << "-" << regionEnd << endl;
    bam1_t * aln = bam_init1(); //initialize an alignment
    hts_itr_t * itr;
 
@@ -477,21 +645,27 @@ void IO::CallSNVs(string &chrom, vector<VNTR*> &vntrs,
    uint32_t origPhaseFlank = phaseFlank;
 
    if (vntrMap.find(chrom) == vntrMap.end()) {
+     cerr << "Skipping "<< chrom << endl;
      return;
    }
    // For now process all reads on chrom
-   itr = bam_itr_querys(idx, bamHdr, chrom.c_str());
+
+   string region=MakeRegion(chrom, regionStart, regionEnd);
+   itr = bam_itr_querys(idx, bamHdr, region.c_str());
    IOAlignBuff alignBuff(fp_in, itr, ioLock, 1000);
    int curVNTR=0;
 
    vector<int> &vntrIndex=vntrMap[chrom];
-   SearchVNTRPos comp;
-   comp.vntrs = &vntrs;
    int nRead=0;
    while (alignBuff.GetNext(aln) > 0) {
+     int tid=aln->core.tid;
+     if (tid != -1) {
+       string refName(bamHdr->target_name[tid]);
+     }
+     
      ++nRead;
-     if (nRead % 1000 == 0) {
-       cerr << "thread " << thread << " consensus size " << pileup.consensus.size() << " Read stack: " << pileup.reads.size() << " " << chromosomeNames[curChromosome] << ":" << pileup.reads.front().refStartPos << endl;
+     if (nRead % 10000 == 0) {
+       cerr << "thread " << thread << " consensus size " << pileup.consensus.size() << " Read stack: " << pileup.reads.size() << " " << curChromosome << ":" << pileup.reads.front().refStartPos << " " << nRead << " reads." << endl;
      }
      int refStartPos = aln->core.pos;
      int refAlnEnd = bam_endpos(aln);
@@ -523,7 +697,6 @@ void IO::CallSNVs(string &chrom, vector<VNTR*> &vntrs,
        // no additional phasing information will be added by future alignments
        // and positions up to this read.
        int nextEndPos = pileup.endPosPQueue.top().pos;
-       //       cerr << "Next end pos " << nextEndPos << " removing " << pileup.endPosPQueue.top().it->readName << endl;
        pileup.RemoveRead(pileup.endPosPQueue.top().it);
        pileup.endPosPQueue.pop();
      }
@@ -536,99 +709,10 @@ void IO::CallSNVs(string &chrom, vector<VNTR*> &vntrs,
      int before=pileup.consensus.size();
      
      pileup.ProcessUntil(finishedCons);
-     /*
-     if (before > pileup.consensus.size()) {
-       cerr << "Cleaning up pileup from " << pileup.consensusStart << " to " << finishedCons << " removed " << before - pileup.consensus.size() << endl;
-       } */
      bam_destroy1(aln);
    }
    pileup.ProcessUntil(pileup.consensusEnd);
 }
-
-void IO::ProcessReadsOnChrom(string &chrom, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap) {
-   bam1_t * aln = bam_init1(); //initialize an alignment
-   hts_itr_t * itr;
-
-   uint32_t isize; // observed template size
-   uint32_t * cigar;
-   uint8_t * s; // pointer to the read sequence
-   bool rev;
-   char * name;
-
-   uint32_t ref_aln_start, ref_aln_end;
-   uint32_t read_aln_start, read_len;
-   uint32_t ref_len;
-   uint32_t VNTR_s, VNTR_e;
-   unsigned char base;
-   uint32_t total_len;
-
-   int i;
-   VNTR * vntr = NULL;
-   uint32_t origPhaseFlank = phaseFlank;
-
-   if (vntrMap.find(chrom) == vntrMap.end()) {
-     return;
-   }
-   // For now process all reads on chrom
-   itr = bam_itr_querys(idx, bamHdr, chrom.c_str());
-   IOAlignBuff alignBuff(fp_in, itr, ioLock, 1000);
-
-   Pileup pileup;
-   int curVNTR=0;
-
-   vector<int> &vntrIndex=vntrMap[chrom];
-   
-   while (curVNTR < vntrMap[chrom].size() and alignBuff.GetNext(aln) > 0) {
-     int refAlnPos = aln->core.pos;
-     int refAlnEnd = bam_endpos(aln);
-     // If not overlapping anything, continue reading.
-     if (refAlnEnd < vntrs[vntrMap[chrom][curVNTR]]->ref_start or
-	 (aln->core.flag & 256) or (aln->core.flag & 2048) ) {
-       //       cerr << "skipping " << bam_get_qname(aln) << " at " << refAlnPos << " " << (int) aln->core.flag << endl;
-       bam_destroy1(aln);
-       aln=bam_init1();
-       continue;
-     }
-
-     //
-     // Check to see if all possible reads for the current vntr have bee nread.
-     //
-     if (refAlnPos  > vntrs[vntrIndex[curVNTR]]->ref_end + 10000)  {
-       //
-       // Process all the loci overlapped by the current read stack.
-       //
-       //       cerr << "Adding locus " << vntrs[vntrIndex[curVNTR]]->region << endl;
-       //
-       // First get snv consensus with SNPs.
-       StoreVNTRLoci(vntrs, vntrIndex, pileup, refAlnPos, curVNTR);
-     }
-     string readSeq, readToRef;
-
-     StoreSeq(aln, readSeq);
-     int hap;
-     bool readIsPhased = QueryAndSetPhase(aln, hap);     
-     vector<int> readMap;
-     StoreReadSeqAtRefCoord(aln, readSeq, readToRef, readMap);
-     PiledRead read(aln->core.pos, readToRef);
-     read.flag = aln->core.flag;
-     read.phased = readIsPhased;
-     read.hap = hap;
-     read.readName = bam_get_qname(aln);
-     pileup.AddRead(read);
-
-     
-
-   }
-   while (curVNTR < vntrIndex.size()) {
-     cerr << "WRapping up with " << curVNTR << endl;
-     int lastPos = vntrs[vntrIndex[vntrIndex.size()-1]]->ref_end;
-     StoreVNTRLoci(vntrs, vntrIndex, pileup, lastPos, curVNTR);
-     curVNTR++;
-   }
-}
-
-
-
 
 /*
  read alignment from bam
@@ -645,15 +729,15 @@ string &FlankSeq(READ* read, int side) {
 }
 
 void IO::initializeBam() {
-    fp_in = hts_open(input_bam, "r"); //open bam file
+  fp_in = hts_open(input_bam.c_str(), "r"); //open bam file
     bamHdr = sam_hdr_read(fp_in); //read header
-    bai = (char *) malloc(strlen(input_bam) + 4 + 1); // input_bam.bai
-    strcpy(bai, input_bam);
-    strcat(bai, ".bai");
-    idx = sam_index_load(fp_in, bai);
+    bai = input_bam + ".bai";
+    idx = sam_index_load(fp_in, bai.c_str());
     for (int i = 0; i < bamHdr->n_targets; ++i) {
       chromosomeNames.push_back(bamHdr->target_name[i]);
+      chromosomeLengths.push_back(bamHdr->target_len[i]);      
     }
+    
 }
 
 void InitNucIndex(char nucIndex[]) {
@@ -669,7 +753,6 @@ void InitNucIndex(char nucIndex[]) {
 
 
 void IO::closeBam() {
-     free(bai);
     bam_hdr_destroy(bamHdr);
     hts_idx_destroy(idx);
     sam_close(fp_in); 
@@ -682,26 +765,26 @@ void IO::readSeqFromFasta(vector<VNTR *> &vntrs)
     gzFile fp;  
     kseq_t *seq;  
     int l; 
-    fp = gzopen(input_bam, "r"); // STEP 2: open the file handler  
+    fp = gzopen(input_bam.c_str(), "r"); // STEP 2: open the file handler  
     seq = kseq_init(fp); // STEP 3: initialize seq  
     while ((l = kseq_read(seq)) >= 0) { // STEP 4: read sequence  
         READ * read = new READ();
         read->l_qname = seq->name.l;
-        read->qname = (char *) malloc(read->l_qname + 1);
-        strcpy(read->qname, seq->name.s);
-
-        read->seq = (char *) malloc(seq->seq.l + 1); // read sequence array
-        strcpy(read->seq, seq->seq.s);
+        read->qname = seq->name.s; //bam_get_qnamenew char[read->l_qname + 1];
+	read->seq = seq->seq.s;
+	//        read->seq = new char[seq->seq.l + 1]; // read sequence array
+	//        strcpy(read->seq, seq->seq.s);
         read->len = seq->seq.l;
+	//	read->seq[seq->seq.l] = '\0';
 
         vntrs[0]->reads.push_back(read); 
         if (debug_flag)
         {
              cerr << "read_name: "; 
-             cout.write(read->qname, read->l_qname);
+             cout << read->qname;
              cerr << endl;
              cerr << "read length: " << read->len << endl;
-             cout.write(read->seq, read->len);
+             cout << read->seq;
              cout << endl; 
         }
     }  
@@ -739,9 +822,6 @@ int IO::writeBEDBody_readwise(ofstream& out, vector<VNTR *> &vntrs, int tid, int
     outWriter.writeBody_readwise(vntrs, out, tid, nproc);
     return 0;
 }
-char *Consensus::nucIndex=NULL;
-
-int Consensus::minCov=3;
 
 void IO::writeFa(ofstream& out, vector<VNTR *> &vntrs)
 {
@@ -749,11 +829,8 @@ void IO::writeFa(ofstream& out, vector<VNTR *> &vntrs)
     {
         for (auto &read : vntr->reads)
         {
-            out << ">"; 
-            out.write(read->qname, read->l_qname);
-            out << "\n";
-            out.write(read->seq, read->len);
-            out << "\n";
+	  out << ">" << read->qname << endl;
+	  out << read->seq << endl;
         }
     }
     return;
