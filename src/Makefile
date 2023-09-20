@@ -38,7 +38,7 @@ endif
 
 PROF = $(CONDA_PREFIX)/lib
 
-ABPOA_DIR = ../abPOA
+ABPOA_DIR = ../abPOA-1.4.1
 
 all: $(PROG)
 ZLPATH=""
