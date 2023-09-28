@@ -350,7 +350,7 @@ int main (int argc, char **argv)
     };
     /* getopt_long stores the option index here. */
     int option_index = 0;
-    while ((c = getopt_long (argc, argv, "Sb:r:a:o:s:t:f:d:c:x:v:m:p:h:L", long_options, &option_index)) != -1)
+    while ((c = getopt_long (argc, argv, "Sb:r:a:o:s:t:f:d:c:x:v:m:p:hL:", long_options, &option_index)) != -1)
     {
         switch (c)
         {
