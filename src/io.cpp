@@ -660,7 +660,6 @@ int IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> &
    uint32_t origPhaseFlank = phaseFlank;
 
    if (vntrMap.find(chrom) == vntrMap.end()) {
-     cerr << "Skipping "<< chrom << endl;
      return 0;
    }
    // For now process all reads on chrom
