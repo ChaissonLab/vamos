@@ -17,7 +17,7 @@ asan  ?= ""
 tsan  ?= ""
 
 ifeq ("$(DEBUG)", "TRUE")
-	  CFLAGS = -g -std=c++14 #-fsanitize=address  -static-libasan -gdwarf-4  #-Wall -Wextra
+	  CFLAGS = -g3 -std=c++14 #-fsanitize=address  -static-libasan -gdwarf-4  #-Wall -Wextra
 else
   CFLAGS = -O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
 endif
@@ -48,6 +48,9 @@ endif
 
 $(ABPOA_DIR)/lib/libabpoa.a:
 	cd $(ABPOA_DIR) && make sse2=TRUE PREFIX=. CC=gcc $(ZLPATH) lib/libabpoa.a
+
+testmsa: TestMSA.cpp
+	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -I $(ABPOA_DIR)/include -L $(ABPOA_DIR)/lib -labpoa -lrt -L$(mchaisso)/software/lib
 
 vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o $(ABPOA_DIR)/lib/libabpoa.a
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -lrt -L$(mchaisso)/software/lib

@@ -20,6 +20,11 @@
 
 using namespace std;
 
+void SetVNTRBounds(vector<VNTR*> &vntrs,
+		   map<string, vector<int> > &vntrMap, string chrom, int regionStart, int regionEnd,
+		   vector<int>::iterator &startIt,
+		   vector<int>::iterator &endIt);
+
 class PiledRead {
 public:
   int refStartPos;
@@ -262,6 +267,11 @@ public:
   samFile * fp_in;
   mutex *ioLock;
   int nRead;
+  void Free() {
+    for (; curAln < alignments.size(); curAln++) {
+      bam_destroy1(alignments[curAln]);
+    }
+  }
   IOAlignBuff(samFile *initFp_in, hts_itr_t *initIter, mutex * initIoLock, int initBuffSize) {
     itr = initIter;
     fp_in = initFp_in;
@@ -280,22 +290,27 @@ public:
       curAln = 0;
       nRead=0;
       if (ioLock != NULL) { ioLock->lock();}
-      bam1_t * aln = bam_init1(); //initialize an alignment
+      bam1_t * aln;// = bam_init1(); //initialize an alignment
       if (alignments.size() == 0 ){
 	alignments.resize(buffSize);
       }
       //      cerr << "Refreshing IO Buffer " << endl;      
       while (nRead < buffSize) {
+	aln = bam_init1(); //initialize an alignment		  
 	if (bam_itr_next(fp_in, itr, aln) >= 0) {
 	  alignments[nRead] = aln;
-	  aln = bam_init1(); //initialize an alignment		  
 	  ++nRead;
 	}
 	else {
+	  bam_destroy1(aln);
 	  break;
 	}
       }
+      // Last alignment not needed.
+
       if (nRead > 0) {
+	//
+	// Allocated one extra
 	next=alignments[curAln];
 	curAln++;
 	if (ioLock != NULL) { ioLock->unlock();}
@@ -326,6 +341,7 @@ public:
     mutex *ioLock;
     int *numProcessed;
     int thread;
+    int minMapQV;
     string curChromosome;
     vector<string> chromosomeNames;
     vector<int> chromosomeLengths;  
@@ -350,9 +366,21 @@ public:
         ioLock = NULL;
 	thread = 0;
 	curChromosome="";
+	minMapQV=3;
     };
 
-
+  void clear() {
+    cerr << "Clearing IO" << endl;
+      if (bamHdr != NULL) {
+	//
+	// The structure was read using sam_hdr_read, so destroy it with this.
+	//
+	sam_hdr_destroy(bamHdr);
+      }
+      if (idx != NULL) {
+	hts_idx_destroy(idx);
+      }
+  }    
     ~IO() 
     {
     };
@@ -403,10 +431,10 @@ public:
 
     void readSeqFromFasta(vector<VNTR *> &vntrs);
 
-  void StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrIndex, Pileup &pileup, int &refAlignPos, int &curVNTR);
+  //  void StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrIndex, Pileup &pileup, int &refAlignPos, int &curVNTR);
 
-  void CallSNVs(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup);  
-  void StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup, int thread);
+  int CallSNVs(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup, bool& readsArePhased);  
+  void StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup, int thread, bool readsArePhased);
 
   void StoreReadSeqAtRefCoord(bam1_t *aln, string &seq, string &toRef, vector<int> &map);
   void ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrIndex);
@@ -418,5 +446,6 @@ public:
     return sstrm.str();
   }
 };
+
 
 #endif

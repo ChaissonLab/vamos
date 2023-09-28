@@ -181,7 +181,7 @@ void *CallSNVs (void *procInfoValue) {
     pthread_exit(NULL);    
   }
   string curChrom = (*(procInfo->processed)).begin()->first;
-  
+  bool readsArePhased = false;
   while (true) {
     procInfo->mtx->lock();
     bool foundNextRegion = false;
@@ -194,27 +194,42 @@ void *CallSNVs (void *procInfoValue) {
       pthread_exit(NULL);
     }
     Pileup pileup;
-    cerr << "start reading thread: " << procInfo->thread << " chrom " << curChrom << " cur region " << curRegion << endl;
     (procInfo->io)->curChromosome = curChrom;
-    (procInfo->io)->CallSNVs(curChrom,
-			     (*(procInfo->bucketEndPos))[curChrom][curRegion],
-			     (*(procInfo->bucketEndPos))[curChrom][curRegion+1],
-			     *(procInfo->vntrs),
-			     *(procInfo->vntrMap),
-			     pileup);
+    if (readsArePhased == false) {
+    
+      (procInfo->io)->CallSNVs(curChrom,
+			       (*(procInfo->bucketEndPos))[curChrom][curRegion],
+			       (*(procInfo->bucketEndPos))[curChrom][curRegion+1],
+			       *(procInfo->vntrs),
+			       *(procInfo->vntrMap),
+			       pileup, readsArePhased);
+    }
 
 
-    (procInfo->io)->StoreReadsOnChrom(curChrom,
+    (procInfo->io)->StoreReadsOnChrom(curChrom,				      
 				      (*(procInfo->bucketEndPos))[curChrom][curRegion],
 				      (*(procInfo->bucketEndPos))[curChrom][curRegion+1],
 				      *(procInfo->vntrs),
 				      *(procInfo->vntrMap),
-				      pileup, procInfo->thread);
-    
+				      pileup, procInfo->thread, readsArePhased);
+     vector<int>::iterator it,end;
+     SetVNTRBounds(*(procInfo->vntrs),
+		   (*(procInfo->vntrMap)), curChrom,
+		   (*(procInfo->bucketEndPos))[curChrom][curRegion],		   
+		   (*(procInfo->bucketEndPos))[curChrom][curRegion+1], it, end);
+
+     SDTables sdTables;
+     while (it != end) {
+       VNTR* vntr = (*procInfo->vntrs)[*it];
+       ProcVNTR (vntr->index, vntr, *(procInfo->opt), sdTables, *(procInfo->mismatchCI));
+       vntr->clearReads();
+       ++it;
+     }
   }
   cerr << "Done reading " << procInfo->thread << endl;
   pthread_exit(NULL);     /* Thread exits (dies) */      
 }
+
 
 void *ProcVNTRs (void *procInfoValue)
 {
@@ -506,7 +521,6 @@ int main (int argc, char **argv)
     if (single_seq_flag) fprintf(stderr, "single_seq_flag is set\n");
     if (readwise_anno_flag) fprintf(stderr, "readwise_anno_flag is set. \n");
     if (locuswise_prephase_flag) fprintf(stderr, "locuswise_prephase_flag is set. \n");
-    if (locuswise_flag) fprintf(stderr, "locuswise_flag is set. \n");
     
 
     /* Print any remaining command line arguments (not options). */
@@ -560,6 +574,67 @@ int main (int argc, char **argv)
     //
     if (contig_flag) {
       io.StoreAllContigs(vntrs, vntrMap);
+      int i;
+      if (opt.nproc > 1)    {
+        pthread_t *tid = new pthread_t[opt.nproc];
+	
+        mutex mtx;
+        mutex ioLock;
+        vector<ProcInfo> procInfo(opt.nproc);
+	
+        for (i = 0; i < opt.nproc; i++) { 
+	  procInfo[i].vntrs = &vntrs;
+	  procInfo[i].thread = i;
+	  procInfo[i].opt = &opt;
+	  // procInfo[i].io = &io;
+	  procInfo[i].io = new IO;
+	  procInfo[i].io->ioLock = &ioLock;
+	  procInfo[i].io->bai = io.bai;
+	  procInfo[i].io->fp_in = io.fp_in;
+	  procInfo[i].io->bamHdr = io.bamHdr;
+	  procInfo[i].io->idx = io.idx;
+	  procInfo[i].io->numProcessed = &num_processed;
+	  procInfo[i].mtx = &mtx;
+	  procInfo[i].mismatchCI = &mismatchCI;
+	  procInfo[i].out = &out;
+	  // procInfo[i].out_nullAnno = &out_nullAnno;
+
+	  if (pthread_create(&tid[i], NULL, ProcVNTRs, (void *) &procInfo[i]) )
+            {
+	      cerr << "ERROR: Cannot create thread" << endl;
+	      exit(EXIT_FAILURE);
+            }
+        }
+
+        for (i = 0; i < opt.nproc; i++)
+	  {
+            pthread_join(tid[i], NULL);
+            delete procInfo[i].io;
+	  }
+        delete[] tid;
+      
+        for (i = 1; i < opt.nproc; i++) 
+	  threads_elapsed_time += procInfo[i].elapsed_time.tv_sec + procInfo[i].elapsed_time.tv_usec/1000000.0;
+      }
+      else {
+	gettimeofday(&single_start_time, NULL);
+	
+	// read input bam/fasta
+	if (single_seq_flag)
+	  io.readSeqFromFasta(vntrs);
+	
+	int s = 0;
+	SDTables sdTables;
+	for (auto i=0; i < vntrs.size(); i++)  { 
+	  ProcVNTR (s, vntrs[i], opt, sdTables, mismatchCI);
+	    vntrs[i]->clearReads();	    
+	}
+	
+      
+          
+        gettimeofday(&single_stop_time, NULL);
+        timersub(&single_stop_time, &single_start_time, &single_elapsed_time);
+      }
     }
     else {
       //
@@ -598,6 +673,8 @@ int main (int argc, char **argv)
             procInfo[i].mtx = &mtx;
             procInfo[i].mismatchCI = &mismatchCI;
             procInfo[i].out = &out;
+	    procInfo[i].processed = &processed;
+	    procInfo[i].bucketEndPos = &bucketEndPos;	    
             // procInfo[i].out_nullAnno = &out_nullAnno;
             if (pthread_create(&tid[i], NULL, CallSNVs, (void *) &procInfo[i]) )
             {
@@ -613,87 +690,32 @@ int main (int argc, char **argv)
 	    }	  
       }
       else {
-        io.initializeBam();	
+        io.initializeBam();
+	bool readsArePhased = false;
 	for (int i=0; i < io.chromosomeNames.size(); i++ ) {
 	  Pileup pileup;
 	  if ( vntrMap.find(io.chromosomeNames[i] ) != vntrMap.end() ) {
 	    int start = vntrs[vntrMap[io.chromosomeNames[i]][0]]->ref_start;
 	    int end   = vntrs[vntrMap[io.chromosomeNames[i]][vntrMap[io.chromosomeNames[i]].size()-1]]->ref_end;
-	    io.CallSNVs(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup);
-	    io.StoreReadsOnChrom(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup, 1);
-	  }
+	    if (readsArePhased == false) {
+	      io.CallSNVs(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup, readsArePhased);
+	    }
+	    io.StoreReadsOnChrom(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup, 1, readsArePhased);
+
+	    SDTables sdTables;
+	    for (int j=0; j < vntrMap[io.chromosomeNames[i]].size(); j++) {
+	      int v=vntrMap[io.chromosomeNames[i]][j];
+	      ProcVNTR (vntrs[v]->index, vntrs[v], opt, sdTables, mismatchCI);
+	      vntrs[v]->clearReads();
+	    }	    
 	}
       }
     }
-
+    }
     
-    /* Create threads */
-    int i;
-    if (opt.nproc > 1)
-    {
-        pthread_t *tid = new pthread_t[opt.nproc];
+      /* Create threads */
 
-        mutex mtx;
-        mutex ioLock;
-        vector<ProcInfo> procInfo(opt.nproc);
-
-        for (i = 0; i < opt.nproc; i++)
-        { 
-            procInfo[i].vntrs = &vntrs;
-            procInfo[i].thread = i;
-            procInfo[i].opt = &opt;
-            // procInfo[i].io = &io;
-            procInfo[i].io = new IO;
-            procInfo[i].io->ioLock = &ioLock;
-            procInfo[i].io->bai = io.bai;
-            procInfo[i].io->fp_in = io.fp_in;
-            procInfo[i].io->bamHdr = io.bamHdr;
-            procInfo[i].io->idx = io.idx;
-            procInfo[i].io->numProcessed = &num_processed;
-            procInfo[i].mtx = &mtx;
-            procInfo[i].mismatchCI = &mismatchCI;
-            procInfo[i].out = &out;
-            // procInfo[i].out_nullAnno = &out_nullAnno;
-
-            if (pthread_create(&tid[i], NULL, ProcVNTRs, (void *) &procInfo[i]) )
-            {
-                cerr << "ERROR: Cannot create thread" << endl;
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        for (i = 0; i < opt.nproc; i++)
-        {
-            pthread_join(tid[i], NULL);
-            delete procInfo[i].io;
-        }
-        delete[] tid;
-      
-        for (i = 1; i < opt.nproc; i++) 
-            threads_elapsed_time += procInfo[i].elapsed_time.tv_sec + procInfo[i].elapsed_time.tv_usec/1000000.0;
-    }
-    else 
-    {
-        gettimeofday(&single_start_time, NULL);
-
-        // read input bam/fasta
-        if (single_seq_flag)
-            io.readSeqFromFasta(vntrs);
-
-	int s = 0;
-	SDTables sdTables;
-	for (auto i=0; i < vntrs.size(); i++)  { 
-	    ProcVNTR (s, vntrs[i], opt, sdTables, mismatchCI);
-	    vntrs[i]->clearReads();	    
-	  }
-
-      
-          
-        gettimeofday(&single_stop_time, NULL);
-        timersub(&single_stop_time, &single_start_time, &single_elapsed_time); 
-    }
-
-
+    io.clear();
         // output vcf or bed or fasta
     if (readwise_anno_flag) 
       io.writeBEDBody_readwise(out, vntrs, -1, 1);

@@ -146,11 +146,12 @@ public:
     int len_h1;                             // 
     int len_h2;                             // 
     bool readsArePhased;                    // 
-
+  int index;
 
     /// @brief Construct a new VNTR object
     VNTR()
     {
+      index = 0;
         het = false;
         nreads = 0;
         skip = false;

@@ -72,7 +72,7 @@ void OutWriter::writeHeader_locuswise(ofstream &out)
 
 void writeSingleBody_locuswise(VNTR * it, ofstream &out)
 {
-	if (it->skip) return;
+  if (it->skip) return;
 	
 	string motif_list, motif_anno_h1, motif_anno_h2, GT; 
 	for (auto &piece : it->motifs) 

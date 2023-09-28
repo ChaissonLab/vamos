@@ -123,7 +123,7 @@ int IO::readRegionAndMotifs (vector<VNTR*> &vntrs)
         ss >> chrom >> start >> end >> motifs;
         VNTR * vntr = new VNTR(chrom, start, end, end-start);
         vntrs.push_back(vntr);
-
+	vntr->index = vntrs.size()-1;
         stringstream mm(motifs);
         while(getline(mm, tmp, ',')) 
         {
@@ -181,7 +181,8 @@ void IO::StoreReadSeqAtRefCoord(bam1_t *aln, string &readSeq, string &readSeqAtR
     char *name = bam_get_qname(aln);
     readSeqAtRefCoord.resize(refEnd - refPos);
     int refOffset=0;
-    for (uint32_t k = 0; k < aln->core.n_cigar && refPos < refEnd && readPos < readLen; k++) 
+    uint32_t k;
+    for (k = 0; k < aln->core.n_cigar && refPos < refEnd && readPos < readLen; k++) 
     {
         assert(readPos < readLen);
         op = bam_cigar_op(cigar[k]);
@@ -374,14 +375,14 @@ int QueryAndSetPhase(bam1_t* aln, int &setHap) {
     {
         int si=0, nc=0;
         int hap=GetHap(auxStr.s, auxStr.l);
-	setHap=1;
+	setHap=hap;
 	return true;
     }
     ks_free(&auxStr);
     return false;
 }
 
-
+/*
 void IO::StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrMap, Pileup &pileup, int &refAlnPos, int &curVNTR) {
   //
   // Find snps that overlap with the current read.
@@ -391,9 +392,7 @@ void IO::StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrMap, Pileup &pileu
   for (auto & consIt : pileup.consensus) {    
     if (consIt.second.Calc(3)) {
       snpOffset.push_back(offset);
-      //      cerr << "added snp at " << offset + pileup.consensusStart << " " << consIt.second.a << " " << consIt.second.b << endl;
     }
-    //    cerr << "consIt.second.counts " << consIt.second.pos << " " << offset << " " << consIt.second.counts[0] << " " << consIt.second.counts[1] << " " << consIt.second.counts[2] << " " << consIt.second.counts[3] << " " << consIt.second.counts[4] << " " << consIt.second.counts[5] << endl;
     offset++;
   }
 
@@ -416,7 +415,7 @@ void IO::StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrMap, Pileup &pileu
   
   while (curVNTR < vntrMap.size() and refAlnPos > vntrs[vntrMap[curVNTR]]->ref_end) {
     VNTR* vntr=vntrs[vntrMap[curVNTR]];
-    bool readsArePhased = false;
+
     pileup.PurgeBefore(vntr->ref_start);
     // cerr << "Adding " << snpOffset.size() << " snps for locus " << curVNTR << endl;
     for (auto pread : pileup.reads) {
@@ -436,16 +435,12 @@ void IO::StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrMap, Pileup &pileu
 	read->phased = pread.phased;
 	read->haplotype = pread.hap;
 
-	if (false and read->phased == true) {
-	  readsArePhased = true;
-	}
-	else {
-	  for (auto offset : snpOffset ) {	
-    if (offset + pileup.consensusStart >= pread.refStartPos and
-		offset + pileup.consensusStart < pread.refEndPos) {
-	      SNV snv;
-	      snv.nuc = '-';
-	      Consensus &consRef=pileup.consensus[offset + pileup.consensusStart];
+	for (auto offset : snpOffset ) {	
+	  if (offset + pileup.consensusStart >= pread.refStartPos and
+	      offset + pileup.consensusStart < pread.refEndPos) {
+	    SNV snv;
+	    snv.nuc = '-';
+	    Consensus &consRef=pileup.consensus[offset + pileup.consensusStart];
 	      assert(offset + pileup.consensusStart - pread.refStartPos >= 0);
 	      if (consRef.a == pread.readSeq[offset + pileup.consensusStart - pread.refStartPos]) {
 		snv.nuc = consRef.a;
@@ -458,7 +453,6 @@ void IO::StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrMap, Pileup &pileu
 	      if (snv.nuc != '-') {
 		read->snvs.push_back(snv);
 	      }		      		    
-	    }
 	  }
 	}
       }
@@ -470,6 +464,7 @@ void IO::StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrMap, Pileup &pileu
     curVNTR++;
   }
 }
+*/
 
 void IO::StoreSeq(bam1_t *aln, string &readSeq) {
   uint8_t *read = bam_get_seq(aln);  
@@ -480,11 +475,28 @@ void IO::StoreSeq(bam1_t *aln, string &readSeq) {
   }
 }
 
+void SetVNTRBounds(vector<VNTR*> &vntrs,
+		   map<string, vector<int> > &vntrMap, string chrom, int regionStart, int regionEnd,
+		   vector<int>::iterator &startIt,
+		   vector<int>::iterator &endIt) {
+
+  vector<int> &vntrIndex=vntrMap[chrom];
+  LowerBoundSearchVNTRPos lbComp;
+  UpperBoundSearchVNTRPos ubComp;   
+  lbComp.vntrs = &vntrs;
+  ubComp.vntrs = &vntrs;  
+  startIt = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), regionStart, ubComp);
+  endIt   = std::lower_bound(vntrIndex.begin(), vntrIndex.end(), regionEnd, lbComp);
+
+}
+
+		   
+
 void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs,
 			   map<string, vector<int> > &vntrMap,
-			   Pileup &pileup, int thread) {
+			   Pileup &pileup, int thread, bool readsArePhased) {
 
-   bam1_t * aln = bam_init1(); //initialize an alignment
+   bam1_t * aln;
    hts_itr_t * itr;
 
    uint32_t isize; // observed template size
@@ -503,7 +515,7 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
    int i;
    VNTR * vntr = NULL;
    uint32_t origPhaseFlank = phaseFlank;
-   //   cerr << "Storing reads on " << chrom << " " << regionStart << " " << regionEnd << endl;
+   cerr << "Storing TR sequences on " << chrom << ":" << regionStart << "-" << regionEnd << endl;
    if (vntrMap.find(chrom) == vntrMap.end()) {
      return;
    }
@@ -516,16 +528,23 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
    int curVNTR=0;
 
    vector<int> &vntrIndex=vntrMap[chrom];
-   LowerBoundSearchVNTRPos lbComp;
-   UpperBoundSearchVNTRPos ubComp;   
-   lbComp.vntrs = &vntrs;
-   ubComp.vntrs = &vntrs;
+
+
    int nRead=0;
    CompPosWithSNV posSnvComp;
-   bool readsArePhased=false;
+
    while (alignBuff.GetNext(aln) > 0) {
      string readSeq, readToRef;
      vector<int> readMap;
+     if ((aln->core.flag & 256) or (aln->core.flag & 2048) ) {
+       bam_destroy1(aln);
+       continue;
+     }
+     if (aln->core.qual < minMapQV) {
+       bam_destroy1(aln);
+       continue;
+     }
+     
      StoreSeq(aln, readSeq);     
      StoreReadSeqAtRefCoord(aln, readSeq, readToRef, readMap);
      PiledRead read(aln->core.pos, readToRef);
@@ -536,7 +555,7 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
      int refAlnStart = aln->core.pos;
      int refAlnEnd = bam_endpos(aln);
      vector<SNV> snvs;
-     if (readIsPhased == false ) {
+     if (readsArePhased == false ) {
        auto snvIt = lower_bound(pileup.hetSNVs.begin(), pileup.hetSNVs.end(), HetSNV(refAlnStart), posSnvComp);
        auto snvEnd = upper_bound(pileup.hetSNVs.begin(), pileup.hetSNVs.end(), HetSNV(refAlnEnd), posSnvComp);
 
@@ -551,13 +570,12 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
 	 }
        }
      }
-     else {
-       readsArePhased = true;
-     }
      //
      // For each vntr that overlaps this read, add the read to the VNTR.
      //
-     vector<int>::iterator it = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), refAlnStart, ubComp);
+     vector<int>::iterator it, endIt;
+     SetVNTRBounds(vntrs, vntrMap, chrom, refAlnStart, refAlnEnd, it, endIt);
+     
      while(it != vntrIndex.end() and vntrs[*it]->ref_end <= refAlnEnd) {
        //
        // Need to skip this vntr since it is outside the region.
@@ -571,16 +589,12 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
        vntrSeq = readSeq.substr(readStart, readEnd-readStart);
 
        READ *read = new READ;
-       read->qname = bam_get_qname(aln);//refName; //new char[refName.size()+1];
-       //       memcpy(read->qname, refName.c_str(), refName.size());
-       //       read->qname[refName.size()]='\0';
+       read->qname = bam_get_qname(aln);
        read->l_qname = read->qname.size();
-       read->seq = vntrSeq; //new char[vntrSeq.size()+1];
-       //       memcpy(read->seq, vntrSeq.c_str(), vntrSeq.size());
-       //       read->seq[vntrSeq.size()] = '\0';
+       read->seq = vntrSeq;
        read->len = vntrSeq.size();
        read->flag = aln->core.flag;
-       //       cerr << "STORE VNTR " << vntrs[*it]->region << "\t" << read->qname << "\t" << thread << endl;       
+
        //
        // Copy over all snvs
        //
@@ -592,11 +606,13 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
        ++it;
      } // End looping over vntr loci
      bam_destroy1(aln);
-     aln=bam_init1();     
    } // End looping over reads.
+   bam_itr_destroy(itr);   
    if ( readsArePhased == false) {
-     vector<int>::iterator it = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), regionStart, ubComp);
-     vector<int>::iterator end = std::lower_bound(vntrIndex.begin(), vntrIndex.end(), regionEnd, lbComp);
+     cerr << "Phasing reads in " << chrom << ":" << regionStart << "-" << regionEnd << endl;
+     vector<int>::iterator it,end;
+     SetVNTRBounds(vntrs, vntrMap, chrom, regionStart, regionEnd, it, end);
+     
      int nProc=0;
      int total=end-it;
      int itPos = *it;
@@ -617,14 +633,13 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
        ++it;
        ++nProc;
      }
-   }
-   bam_destroy1(aln);   
+   }   
 }
-void IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> &vntrs,
+int IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> &vntrs,
 		  map<string, vector<int> > &vntrMap,
-		  Pileup &pileup) {
-   cerr << "Calling SNVS " << chrom << ":" << regionStart << "-" << regionEnd << endl;
-   bam1_t * aln = bam_init1(); //initialize an alignment
+		 Pileup &pileup, bool & readsArePhased) {
+   cerr << "Calling SNVs " << chrom << ":" << regionStart << "-" << regionEnd << endl;
+   bam1_t * aln;
    hts_itr_t * itr;
 
    uint32_t isize; // observed template size
@@ -646,7 +661,7 @@ void IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> 
 
    if (vntrMap.find(chrom) == vntrMap.end()) {
      cerr << "Skipping "<< chrom << endl;
-     return;
+     return 0;
    }
    // For now process all reads on chrom
 
@@ -664,18 +679,18 @@ void IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> 
      }
      
      ++nRead;
-     if (nRead % 10000 == 0) {
-       cerr << "thread " << thread << " consensus size " << pileup.consensus.size() << " Read stack: " << pileup.reads.size() << " " << curChromosome << ":" << pileup.reads.front().refStartPos << " " << nRead << " reads." << endl;
-     }
      int refStartPos = aln->core.pos;
      int refAlnEnd = bam_endpos(aln);
      // If not overlapping anything, continue reading.
      if ((aln->core.flag & 256) or (aln->core.flag & 2048) ) {
        bam_destroy1(aln);
-       aln=bam_init1();
+       //       aln=bam_init1();
        continue;
      }
-
+     if (aln->core.qual < minMapQV) {
+       bam_destroy1(aln);
+       continue;
+     }
      //
      // Add a read to the pileup. This increments all counts of snps
      //
@@ -686,9 +701,16 @@ void IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> 
      PiledRead read(aln->core.pos, readToRef);
      read.flag = aln->core.flag;
      int hap;
-     bool readIsPhased = QueryAndSetPhase(aln, hap);     
+     bool readIsPhased = QueryAndSetPhase(aln, hap);
      read.phased = readIsPhased;
      read.hap = hap;
+     if (readIsPhased) {
+       readsArePhased= true;
+       alignBuff.Free();
+       cerr << "Reads are phased. Skipping SNV calling." << endl;
+       return -1;
+     }
+     
      read.readName = bam_get_qname(aln);
      pileup.AddRead(read);
      while(pileup.endPosPQueue.top().pos <= refStartPos) {
@@ -707,11 +729,14 @@ void IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> 
        finishedCons++;
      }
      int before=pileup.consensus.size();
-     
-     pileup.ProcessUntil(finishedCons);
+     if (readIsPhased == false) {
+       pileup.ProcessUntil(finishedCons);
+     }
      bam_destroy1(aln);
    }
+   bam_itr_destroy(itr);
    pileup.ProcessUntil(pileup.consensusEnd);
+   return 1;
 }
 
 /*

@@ -15,7 +15,7 @@ public:
     int cons_n;                             // number of all consensus sequences
     uint8_t ** msa_seq;                     // 
     int msa_l;                              // 
-    int n_seqs;                             // total number of read sequences
+    int n_seqs, n_empty_seqs;                             // total number of read sequences, total number of deletion sequences.
     int * seq_lens;                         // read sequences length
     uint8_t ** bseqs;                       // read sequences in integer 0-4 (AaCcGgTtNn ==> 0,1,2,3,4)
     abpoa_t * ab;                           // struct for abpoa parameters
@@ -51,10 +51,13 @@ public:
         msa_seq = NULL;
         msa_l = 0;
         n_seqs = 0;
+	n_empty_seqs = 0;
         // initialize variables
     };
 
-
+  ~MSA() {
+    cleanMSA();
+  }
     /**
      * @brief Construct a new MSA object for msa of anno sequences - initialize all anno seqs as vector of motif indices
      * @param annos annotations (by motif index vector) of all reads for this VNTR
@@ -112,25 +115,50 @@ public:
         msa_l = 0;
         ab = abpoa_init();
         abpt = abpoa_init_para();
-
-        n_seqs = gp.size();
-        seq_lens = new int[n_seqs+1]; // n_seqs+1, one extra read as padding?
-        bseqs = new uint8_t*[n_seqs];
+	n_seqs = 0;
+	n_empty_seqs = 0;
+	int numNonZero = 0;
+	for (int i = 0; i < gp.size(); i++) {
+	  if (reads[gp[i]]->seq.size() > 0) {
+	    n_seqs++;
+	  }
+	  else {
+	    n_empty_seqs++;
+	  }
+	}
+	
+	if (n_seqs > 0) {
+	    seq_lens = new int[n_seqs+1]; // n_seqs+1, one extra read as padding?
+	    bseqs = new uint8_t*[n_seqs];
+	}
+	else {
+	  return;
+	}
         int i, j;
         seq_lens[n_seqs] = 0; // n_seqs+1, one extra read as padding?
-
-        for (i = 0; i < n_seqs; ++i)
+	int cur=0;
+        for (i = 0; i < gp.size(); ++i)
         {
             assert(gp[i] < reads.size());
-            seq_lens[i] = reads[gp[i]]->len;
-            bseqs[i] = new uint8_t[seq_lens[i] + 1];
-            memcpy(bseqs[i], reads[gp[i]]->seq.c_str(), seq_lens[i]);
+	    if (reads[gp[i]]->seq.size() > 0) {
+	      seq_lens[cur] = reads[gp[i]]->seq.size();
+	      bseqs[cur] = new uint8_t[seq_lens[cur] + 1];
+	      memcpy(bseqs[cur], reads[gp[i]]->seq.c_str(), seq_lens[cur]);
+	      
+	      for (auto j=0; j < seq_lens[cur]; j++)
+		{
+		  bseqs[cur][j] = ab_nt4_table[bseqs[cur][j]];
+		}
+	      bseqs[cur][seq_lens[cur]] = '\0'; // last position of each read as '\0' (NULL character)
+	      cur++;	      
+	    }
 
-            for (auto j=0; j < seq_lens[i]; j++)
-            {
-                bseqs[i][j] = ab_nt4_table[bseqs[i][j]];
-            }
-            bseqs[i][seq_lens[i]] = '\0'; // last position of each read as '\0' (NULL character)
+	    /*
+	    else {
+	      seq_lens[i] = 0;
+	      bseqs[i] = new uint8_t[1];
+	      bseqs[i][0] = '\0';
+	      }*/
         }
     };
 

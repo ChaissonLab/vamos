@@ -64,9 +64,8 @@ void MSA::runConsensus()
     abpt->use_read_ids = 0;
 
     abpoa_post_set_para(abpt);
-
-    // abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, &cons_seq, &cons_cov, &cons_l, &cons_n, &msa_seq, &msa_l);
     abpoa_msa(ab, abpt, n_seqs, NULL, seq_lens, bseqs, NULL, NULL);
+    
     cons_seq = ab->abc->cons_base;
     cons_cov = ab->abc->cons_cov;
     cons_l   = ab->abc->cons_len;
@@ -119,13 +118,8 @@ void MSA::MSA_anno_group(int motifs_size, const vector<vector<uint8_t> > &annos,
     }
     
     // encodeSeqsFromAnno(gp, annos, n_seqs, motifs_size);
-    ab = abpoa_init();
-    abpt = abpoa_init_para();
-    
     runConsensus ();
     extractConsensusAnno (consensus, motifs_size);
-    cleanMSA();
-
     return;
 }
 
@@ -133,21 +127,23 @@ void MSA::MSA_anno_group(int motifs_size, const vector<vector<uint8_t> > &annos,
 void MSA::MSA_seq_group(const vector<int> &gp, const vector<READ *> &reads, READ * Hap_seq)
 {
     if (gp.empty()) return;
-    ab = abpoa_init();
-    abpt = abpoa_init_para();
 
     if (n_seqs == 1)
     {
         Hap_seq->seq = reads[gp[0]]->seq;
-        Hap_seq->len = reads[gp[0]]->len;
+        Hap_seq->len = reads[gp[0]]->len;	
         return;
     }
 
     // encodeSeqsFromRaw(gp, reads);
-    runConsensus ();
-    extractConsensusRawSeq (Hap_seq);
-    cleanMSA();
-
+    if (n_seqs > 0) {
+      runConsensus ();
+      extractConsensusRawSeq (Hap_seq);
+    }
+    else if (n_empty_seqs  > 0) {
+      Hap_seq->seq = "";
+      Hap_seq->len = 0;
+    }
     return;
 }
 
@@ -155,12 +151,21 @@ void MSA::MSA_seq_group(const vector<int> &gp, const vector<READ *> &reads, READ
 void MSA::cleanMSA()
 {
     int i;
-    for(i = 0; i < n_seqs; ++i) delete [] bseqs[i];
-    delete [] bseqs;
-    delete [] seq_lens;
-
-    abpoa_free(ab); 
-    abpoa_free_para(abpt); 
+    if (n_seqs > 0 and bseqs != NULL) {
+      for(i = 0; i < n_seqs; ++i) delete[] bseqs[i];    
+      delete [] bseqs;
+      delete [] seq_lens;
+    }
+    bseqs = NULL;
+    seq_lens = NULL;
+    if (ab) {
+      abpoa_free(ab);
+      ab=NULL;
+    }
+    if (abpt) {
+      abpoa_free_para(abpt);
+      abpt=NULL;
+    }
 
     return;
 }
