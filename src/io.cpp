@@ -121,6 +121,10 @@ int IO::readRegionAndMotifs (vector<VNTR*> &vntrs)
         int start;
         int end;
         ss >> chrom >> start >> end >> motifs;
+	if (end - start > maxLength) {
+	  cerr << "WARNING, locus " << chrom << ":" << start << "-" << end << " has length greater than " << maxLength << " and will be ignored." << endl;
+	  continue;
+	}
         VNTR * vntr = new VNTR(chrom, start, end, end-start);
         vntrs.push_back(vntr);
 	vntr->index = vntrs.size()-1;
@@ -150,8 +154,13 @@ void IO::readVNTRFromBed (vector<VNTR*> &vntrs)
         start = stoi(it[1]);
         end = stoi(it[2]);
         len = start < end ? end - start : 0;
-        VNTR * vntr = new VNTR(it[0], start, end, len);
-        vntrs.push_back(vntr);
+	if (len < maxLength) {
+	  VNTR * vntr = new VNTR(it[0], start, end, len);
+	  vntrs.push_back(vntr);
+	}
+	else {
+	  cerr << "WARNING, locus " << it[0] << ":" << it[1] << "-" << it[2] << " has length greater than " << maxLength << " and will be ignored." << endl;
+	}
     }
     return;
 }

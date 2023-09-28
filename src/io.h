@@ -344,7 +344,8 @@ public:
     int minMapQV;
     string curChromosome;
     vector<string> chromosomeNames;
-    vector<int> chromosomeLengths;  
+    vector<int> chromosomeLengths;
+  int maxLength;
     std::map<string, vector<int> > *vntrMap;
 
     // Not the best place to put this, but since the IO is batched and we
@@ -355,7 +356,7 @@ public:
     int phaseFlank;
     IO() 
     {
-      version = "1.3.1";
+      version = "1.3.2";
         region_and_motifs = "";
         input_bam = "";
         vntr_bed = "";
@@ -367,6 +368,7 @@ public:
 	thread = 0;
 	curChromosome="";
 	minMapQV=3;
+	maxLength=10000;
     };
 
   void clear() {

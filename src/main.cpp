@@ -293,6 +293,7 @@ void printUsage(IO &io)
     printf("   Downloading motifs:\n");
     PrintDownloadMotifs();
     printf("   Others: \n");
+    printf("       -L   INT          Maximum length locus to compute annotation for (10000)\n");
     printf("       -t   INT          Number of threads, DEFAULT: 1. \n");
     printf("       --debug           Print out debug information. \n");
     printf("       -h                Print out help message. \n");
@@ -337,6 +338,7 @@ int main (int argc, char **argv)
         {"numThreads",      required_argument,       0, 't'},
         {"filterNoisy",     required_argument,       0, 'f'},
         {"penlaty_indel",   required_argument,       0, 'd'},
+        {"max_length",      required_argument,       0, 'L'},	
         {"penlaty_mismatch",required_argument,       0, 'c'},
         {"accuracy"        ,required_argument,       0, 'a'},
         {"phase_flank"     ,required_argument,       0, 'p'},
@@ -348,7 +350,7 @@ int main (int argc, char **argv)
     };
     /* getopt_long stores the option index here. */
     int option_index = 0;
-    while ((c = getopt_long (argc, argv, "Sb:r:a:o:s:t:f:d:c:x:v:m:p:h", long_options, &option_index)) != -1)
+    while ((c = getopt_long (argc, argv, "Sb:r:a:o:s:t:f:d:c:x:v:m:p:h:L", long_options, &option_index)) != -1)
     {
         switch (c)
         {
@@ -359,6 +361,10 @@ int main (int argc, char **argv)
                 fprintf (stderr, "option %s", long_options[option_index].name);
                 if (optarg) fprintf (stderr, " with arg %s", optarg);
                 break;
+            case 'L':
+	      fprintf(stderr, "option --max_length '\n", optarg);
+	      io.maxLength=atoi(optarg);
+	      break;
             case 'S':
 	        fprintf (stderr, "option --output_seq '\n", optarg);
 	        output_read_seq_flag = true;
