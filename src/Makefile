@@ -48,7 +48,7 @@ ifneq ($(ZLIB_ROOT), "")
 endif
 
 $(ABPOA_DIR)/lib/libabpoa.a:
-	cd $(ABPOA_DIR) && make sse2=TRUE PREFIX=. CC=$(CXX) $(ZLPATH) lib/libabpoa.a
+	cd $(ABPOA_DIR) && make sse2=TRUE PREFIX=. CC="$(CXX)" $(ZLPATH) lib/libabpoa.a
 
 testmsa: TestMSA.cpp
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -I $(ABPOA_DIR)/include -L $(ABPOA_DIR)/lib -labpoa -lrt -L$(mchaisso)/software/lib
