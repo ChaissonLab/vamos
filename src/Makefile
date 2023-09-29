@@ -9,6 +9,7 @@ endif
 
 CXX ?= g++ -std=c++11
 
+
 CCFLAGS = -Wall -O3 -Wno-unused-function -Wno-misleading-indentation
 
 DEBUG ?= "-g2 -std=c++11 "
@@ -47,13 +48,14 @@ ifneq ($(ZLIB_ROOT), "")
 endif
 
 $(ABPOA_DIR)/lib/libabpoa.a:
-	cd $(ABPOA_DIR) && make sse2=TRUE PREFIX=. CC=gcc $(ZLPATH) lib/libabpoa.a
+	cd $(ABPOA_DIR) && make sse2=TRUE PREFIX=. CC=$(CXX) $(ZLPATH) lib/libabpoa.a
 
 testmsa: TestMSA.cpp
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -I $(ABPOA_DIR)/include -L $(ABPOA_DIR)/lib -labpoa -lrt -L$(mchaisso)/software/lib
 
-vamos: main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o $(ABPOA_DIR)/lib/libabpoa.a
-	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -lrt -L$(mchaisso)/software/lib
+OBJS=main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o
+vamos:  $(OBJS) $(ABPOA_DIR)/lib/libabpoa.a
+	$(CXX) $(CFLAGS) -o $@ $(OBJS) -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -lrt
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include
