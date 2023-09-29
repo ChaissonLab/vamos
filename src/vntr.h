@@ -11,6 +11,7 @@
 #include <cassert>
 #include <algorithm>
 #include <map>
+#include <stdint.h>
 #include "read.h"
 #include "option.h"
 
