@@ -461,7 +461,7 @@ int main (int argc, char **argv)
         }        
     }
     if ( argc == 1) {
-      printUsage();
+      printUsage(io);
       exit(0);
     }
     if (read_flag) {
