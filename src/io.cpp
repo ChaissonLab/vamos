@@ -391,89 +391,6 @@ int QueryAndSetPhase(bam1_t* aln, int &setHap) {
     return false;
 }
 
-/*
-void IO::StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrMap, Pileup &pileup, int &refAlnPos, int &curVNTR) {
-  //
-  // Find snps that overlap with the current read.
-  //
-  int offset=0;
-  vector<int> snpOffset;
-  for (auto & consIt : pileup.consensus) {    
-    if (consIt.second.Calc(3)) {
-      snpOffset.push_back(offset);
-    }
-    offset++;
-  }
-
-  vector<bool> cluster(snpOffset.size());
-  for (int i =0; i + 1 < snpOffset.size(); i++ ) {
-    if (snpOffset[i+1] - snpOffset[i] < 20) {
-      cluster[i] = true;
-      cluster[i+1] = true;
-    }
-  }
-  int c,i;
-  for (c=0,i=0; i < snpOffset.size(); i++ ) {
-    if (cluster[i] == false) {
-      snpOffset[c] = snpOffset[i];
-      c++;
-    }
-  }
-  snpOffset.resize(c);
-
-  
-  while (curVNTR < vntrMap.size() and refAlnPos > vntrs[vntrMap[curVNTR]]->ref_end) {
-    VNTR* vntr=vntrs[vntrMap[curVNTR]];
-
-    pileup.PurgeBefore(vntr->ref_start);
-    // cerr << "Adding " << snpOffset.size() << " snps for locus " << curVNTR << endl;
-    for (auto pread : pileup.reads) {
-
-      //
-      // Add this read to the vntr locus
-      //
-      string readLocusSeq;
-      if (pread.GetSubstr(vntr->ref_start, vntr->ref_end, readLocusSeq)) {
-	READ *read = new READ;
-	read->seq = readLocusSeq; // new char[readLocusSeq.size() + 1];
-	//	memcpy(read->seq, readLocusSeq.c_str(), readLocusSeq.size());
-	//	read->seq[readLocusSeq.size()] = '\0';
-	read->len =readLocusSeq.size();
-	read->flag = pread.flag;
-	vntr->reads.push_back(read);
-	read->phased = pread.phased;
-	read->haplotype = pread.hap;
-
-	for (auto offset : snpOffset ) {	
-	  if (offset + pileup.consensusStart >= pread.refStartPos and
-	      offset + pileup.consensusStart < pread.refEndPos) {
-	    SNV snv;
-	    snv.nuc = '-';
-	    Consensus &consRef=pileup.consensus[offset + pileup.consensusStart];
-	      assert(offset + pileup.consensusStart - pread.refStartPos >= 0);
-	      if (consRef.a == pread.readSeq[offset + pileup.consensusStart - pread.refStartPos]) {
-		snv.nuc = consRef.a;
-		snv.pos = offset + pileup.consensusStart - pread.refStartPos;
-	      }
-	      if (consRef.a == pread.readSeq[offset + pileup.consensusStart - pread.refStartPos]) {
-		snv.nuc = consRef.b;
-		snv.pos = offset + pileup.consensusStart - pread.refStartPos;
-	      }
-	      if (snv.nuc != '-') {
-		read->snvs.push_back(snv);
-	      }		      		    
-	  }
-	}
-      }
-    }
-
-    if (readsArePhased == false ) {
-      MaxCutPhase(vntr);          
-    }
-    curVNTR++;
-  }
-}
-*/
 
 void IO::StoreSeq(bam1_t *aln, string &readSeq) {
   uint8_t *read = bam_get_seq(aln);  
@@ -493,9 +410,10 @@ void SetVNTRBounds(vector<VNTR*> &vntrs,
   LowerBoundSearchVNTRPos lbComp;
   UpperBoundSearchVNTRPos ubComp;   
   lbComp.vntrs = &vntrs;
-  ubComp.vntrs = &vntrs;  
-  startIt = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), regionStart, ubComp);
-  endIt   = std::lower_bound(vntrIndex.begin(), vntrIndex.end(), regionEnd, lbComp);
+  ubComp.vntrs = &vntrs;
+  startIt = std::lower_bound(vntrIndex.begin(), vntrIndex.end(), regionStart, lbComp);
+  endIt   = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), regionEnd, ubComp);
+  cerr << "Set VNTR Bounds for " << regionStart << "-" << regionEnd << " " << *startIt << " " << *endIt << endl;
 
 }
 
@@ -585,13 +503,25 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
      vector<int>::iterator it, endIt;
      SetVNTRBounds(vntrs, vntrMap, chrom, refAlnStart, refAlnEnd, it, endIt);
      
-     while(it != vntrIndex.end() and vntrs[*it]->ref_end <= refAlnEnd) {
+     while ( it != vntrIndex.end() and vntrs[*it]->ref_end <= refAlnEnd ) {
        //
-       // Need to skip this vntr since it is outside the region.
+       // Need to skip this vntr since it is outside the region. Here the loop exits because
+       // all additional VNTRs will not overlap this read.
        //
        if (vntrs[*it]->ref_end < regionStart or vntrs[*it]->ref_start > regionEnd ) {
 	 break;
        }
+
+       //
+       // Handle the corner case where a read starts at the same position as the tandem repeat.
+       // Since this is not informative for the full length of the TR, do not process it.
+       //
+       if (vntrs[*it]->ref_start == refAlnStart) {
+	 ++it;
+	 continue;
+       }
+
+       
        int readStart = MappedStartPosInRead(readMap, refAlnStart, vntrs[*it]->ref_start-1);
        int readEnd   = MappedEndPosInRead(readMap, refAlnStart, vntrs[*it]->ref_end-1);
        string vntrSeq;

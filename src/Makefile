@@ -3,10 +3,10 @@ PROG = vamos
 LIBS       = -lhts -lz -lpthread
 #ABPOA_LIBS = -lm -lz -lpthread
 
-ifeq ($(CC),"cc")
-	CC=gcc
+ifeq ($(CC),cc)
+    CC = gcc
 endif
-
+CC ?= gcc
 CXX ?= g++ -std=c++11
 
 
@@ -18,7 +18,7 @@ asan  ?= ""
 tsan  ?= ""
 
 ifeq ("$(DEBUG)", "TRUE")
-	  CFLAGS = -g3 -std=c++14 #-fsanitize=address  -static-libasan -gdwarf-4  #-Wall -Wextra
+	  CFLAGS = -g -std=c++14 #-fsanitize=address  -static-libasan -gdwarf-4  #-Wall -Wextra
 else
   CFLAGS = -O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
 endif
@@ -48,7 +48,9 @@ ifneq ($(ZLIB_ROOT), "")
 endif
 
 $(ABPOA_DIR)/lib/libabpoa.a:
-	cd $(ABPOA_DIR) && make sse2=TRUE PREFIX=. CC="$(CC)" $(ZLPATH) lib/libabpoa.a
+	echo $(CC)
+	echo "^^CC"
+	cd $(ABPOA_DIR) && make sse2=true PREFIX=. CC="$(CC)" $(ZLPATH) lib/libabpoa.a
 
 testmsa: TestMSA.cpp
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -I $(ABPOA_DIR)/include -L $(ABPOA_DIR)/lib -labpoa -lrt -L$(mchaisso)/software/lib

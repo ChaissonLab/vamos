@@ -213,10 +213,11 @@ void *CallSNVs (void *procInfoValue) {
 				      *(procInfo->vntrMap),
 				      pileup, procInfo->thread, readsArePhased);
      vector<int>::iterator it,end;
+     int regionStart = (*(procInfo->bucketEndPos))[curChrom][curRegion];
+     int regionEnd   = (*(procInfo->bucketEndPos))[curChrom][curRegion+1];
      SetVNTRBounds(*(procInfo->vntrs),
 		   (*(procInfo->vntrMap)), curChrom,
-		   (*(procInfo->bucketEndPos))[curChrom][curRegion],		   
-		   (*(procInfo->bucketEndPos))[curChrom][curRegion+1], it, end);
+		   regionStart, regionEnd, it, end);
 
      SDTables sdTables;
      while (it != end) {
