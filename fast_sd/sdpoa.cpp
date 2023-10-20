@@ -223,7 +223,7 @@ public:
 	int maxPrevNode=-1;
 	for (int ini=0; ini < in.size(); ini++ ) {
 	  int p=in[ini];
-	  int inLeft = nodes[p].score[i+1][nodes[p].last];
+	  int inLeft = nodes[p].score[i+1][nodes[p].last];	  
 	  if (inLeft > maxPrev) {
 	    inLeft = maxPrev;
 	    path[i+1][1] = SetArrow(leftArr, ini);
@@ -267,18 +267,23 @@ public:
 	  score[i+1][j+1] = maxWrapScore;
 	}
 	else {*/
-	
-	  if (matScore >= leftScore and matScore >= upScore) {
-	    path[i+1][j+1]  = diagArr;
-	    score[i+1][j+1] = matScore;
-	  }
-	  else if (leftScore >= matScore and leftScore >= upScore ) {
-	    path[i+1][j+1] = leftArr;
-	    score[i+1][j+1] = leftScore;
+	  if (maxWrapScore > maxRecScore and starting[j] == '1' ) {
+	    path[i+1][j+1] = SetArrow(wrapArr, maxWrapNode);
+	    score[i+1][j+1] = maxWrapScore;
 	  }
 	  else {
-	    path[i+1][j+1] = upArr;
-	    score[i+1][j+1] = upScore;
+	    if (matScore >= leftScore and matScore >= upScore) {
+	      path[i+1][j+1]  = diagArr;
+	      score[i+1][j+1] = matScore;
+	    }
+	    else if (leftScore >= matScore and leftScore >= upScore ) {
+	      path[i+1][j+1] = leftArr;
+	      score[i+1][j+1] = leftScore;
+	    }
+	    else {
+	      path[i+1][j+1] = upArr;
+	      score[i+1][j+1] = upScore;
+	    }
 	  }
 	}
       //      }
@@ -286,7 +291,9 @@ public:
   }
   
   void Align(string &query, vector<Node> &nodes, int row=-1) {
-    // rows are seq, cols are query
+    // rows are from the graph, cols are query.
+    // An entire alignment to the graph is computed successively for each
+    // position in the query.
 
     //
     // If there are no in-edges, initialize a boundary gap column.
@@ -336,7 +343,7 @@ public:
 	}
 	else {
 	  path[0][i+1] = leftArr;
-	score[0][i+1] = score[0][i] + gap;
+	  score[0][i+1] = score[0][i] + gap;
 	}
       }
 #ifdef DEBUG
@@ -731,14 +738,20 @@ int RunAlign(vector<Node> &nodes, string &read, vector<int> &order) {
     nodes[n].Alloc(read);
   }
   for (int j=0; j < read.size(); j++ ) {
+    //
+    // Run alignment in standard dynamic programming
+    //
     for (int i = 0; i < order.size(); i++ ) {
       nodes[order[i]].Align(read, nodes, j);
     }
     int maxNode, maxPos, maxScore;
 #ifdef DEBUG
     cerr << "iter " << j << endl;
-#endif    
-    
+#endif
+    //
+    // Rerun alignment for this row after copying over
+    // maximum scoring end pos.
+    //
     maxScore = FindMax(nodes, maxNode, maxPos, j+1);
     for (int i = 0; i < order.size(); i++ ) {
       nodes[order[i]].RealignRow(read, nodes, j, maxScore, maxNode);
@@ -801,6 +814,12 @@ int main(int argc, char* argv[]) {
   ReadGraph(gfa_file, headerLine, nodes, links, paths);
   SetTerminal(nodes, paths);
   MergeSimplePaths(nodes, links);
+  /*
+  for (int i=0; i < nodes.size(); i++) {
+    cerr << "node: " << i << endl;
+    cerr << nodes[i].seq << endl;
+  }
+  */
   if (argc == 4) {
     ofstream gfaOut(argv[3]);
     PrintGraph(gfaOut, headerLine, nodes, links, paths);
