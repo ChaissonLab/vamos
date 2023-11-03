@@ -376,19 +376,22 @@ int GetHap(char *s, int l) {
 }
 
 int QueryAndSetPhase(bam1_t* aln, int &setHap) {
-    kstring_t auxStr = KS_INITIALIZE;  
-    int auxStat =  bam_aux_get_str(aln, "HP", &auxStr);
-    setHap=-1;    
-    bool isPhased = false;
-    if (auxStat ) 
-    {
-        int si=0, nc=0;
-        int hap=GetHap(auxStr.s, auxStr.l);
+  //    kstring_t auxStr = { 0, 0, NULL };
+  char *auxStr;
+    uint8_t* auxRes= bam_aux_get(aln, "HP");
+    bool foundAux=false;
+    if (auxRes != NULL) {
+      int hap = bam_aux2i(auxRes);
+      setHap=-1;    
+      bool isPhased = false;
+      int si=0, nc=0;
+      if (errno == 0) {
 	setHap=hap;
-	return true;
+	foundAux = true;	
+      }
     }
-    ks_free(&auxStr);
-    return false;
+    //    free(auxRes);
+    return foundAux;
 }
 
 

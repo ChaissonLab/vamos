@@ -377,7 +377,7 @@ public:
 	//
 	// The structure was read using sam_hdr_read, so destroy it with this.
 	//
-	sam_hdr_destroy(bamHdr);
+	bam_hdr_destroy(bamHdr);
       }
       if (idx != NULL) {
 	hts_idx_destroy(idx);
