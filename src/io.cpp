@@ -412,7 +412,7 @@ void SetVNTRBounds(vector<VNTR*> &vntrs,
   lbComp.vntrs = &vntrs;
   ubComp.vntrs = &vntrs;
   startIt = std::lower_bound(vntrIndex.begin(), vntrIndex.end(), regionStart, lbComp);
-  endIt   = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), regionEnd, ubComp);
+  endIt   = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), regionEnd-1, ubComp);
 }
 
 		   

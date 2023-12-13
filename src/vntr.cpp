@@ -45,8 +45,9 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 {
     if (skip) return;
     if (reads.size() == 0) return;
-
     het = false;
+    assert(h1_reads.size() == 0);
+    assert(h2_reads.size() == 0);
     for (int i = 0; i < reads.size(); ++i) 
     {
       if (reads[i]->haplotype != 0) het = true;

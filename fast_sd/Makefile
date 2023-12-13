@@ -1,4 +1,4 @@
 all: sdpoa
 
 sdpoa: sdpoa.cpp
-	g++ sdpoa.cpp -o sdpoa  $(DEBUG)
+	g++ -g sdpoa.cpp -o sdpoa  $(DEBUG)

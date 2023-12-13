@@ -142,7 +142,7 @@ int GetPrev(int p, int &arrow, int &index) {
   return p;
 }
 
-int SetArrow(int arrow, int index ) {
+int SetTransitionArrow(int arrow, int index ) {
   int p;
   if (arrow == leftArr) {
     p = 6+(index*3);
@@ -207,13 +207,19 @@ public:
 
   void RealignRow(string &query, vector<Node> &nodes, int row, int maxWrapScore, int maxWrapNode) {
     int i=row;
+
+    //
+    // This function assume that query up to position 'row' has been aligned
+    // to the entire POA, and that maxWrapScore reflects the score to the maximum
+    // ending position.  
+    
     //
     // Handle first cell in the table, which may either be a restart or transition.
     //
     if (in.size() == 0) {
       if (score[i+1][0] < maxWrapScore) {
 	score[i+1][0] = maxWrapScore;
-	path[i+1][0]  = SetArrow(wrapArr, maxWrapNode);
+	path[i+1][0]  = SetTransitionArrow(wrapArr, maxWrapNode);
       }
     }
 
@@ -226,7 +232,7 @@ public:
 	  int inLeft = nodes[p].score[i+1][nodes[p].last];	  
 	  if (inLeft > maxPrev) {
 	    inLeft = maxPrev;
-	    path[i+1][1] = SetArrow(leftArr, ini);
+	    path[i+1][1] = SetTransitionArrow(leftArr, ini);
 	  }
 	  int inDiag;
 	  if (query[i] == seq[0]) {
@@ -236,7 +242,7 @@ public:
 	    inDiag = nodes[p].score[i][nodes[p].last] + misMatch;
 	  }
 	  if (inDiag >= maxPrev) {
-	    path[i+1][1] = SetArrow(diagArr, ini);
+	    path[i+1][1] = SetTransitionArrow(diagArr, ini);
 	    maxPrev = inDiag;
 	  }
 	  score[i+1][1] = maxPrev;
@@ -244,7 +250,7 @@ public:
 	  // Now check to see if this instead should start from a wraparound score
 	  //
 	  if (starting[0] == '1' and score[i+1][1] < maxWrapScore ) {
-	    path[i+1][1] = SetArrow(wrapArr, maxWrapNode);
+	    path[i+1][1] = SetTransitionArrow(wrapArr, maxWrapNode);
 	    score[i+1][1] = maxWrapScore;
 	  }	    
 	}
@@ -263,12 +269,12 @@ public:
 	int maxRecScore = max(max(matScore, leftScore), upScore);
 
 	/*	if (maxRecScore < maxWrapScore) {
-	  path[i+1][j+1] = SetArrow(wrapArr, maxWrapNode);
+	  path[i+1][j+1] = SetTransitionArrow(wrapArr, maxWrapNode);
 	  score[i+1][j+1] = maxWrapScore;
 	}
 	else {*/
 	  if (maxWrapScore > maxRecScore and starting[j] == '1' ) {
-	    path[i+1][j+1] = SetArrow(wrapArr, maxWrapNode);
+	    path[i+1][j+1] = SetTransitionArrow(wrapArr, maxWrapNode);
 	    score[i+1][j+1] = maxWrapScore;
 	  }
 	  else {
@@ -323,10 +329,17 @@ public:
 	    maxLeftI = ini;
 	  }
 	}
-	path[0][1] = SetArrow(leftArr, maxLeftI);
+	//
+	// Point left arrow to the node with the maximum transition
+	// score.
+	path[0][1] = SetTransitionArrow(leftArr, maxLeftI);
 	score[0][1] = maxLeft;
       }
       else {
+	//
+	// Node that does not have in-edges, so only transitions within
+	// the same sequence are allowed.
+	//
 	path[0][1] = leftArr;
 	score[0][1] = score[0][0] + gap;
       }
@@ -399,11 +412,11 @@ public:
 	      inDiag = nodes[p].score[i][nodes[p].last] + misMatch;
 	    }
 	    if (inLeft >= maxScore) {
-	      path[i+1][1] = SetArrow(leftArr, ini);
+	      path[i+1][1] = SetTransitionArrow(leftArr, ini);
 	      maxScore = inLeft;
 	    }
 	    if (inDiag >= maxScore) {
-	      path[i+1][1] = SetArrow(diagArr, ini);
+	      path[i+1][1] = SetTransitionArrow(diagArr, ini);
 	      maxScore = inDiag;
 	    }
 	  }
@@ -735,6 +748,7 @@ int FindMax(vector<Node> &nodes, int &maxTerminalNode, int &maxTerminalPos, int 
 }
 int RunAlign(vector<Node> &nodes, string &read, vector<int> &order) {
   for (int n=0; n < nodes.size(); n++) {
+    cerr << "Allocating node " << n << " " << nodes[n].seq.size() << endl;
     nodes[n].Alloc(read);
   }
   for (int j=0; j < read.size(); j++ ) {
