@@ -561,18 +561,6 @@ void MergeSimplePaths(vector<Node> &nodes, vector<Link> &links) {
       }
       removed[dest] = true;
       nodes[dest].index=-1;
-      
-      /*
-      //
-      //
-      for (int i=0; i < nodes[src].out.size(); i++ ) {
-	// Relink src to dest
-	if (links[nodes[src].out[i]].dest == nodes[n].index) {
-	  links[nodes[src].out[i]].dest = dest;
-	  break;
-	}
-      }
-      */
     }     
   }
 }
@@ -612,9 +600,29 @@ void SetTerminal(vector<Node> &nodes, vector<Path> &paths) {
 class Align {
 public:
   string read, str, graph;
+  vector<string> readAln;
+  vector<string> refAln;
+  vector<string> matStr;
+  vector<int> readBound, refBound;
+  void Reverse() {
+    for (int i=0; i < readAln.size(); i++ ) {
+      std::reverse(readAln[i].begin(),
+		   readAln[i].end());
+      std::reverse(refAln[i].begin(),
+		   refAln[i].end());
+      std::reverse(matStr[i].begin(),
+		   matStr[i].end());
+    }
+    reverse(readBound.begin(), readBound.end());
+  }
+
 };
 
-void TraceAlign(vector<Node> &nodes, string &read, int maxNode, int maxPos, Align &aln) {
+void TraceAlign(vector<Node> &nodes,
+		string &read,
+		int maxNode,
+		int maxPos, Align &aln
+) {
 
 
   int curI, curJ, curN;
@@ -624,6 +632,7 @@ void TraceAlign(vector<Node> &nodes, string &read, int maxNode, int maxPos, Alig
   aln.read="";
   aln.str="";
   aln.graph="";
+  aln.readBound.push_back(curI);
   while ((curI > 0 or curJ > 0) and  nodes[curN].IsTerminal(curI, curJ) == false ) {
     int arrow = nodes[curN].path[curI][curJ];
     if (IsMatHop(arrow)) {
@@ -673,6 +682,14 @@ void TraceAlign(vector<Node> &nodes, string &read, int maxNode, int maxPos, Alig
 	// This operation doesn't add any gaps or matches, it just jumps to a different
 	// part of the graph.
 	//
+
+	aln.readAln.push_back(aln.read);
+	aln.refAln.push_back(aln.graph);
+	aln.matStr.push_back(aln.str);
+	aln.read=""; aln.graph=""; aln.str="";
+	aln.readBound.push_back(curI-1);
+	
+	
 	curN = hopNode;
 #ifdef DEBUG
 	cerr << "Wrapping back to " << hopNode  << "_" << nodes[curN].seq << " " << nodes[curN].last << endl;
@@ -719,9 +736,13 @@ void TraceAlign(vector<Node> &nodes, string &read, int maxNode, int maxPos, Alig
       }
     }
   }
-  std::reverse(aln.read.begin(), aln.read.end());
-  std::reverse(aln.str.begin(), aln.str.end());
-  std::reverse(aln.graph.begin(), aln.graph.end());
+  
+  aln.readAln.push_back(aln.read);
+  aln.refAln.push_back(aln.graph);
+  aln.matStr.push_back(aln.str);
+  aln.read=""; aln.graph=""; aln.str="";
+  aln.readBound.push_back(curI);
+  aln.Reverse();
 }
 int FindMax(vector<Node> &nodes, int &maxTerminalNode, int &maxTerminalPos, int row=-1) {
   int maxTerminal=negInf;
@@ -854,10 +875,13 @@ int main(int argc, char* argv[]) {
     FindMax(nodes, maxNode, maxPos);
     Align aln;
     TraceAlign(nodes, read, maxNode, maxPos, aln);
-    cerr << name << endl;
-    cerr << aln.read << endl;
-    cerr << aln.str << endl;
-    cerr << aln.graph << endl;
+    
+    for (int i =0; i < aln.readAln.size();i++) {
+      cerr << name << "\t" << aln.readBound[i] << "\t" << aln.readBound[i+1] << endl;
+      cerr << "    " << aln.readAln[i] << endl;
+      cerr << "    " << aln.matStr[i] << endl;
+      cerr << "    " << aln.refAln[i] << endl;
+    }
   }
   return 0;
 }
