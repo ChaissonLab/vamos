@@ -58,7 +58,7 @@ testmsa: TestMSA.cpp
 OBJS=main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o
 
 vamos:  $(OBJS) $(ABPOA_DIR)/lib/libabpoa.a
-	$(CXX) $(CFLAGS) -o $@ $(OBJS) -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -lrt
+	$(CXX) $(CFLAGS) -o $@ $(OBJS) -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa 
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include
