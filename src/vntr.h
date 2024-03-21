@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <map>
 #include <stdint.h>
+#include <inttypes.h>
 #include "read.h"
 #include "option.h"
 
