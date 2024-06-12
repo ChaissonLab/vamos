@@ -41,12 +41,11 @@ void PrintDownloadMotifs() {
   cout << "Most up-to-date motif set:" << endl
 
        << "For annotation on GRCh38:" << endl
-       << " curl \"https://zenodo.org/records/11625069/files/vamos.motif.CHM13.v2.1.e0.1.tsv.gz?download=1\" > vamos.motif.CHM13.v2.1.e0.1.tsv.gz; gunzip vamos.motif.CHM13.v2.1.e0.1.tsv.gz" << endl
+       << " curl \"https://zenodo.org/records/11625069/files/vamos.motif.hg38.v2.1.e0.1.tsv.gz?download=1\" > vamos.motif.hg38.v2.1.e0.1.tsv.gz; gunzip vamos.motif.hg38.v2.1.e0.1.tsv.gz" << endl
        << "For annotation on CHM13" << endl
        << " curl \"https://zenodo.org/records/11625069/files/vamos.motif.CHM13.v2.1.orig.tsv.gz?download=1\" > vamos.motif.CHM13.v2.1.orig.tsv.gz; gunzip vamos.motif.CHM13.v2.1.orig.tsv.gz" << endl
        << " These motif sets have ~1.2M sites. They are an increase from v2.0 by adding loci " << endl
-       << " that are in mobile elements." << endl;
-    
+       << " that are in mobile elements." << endl    
        << "Previous versions, as well as the unfiltered motif sets, you can navigate to: https://zenodo.org/records/11625069" << endl;
   
     cout << "Motif sets from Ren, Gu, and Chaisson, Genome Biology, 2023 (for backwards compatibility):" << endl
