@@ -1,7 +1,29 @@
 
 # Vamos: VNTR Annotation tool using efficient MOtif Sets
 
-## Updates 
+Vamos is a tool to perform motif annotation of VNTR sequences from long-read assemblies
+or mapped long-read BAMs. Variant calls are produced from BAMs by prephasing sequences
+if no phase information is available, a max-cut heuristic is applied to phase reads. Annotation
+is then called on consensus sequences constructed from partial-order alignment of reads
+in each haplotype (or all reads if in an autozygous region).
+
+
+The motifs used to annotate TR sequences are selected from TR annotations of long-read
+assemblies.An optimization routine is used to select a subset of motifs from all observed
+motifs at each locus so that the sequences used for annotation likely reflect true
+motif variation and not sequencing error. 
+
+Vamos guarantees that the encoding sequence is winthin a bounded edit distance of
+the original sequence for the genomes used to compile the motif database.
+
+For example, a VNTR sequence ACGGT|ACTGT|ACGT may be encoded to a more compact representation: ACGGT|AC**G**GT|ACGT using efficient motif set [ACGGT, ACGT].
+The edit distance between the original VNTR sequence and encoding sequence is 1. 
+
+
+## Updates
+We have released a version 2.1 of the motif set. This has roughly 1.2m loci and uses
+an additional motif-harmonization step before efficient motif selection. We additionally
+supply loci for CHM13.
 
 ## Getting Started
 
@@ -16,36 +38,39 @@ conda activate vamos
 conda install -c bioconda --file requirements.txt
 ```
 
-Download the [latest release](https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.2.0.tar.gz)
-```
-wget https://github.com/ChaissonLab/vamos/archive/refs/tags/vamos-v1.2.0.tar.gz
-tar -zxvf vamos-v1.2.0.tar.gz && cd vamos-v1.2.0
-```
-
 Or download the latest code from github
 ```
 git clone https://github.com/ChaissonLab/vamos.git 
-```
-
-Make from source and run with test data:
-```
 cd vamos*/src/ && make
 ```
+
+Next you should download a locus list. These are in BED format, with the coordinates of the tandem repeat as the BED coordinates, and the list of observed motifs from the Human Pangenome Reference Consortium given as the extra field.
+
+https://zenodo.org/records/11625069
+
+The latest motif sets as of v2.1 can be downloaded via:
+
+For annotation on GRCh38:
+ curl "https://zenodo.org/records/11625069/files/vamos.motif.hg38.v2.1.e0.1.tsv.gz?download=1" > vamos.motif.hg38.v2.1.e0.1.tsv.gz; gunzip vamos.motif.hg38.v2.1.e0.1.tsv.gz
+For annotation on CHM13
+ curl "https://zenodo.org/records/11625069/files/vamos.motif.CHM13.v2.1.orig.tsv.gz?download=1" > vamos.motif.CHM13.v2.1.orig.tsv.gz; gunzip vamos.motif.CHM13.v2.1.orig.tsv.gz
+
+
+
 For running vamos on a haplotype-resolved assembly:
 ```
-vamos --contig -b assembly.hap1.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s sample_name -o assembly.hap1.vcf -t 8
-vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s sample_name -o assembly.hap2.vcf -t 8
+vamos --contig -b assembly.hap1.mapped_to_grch38.bam -r vamos.motif.hg38.v2.1.e0.1.tsv -s sample_name -o assembly.hap1.vcf -t 8
+vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r vamos.motif.hg38.v2.1.e0.1.tsv -s sample_name -o assembly.hap2.vcf -t 8
 ```
-For running vamos on aligned reads (phased or unphased):
+For running vamos on aligned reads, you can use the following command:
 ```
-vamos --read -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o reads.vcf -t 8
+vamos --read -b ../example/demo.aln.bam -r vamos.motif.hg38.v2.1.e0.1.tsv -s NA24385_CCS_h1 -o reads.vcf -t 8
 ```
-Note, if the reads are pre-phased (e.g. by HapCut or WhatsHap) and have the HA SAM tag, the phasing heuristic will not be applied. 
+If the reads are pre-phased using HapCut or WhatsHap, and contain the HA SAM tag, this phasing
+will be used to call variants from each haplotype. If the reads are unphased, a max-cut heuristic will
+be used to prephase reads before calling variants.
 
-For downloading efficient motif set selected at a level of Delta=20:
-```
-vamos -m q20
-```
+
 
 ## Table of Contents
 
@@ -63,13 +88,6 @@ vamos -m q20
 - [Combine VCFs](#combine)
 
 ## <a name="introduction"></a>Introduction
-Vamos is a tool to perform run-length encoding of VNTR sequences using a set of selected motifs from all motifs observed at that locus.
-Vamos guarantees that the encoding sequence is winthin a bounded edit distance of the original sequence. 
-For example, a VNTR sequence ACGGT|ACTGT|ACGT may be encoded to a more compact representation: ACGGT|AC**G**GT|ACGT using efficient motif set [ACGGT, ACGT].
-The edit distance between the original VNTR sequence and encoding sequence is 1. 
-
-Vamos can generate annotation for haplotype-resolved assembly at each VNTR locus, given a set of motifs at that VNTR locus. 
-Vamos can generate annotation for aligned reads (phased or unphased) at each VNTR locus. 
 
 ### <a name="emotif"></a>Efficient motif set
 We defined VNTR loci and motifs using a collection of 32 haplotype-resolved LRS genomes constructed by Human Genome Structural Variation Consortium.
