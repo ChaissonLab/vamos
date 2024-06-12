@@ -24,8 +24,27 @@ tar -zxvf vamos-v1.2.0.tar.gz && cd vamos-v1.2.0
 
 Or download the latest code from github
 ```
-git clone https://github.com/ChaissonLab/vamos.git 
+git clone https://github.com/ChaissonLab/vamos.git
+
 ```
+
+Download motif sets. A motif set is a bed file of VNTR loci on GRCh38 or CHM13 along with 
+annotated repeat motifs from a population on that locus. 
+
+The motif databases are stored on zenodo at:
+https://zenodo.org/records/11625069
+
+The current motif databases can be downloaded with the commands:
+
+or annotation on GRCh38:
+```
+curl "https://zenodo.org/records/11625069/files/vamos.motif.CHM13.v2.1.e0.1.tsv.gz?download=1" > vamos.motif.CHM13.v2.1.e0.1.tsv.gz; gunzip vamos.motif.CHM13.v2.1.e0.1.tsv.gz
+```
+For annotation on CHM13
+```
+curl "https://zenodo.org/records/11625069/files/vamos.motif.CHM13.v2.1.orig.tsv.gz?download=1" > vamos.motif.CHM13.v2.1.orig.tsv.gz; gunzip vamos.motif.CHM13.v2.1.orig.tsv.gz
+```
+
 
 Make from source and run with test data:
 ```
@@ -33,19 +52,15 @@ cd vamos*/src/ && make
 ```
 For running vamos on a haplotype-resolved assembly:
 ```
-vamos --contig -b assembly.hap1.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s sample_name -o assembly.hap1.vcf -t 8
-vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r emotifs.d10.64h.bed -s sample_name -o assembly.hap2.vcf -t 8
+vamos --contig -b assembly.hap1.mapped_to_grch38.bam -r vamos.motif.CHM13.v2.1.e0.1.tsv -s sample_name -o assembly.hap1.vcf -t 8
+vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r vamos.motif.CHM13.v2.1.e0.1.tsv -s sample_name -o assembly.hap2.vcf -t 8
 ```
 For running vamos on aligned reads (phased or unphased):
 ```
-vamos --read -b ../example/demo.aln.bam -r ../example/region_motif.bed -s NA24385_CCS_h1 -o reads.vcf -t 8
+vamos --read -b ../example/demo.aln.bam -r vamos.motif.CHM13.v2.1.e0.1.tsv  -s NA24385_CCS_h1 -o reads.vcf -t 8
 ```
-Note, if the reads are pre-phased (e.g. by HapCut or WhatsHap) and have the HA SAM tag, the phasing heuristic will not be applied. 
+If the reads are not prephased, they will be phased in vamos. If the reads are pre-phased (e.g. by HapCut or WhatsHap) and have the HA SAM tag, the phasing heuristic will not be applied. 
 
-For downloading efficient motif set selected at a level of Delta=20:
-```
-vamos -m q20
-```
 
 ## Table of Contents
 
@@ -72,6 +87,8 @@ Vamos can generate annotation for haplotype-resolved assembly at each VNTR locus
 Vamos can generate annotation for aligned reads (phased or unphased) at each VNTR locus. 
 
 ### <a name="emotif"></a>Efficient motif set
+
+The following applies to the motif set generated for Ren, Gu, and Chaisson, Genome Biology, 2023:
 We defined VNTR loci and motifs using a collection of 32 haplotype-resolved LRS genomes constructed by Human Genome Structural Variation Consortium.
 692,882 loci of simple repeating sequences on the GRCh38 assembly were obtained from the table browser tool of the UCSC Genome Browser.
 For each assembly, VNTR sequences were lifted-over and decomposed into motifs by Tandem Repeats Finder (TRF). Post-filtering step leaves 467104 well-resolved VNTR loci. 
@@ -107,7 +124,7 @@ cd vamos/src; make
 ### <a name="binary"></a>Pre-built binary executable file for Linux/Unix 
 If you meet any compiling issue, please try the pre-built binary file:
 ```
-wget https://github.com/ChaissonLab/vamos/releases/download/vamos-v1.2.0/vamos-v1.2.0_x64-linux
+wget 
 tar -zxvf vamos-v1.2.0_x64-linux
 ```
 
