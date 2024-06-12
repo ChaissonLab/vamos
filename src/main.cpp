@@ -38,14 +38,26 @@ struct timeval single_start_time, single_stop_time, single_elapsed_time;
 
 
 void PrintDownloadMotifs() {
-  cout << "Original (no filtering) " <<endl
-       << "   curl \"https://zenodo.org/record/8357361/files/original_motifs.set148.bed.gz?download=1\" > original_motifs.set148.bed.gz" << endl
+  cout << "Most up-to-date motif set:" << endl
+
+       << "For annotation on GRCh38:" << endl
+       << " curl \"https://zenodo.org/records/11625069/files/vamos.motif.CHM13.v2.1.e0.1.tsv.gz?download=1\" > vamos.motif.CHM13.v2.1.e0.1.tsv.gz; gunzip vamos.motif.CHM13.v2.1.e0.1.tsv.gz" << endl
+       << "For annotation on CHM13" << endl
+       << " curl \"https://zenodo.org/records/11625069/files/vamos.motif.CHM13.v2.1.orig.tsv.gz?download=1\" > vamos.motif.CHM13.v2.1.orig.tsv.gz; gunzip vamos.motif.CHM13.v2.1.orig.tsv.gz" << endl
+       << " These motif sets have ~1.2M sites. They are an increase from v2.0 by adding loci " << endl
+       << " that are in mobile elements." << endl;
+    
+       << "Previous versions, as well as the unfiltered motif sets, you can navigate to: https://zenodo.org/records/11625069" << endl;
+  
+    cout << "Motif sets from Ren, Gu, and Chaisson, Genome Biology, 2023 (for backwards compatibility):" << endl
+       << "Original (no filtering) " <<endl
+       << "   curl \"https://zenodo.org/record/8357361/files/original_motifs.set148.bed.gz?download=1\" > original_motifs.set148.bed.gz; gunzip original_motifs.set148.bed.gz" << endl
        << "q10:" << endl
-       << "   curl \"https://zenodo.org/record/8357361/files/q-0.1_motifs.set148.bed.gz?download=1\"  > q-0.1_motifs.set148.bed.gz" << endl
+       << "   curl \"https://zenodo.org/record/8357361/files/q-0.1_motifs.set148.bed.gz?download=1\"  > q-0.1_motifs.set148.bed.gz; gunzip q-0.1_motifs.set148.bed.gz" << endl
        << "q20:" << endl
-       << "   curl \"https://zenodo.org/record/8357361/files/q-0.2_motifs.set148.bed.gz?download=1\"  > q-0.2_motifs.set148.bed.gz" << endl
+       << "   curl \"https://zenodo.org/record/8357361/files/q-0.2_motifs.set148.bed.gz?download=1\"  > q-0.2_motifs.set148.bed.gz; gunzip q-0.2_motifs.set148.bed.gz" << endl
        << "q30:" << endl
-       << "   curl \"https://zenodo.org/record/8357361/files/q-0.3_motifs.set148.bed.gz?download=1\"  > q-0.3_motifs.set148.bed.gz" << endl << endl;
+       << "   curl \"https://zenodo.org/record/8357361/files/q-0.3_motifs.set148.bed.gz?download=1\"  > q-0.3_motifs.set148.bed.gz; gunzip q-0.3_motifs.set148.bed.gz" << endl << endl;
 }
 
 void process_mem_usage(double &vm_usage, double &resident_set)
