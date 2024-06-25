@@ -111,6 +111,9 @@ int IO::readRegionAndMotifs (vector<VNTR*> &vntrs)
 
     string line;
     size_t numOfLine = 0;
+    string prevChrom="";
+    int lineNumber=1;
+    int prevEnd =-1;
     while (getline(ifs, line)) 
     {
         stringstream ss(line);
@@ -125,6 +128,17 @@ int IO::readRegionAndMotifs (vector<VNTR*> &vntrs)
 	  cerr << "WARNING, locus " << chrom << ":" << start << "-" << end << " has length greater than " << maxLength << " and will be ignored." << endl;
 	  continue;
 	}
+	if (start >= end) {
+	  cout << "ERROR on line " << lineNumber << " of motif file: start >= end: " << start << "\t" << end << endl;
+	  exit(1);
+	}
+	if (chrom == prevChrom and prevEnd > start) {
+	  cout << "ERROR on line " << lineNumber << " of motif file: start is before previous end: " << start << "\t" << prevEnd << endl;
+	  exit(1);
+	}
+	prevChrom=chrom;
+	prevEnd = end;
+	lineNumber++;
         VNTR * vntr = new VNTR(chrom, start, end, end-start);
         vntrs.push_back(vntr);
 	vntr->index = vntrs.size()-1;
