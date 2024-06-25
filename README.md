@@ -199,8 +199,4 @@ chr1	191351	.	N	<VNTR>	.	PASS	END=191386;RU=CACCACAGAAAACAGAG,CACCACAGAAAACAGAGC
 ```
 
 ## <a name="combine"></a>Generate multi-sample vcf
-A *python* script [snakefile/pyscript/combine_vcf.py](https://github.com/ChaissonLab/vamos/blob/master/snakefile/pyscript/combine_vcf.py) is developed that combines vcfs output by *vamos* into multi-sample vcf.
-```
-python combine_vcf.py -i vcf.list -o combine.vcf
-```
-The input `vcf.list` is simply a list of all vcfs to be combined, one line for each vcf. The combined vcf records all unique alleles of the input samples in the `info` field and records the genotype of each sample accordingly.
+Please refer to the [*tryvamos*](https://github.com/ChaissonLab/vamos/blob/master/tryvamos) package for more details.
