@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: UTF-8 -*-
 import os
 import sys
 import argparse
@@ -18,7 +17,6 @@ logging.basicConfig(
 parserDict = {}
 # author and version info
 usage = ' <mode> <options> \n'
-author = 'Author: Bida Gu (bida.beta.gu@gmail.com)'
 version = 'Version: 1.0.0.0'
 description = '''\nDescription:
 This program provides a tool set for various downstream analysis using TR
@@ -26,7 +24,7 @@ annotation output from the Vamos software.
 '''
 
 parser = argparse.ArgumentParser(\
-    usage = '\n'.join([usage, author, version, description]), \
+    usage = '\n'.join([usage, version, description]), \
     formatter_class=argparse.RawTextHelpFormatter)
 subparsers = parser.add_subparsers(dest='command')
 

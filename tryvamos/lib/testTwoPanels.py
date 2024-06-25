@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 import os
 import scipy.stats as stats
 import numpy as np
