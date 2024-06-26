@@ -42,7 +42,7 @@ For annotation on GRCh38 using the *vamos* **efficient** motifs:
  ```
 For annotation on CHM13 using the *vamos* **efficient** motifs
 ```
- curl "https://zenodo.org/records/11625069/files/vamos.motif.CHM13.v2.1.orig.tsv.gz?download=1" > vamos.motif.CHM13.v2.1.e0.1.tsv.gz; gunzip vamos.motif.CHM13.v2.1.orig.tsv.gz
+ curl "https://zenodo.org/records/11625069/files/vamos.motif.CHM13.v2.1.e0.1.tsv.gz?download=1" > vamos.motif.CHM13.v2.1.e0.1.tsv.gz; gunzip vamos.motif.CHM13.v2.1.e0.1.tsv.gz
 ```
 
 ## Running *vamos*
