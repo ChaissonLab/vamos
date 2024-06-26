@@ -1,6 +1,6 @@
 # *tryvamos*: <ins>t</ins>andem <ins>r</ins>epeat anal<ins>y</ins>sis using *<ins>vamos</ins>* outputs
 
-*tryvamos* is a tool package designed to perform quick visualization, result transformation, and statistical analysis for tandem repeats using annotations generated from *vamos*.
+*tryvamos* is a toolkit designed to perform quick visualization, result transformation, and statistical analysis for tandem repeats using annotations generated from *vamos*.
 
 
 ## Preparation
@@ -14,8 +14,8 @@ python tryvamos.py -h
 
 ## Usage
 
-### Generate diploid vcf for a panel of samples from haploid/diploid vcfs of indivudual samples
-Combination of vcfs of individual samples is usually the first step after annotation. Most functionality of *tryvamos* uses a multi-sample diploid vcf as input. To generate a multi-sample diploid vcf, paths of sample-wise vcfs need to be written in a "csv" file, with each line having the two haploid vcfs of one sample (separated by ",") or a single diploid vcf of one sample.
+### Generate diploid vcf for a panel of samples from haploid/diploid vcfs of individual samples
+Combination of vcfs of individual samples is usually the first step after annotation. Most functionality of *tryvamos* uses multi-sample diploid vcf(s) as input. To generate a multi-sample diploid vcf, paths of single-sample vcfs need to be written in a "csv" file, with each line having the two haploid vcfs of one sample (separated by ",") or a single diploid vcf of one sample.
 ```
 python tryvamos.py combineVCF example/example.list example/example.vcf
 ```
