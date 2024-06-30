@@ -195,7 +195,6 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
                 cerr << "This option is no longer supported" << endl;
                 exit(0);
             }
-            // naive_anno(consensus[i], motifs, Hap_seqs[i]->seq, Hap_seqs[i]->len);
             else
             {
                 vector<int> starts, ends, sdAnnos, sdQV;
@@ -205,7 +204,6 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
 				    motifs, Hap_seqs[i]->seq.c_str(), Hap_seqs[i]->len, opt, sdTables, mismatchCI);
 		}
             }
-            
             if (consensus[i].size() == 0) 
             {
                 skip = true;
@@ -228,13 +226,13 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
     else  
     {
         // annotate for consensus read
-        annos.resize(reads.size());
-        nullAnnos.resize(reads.size(), false);
         if (reads.size() > 200)
         {
           cerr << "WARNING, skipping locus " << region << " because it may be a centromeric tandem repeat" << endl;
           return;
         }
+        annos.resize(reads.size());
+        nullAnnos.resize(reads.size(), false);
 
         for (int i = 0; i < reads.size(); ++i)
         {
