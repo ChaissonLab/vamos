@@ -82,14 +82,6 @@ void process_mem_usage(double &vm_usage, double &resident_set)
 void ProcVNTR(int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector<int> &mismatchCI) 
 {
 
-    // if (it->nreads == 0 or it->motifs.size() > 255) 
-    // {
-    //     it->skip = true;
-    //     if (debug_flag and it->nreads == 0) cerr << "no reads" << endl;
-    //     if (debug_flag and it->motifs.size() > 255) cerr << "skip one vntr due to > 255 motifs" << endl;
-    //     return;
-    // }
-
   if (it->reads.size() == 0)
     {
         it->skip = true;
@@ -101,14 +93,13 @@ void ProcVNTR(int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector<in
 
     if (contig_flag) {
         it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI); 
-	/*
-        if (!readwise_anno_flag)     
-            it->consensusMotifAnnoForOneVNTRByABpoa(opt);
-	*/
     }
     else if (read_flag) {
         it->consensusReadForHapByABpoa(opt);
         it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI);      
+    }
+    else if (readwise_anno_flag) {
+      it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI);            
     }
     
     return;
@@ -650,8 +641,6 @@ int main (int argc, char **argv)
 	  ProcVNTR (s, vntrs[i], opt, sdTables, mismatchCI);
 	    vntrs[i]->clearReads();	    
 	}
-	
-      
           
         gettimeofday(&single_stop_time, NULL);
         timersub(&single_stop_time, &single_start_time, &single_elapsed_time);
