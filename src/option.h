@@ -18,7 +18,7 @@ public:
   int phaseFlank;
   string download;
   int maxCoverage;
-  int maxLocusSize;
+  int maxLocusLength;
   InputType inputType;
   OPTION ()
   {
@@ -32,7 +32,7 @@ public:
     download="";
     inputType=by_read;
     maxCoverage=200;
-    maxLocusSize=20000;
+    maxLocusLength=10000;
   };
 
   ~OPTION () {};

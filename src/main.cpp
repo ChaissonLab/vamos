@@ -261,7 +261,7 @@ void *ProcVNTRs (void *procInfoValue)
     pthread_exit(NULL);     /* Thread exits (dies) */    
 }
 
-void printUsage(IO &io) 
+void printUsage(IO &io, OPTION &opt) 
 {
 
     printf("Usage: vamos [subcommand] [options] [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
@@ -299,7 +299,8 @@ void printUsage(IO &io)
     printf("   Downloading motifs:\n");
     PrintDownloadMotifs();
     printf("   Others: \n");
-    printf("       -L   INT          Maximum length locus to compute annotation for (10000)\n");
+    printf("       -L   INT          Maximum length locus to compute annotation for (%d)\n", opt.maxLocusLength);
+    
     printf("       -t   INT          Number of threads, DEFAULT: 1. \n");
     printf("       --debug           Print out debug information. \n");
     printf("       -h                Print out help message. \n");
@@ -345,7 +346,8 @@ int main (int argc, char **argv)
         {"numThreads",      required_argument,       0, 't'},
         {"filterNoisy",     required_argument,       0, 'f'},
         {"penlaty_indel",   required_argument,       0, 'd'},
-        {"max_length",      required_argument,       0, 'L'},	
+        {"max_length",      required_argument,       0, 'L'},
+        {"max_coverage",    required_argument,       0, 'C'},		
         {"penlaty_mismatch",required_argument,       0, 'c'},
         {"accuracy"        ,required_argument,       0, 'a'},
         {"phase_flank"     ,required_argument,       0, 'p'},
@@ -371,7 +373,12 @@ int main (int argc, char **argv)
             case 'L':
 	      fprintf(stderr, "option --max_length '\n", optarg);
 	      io.maxLength=atoi(optarg);
+	      opt.maxLocusLength = io.maxLength;
 	      break;
+            case 'C':
+	      fprintf(stderr, "option --max_coverage '\n", optarg);
+	      opt.maxCoverage=atoi(optarg);
+	      break;	      
             case 'S':
 	        fprintf (stderr, "option --output_seq '\n", optarg);
 	        output_read_seq_flag = true;
@@ -451,7 +458,7 @@ int main (int argc, char **argv)
                 break;
 
             case 'h':
-                printUsage(io);
+	      printUsage(io, opt);
                 exit(EXIT_SUCCESS);
 
             case '?':
@@ -463,12 +470,12 @@ int main (int argc, char **argv)
                 exit(EXIT_FAILURE);
 
             default:
-                printUsage(io);
+	      printUsage(io, opt);
                 exit(EXIT_FAILURE);
         }        
     }
     if ( argc == 1) {
-      printUsage(io);
+      printUsage(io, opt);
       exit(0);
     }
     if (read_flag) {
@@ -527,7 +534,7 @@ int main (int argc, char **argv)
 
     if (missingArg)
     {
-        printUsage(io);
+      printUsage(io, opt);
         exit(EXIT_FAILURE);
     }
 

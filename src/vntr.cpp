@@ -241,7 +241,7 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
         {
    	  haps[i] = reads[i]->haplotype;
 
-            if (reads[i]->len > opt.maxLocusSize)
+            if (reads[i]->len > opt.maxLocusLength)
             {
                 skip = true;
                 cerr << "skip the vntr (length > " << reads[i]->len << ")" << endl;
