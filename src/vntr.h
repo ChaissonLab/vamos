@@ -134,9 +134,9 @@ public:
     vector<READ *> reads;                   // all reads overlapping this VNTR
     int nreads;                             // number of reads
     int cur_len;                            // the sample sequence length (averaged over all reads)
+    vector<uint8_t> haps;
     vector<vector<uint8_t> > annos;         // the motif annotations for each read
     vector<vector<uint8_t> > consensus;     // the final consensus annotation
-    vector<vector<double> > edist;          // 
 
     vector<int> h1_reads;                   // index of all haplotype1 reads (manipulated in consensusReadForHapByABpoa)
     vector<int> h2_reads;                   // index of all haplotype2 reads (manipulated in consensusReadForHapByABpoa)

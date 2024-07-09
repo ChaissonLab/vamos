@@ -187,9 +187,8 @@ void writeSingleBody_readwise(VNTR * it, ofstream &out)
 
 	out << "\t";
 
-	for (int i = 0; i < it->reads.size(); i++) {
-		out << it->reads[i]->qname << ":";
-		out << it->reads[i]->haplotype << ":";
+	for (int i = 0; i < it->annos.size(); i++) {
+	  out << (int) it->haps[i] << ":";
 		out << (int) it->annos[i].size() << ":";
 		for (int j = 0; j < it->annos[i].size(); j++) {
 			out << (int)(it->annos[i][j]); 

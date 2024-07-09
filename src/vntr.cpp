@@ -226,7 +226,10 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
     else  
     {
         // annotate for consensus read
-        if (reads.size() > 200)
+        annos.resize(reads.size());
+	haps.resize(reads.size(), 0);
+        nullAnnos.resize(reads.size(), false);
+        if (reads.size() > opt.maxCoverage)
         {
           cerr << "WARNING, skipping locus " << region << " because it may be a centromeric tandem repeat" << endl;
           return;
@@ -236,8 +239,9 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
 
         for (int i = 0; i < reads.size(); ++i)
         {
+   	  haps[i] = reads[i]->haplotype;
 
-            if (reads[i]->len > 20000)
+            if (reads[i]->len > opt.maxLocusSize)
             {
                 skip = true;
                 cerr << "skip the vntr (length > " << reads[i]->len << ")" << endl;
