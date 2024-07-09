@@ -229,6 +229,7 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
     {
         // annotate for consensus read
         annos.resize(reads.size());
+	haps.resize(reads.size(), 0);
         nullAnnos.resize(reads.size(), false);
         if (reads.size() > 200)
         {
@@ -238,6 +239,7 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
 
         for (int i = 0; i < reads.size(); ++i)
         {
+   	  haps[i] = reads[i]->haplotype;
 
             if (reads[i]->len > 20000)
             {

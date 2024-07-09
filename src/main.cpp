@@ -26,6 +26,7 @@ int single_seq_flag = false;
 int locuswise_prephase_flag = false;
 int locuswise_flag = false;
 int read_flag = false;
+int somatic_flag = false;
 int contig_flag = false;
 int num_processed = 0;
 int download_motifs=false;
@@ -109,6 +110,10 @@ void ProcVNTR(int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector<in
     else if (read_flag) {
         it->consensusReadForHapByABpoa(opt);
         it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI);      
+    }
+    else if (somatic_flag) {
+        it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI);
+	it->clearReads();
     }
     
     return;
@@ -237,6 +242,7 @@ void *CallSNVs (void *procInfoValue) {
        vntr->clearReads();
        ++it;
      }
+     cout << "Done processing " << curChrom << ":" << regionStart <<"-" << regionEnd << endl;
   }
   cerr << "Done reading " << procInfo->thread << endl;
   pthread_exit(NULL);     /* Thread exits (dies) */      
@@ -332,6 +338,7 @@ int main (int argc, char **argv)
         {"contig",              no_argument,        &contig_flag            ,       1}, // was locuswise_prephase_flag
         {"locuswise",           no_argument,        &locuswise_flag,                1},
         {"read",                no_argument,        &read_flag,                     1}, // was locuswise
+        {"somatic",             no_argument,        &somatic_flag,                  1}, // was locuswise	
         {"single_seq",          no_argument,        &single_seq_flag,               1},
         {"readwise",            no_argument,        &readwise_anno_flag,            1},
         {"liftover",            no_argument,        &liftover_flag,                 1},
@@ -478,6 +485,9 @@ int main (int argc, char **argv)
     }
     if (read_flag) {
         locuswise_flag = true;
+    }
+    else if (somatic_flag) {
+      locuswise_flag = false;
     }
     else if (contig_flag) {
       locuswise_flag = true;
@@ -738,7 +748,7 @@ int main (int argc, char **argv)
 
     io.clear();
         // output vcf or bed or fasta
-    if (readwise_anno_flag) 
+    if (readwise_anno_flag or somatic_flag) 
       io.writeBEDBody_readwise(out, vntrs, -1, 1);
     else if (locuswise_prephase_flag or locuswise_flag or single_seq_flag) 
       io.writeVCFBody_locuswise(out, vntrs, -1, 1);

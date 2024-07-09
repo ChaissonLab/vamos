@@ -128,8 +128,8 @@ int IO::readRegionAndMotifs (vector<VNTR*> &vntrs)
 	  cerr << "WARNING, locus " << chrom << ":" << start << "-" << end << " has length greater than " << maxLength << " and will be ignored." << endl;
 	  continue;
 	}
-	if (start >= end) {
-	  cout << "ERROR on line " << lineNumber << " of motif file: start >= end: " << start << "\t" << end << endl;
+	if (start > end) {
+	  cout << "ERROR on line " << lineNumber << " of motif file: start > end: " << start << "\t" << end << endl;
 	  exit(1);
 	}
 	if (chrom == prevChrom and prevEnd > start) {
@@ -399,10 +399,10 @@ int QueryAndSetPhase(bam1_t* aln, int &setHap) {
       setHap=-1;    
       bool isPhased = false;
       int si=0, nc=0;
-      if (errno == 0) {
-	setHap=hap;
-	foundAux = true;	
-      }
+
+      setHap=hap;
+      foundAux = true;	
+
     }
     //    free(auxRes);
     return foundAux;
