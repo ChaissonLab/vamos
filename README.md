@@ -78,6 +78,10 @@ The following shows example entries of a diploid single-sample vcf file
 chr1	11226	.	N	<VNTR>	.	PASS	END=11462;RU=AGAGTGGTGGCCAGCGCCCCCTGCTGGCGCCGGGGCACTGCAGGGCCCTCTTGCTT,ACTGTATAGTGGTGGCACGCCGCCTGCTGGCAGCTAGGGACATTGCAGGGTCCTCTTGCTC,AGAGTGGTGGCCACCGCCCCCTGCTGGCGCCGGGGCACTGCAGGGTCCTCTTGCTT,ACTGTATAGTGGTGGCACGCCGCCTGCTGGCAGCTACGGACATTGCAGGGTCCTCTTGCTC,ACTGTATAGTGGTGGCACGCCGCCTGCTGGCAGCTAGGGACATTGCAGGGTCCTCTTGCTCA;SVTYPE=VNTR;ALTANNO_H1=0,0,4,0;LEN_H1=4;	GT	1/1
 chr1	15796	.	N	<VNTR>	.	PASS	END=15849;RU=CTT,CTC,CTG,CAG,CATG;SVTYPE=VNTR;ALTANNO_H1=0,1,2,1,0,2,0,0,0,1,3,0,2,1,0,4,2;LEN_H1=17;ALTANNO_H2=0,1,2,1,0,2,2,2,0,1,3,0,2,1,0,4,2;LEN_H2=17;	GT	1/2
 ```
+## Citing vamos
+To cite vamos, you should use:
+Ren, Jingwen, Bida Gu, and Mark JP Chaisson. "vamos: variable-number tandem repeats annotation using efficient motif sets." Genome Biology 24.1 (2023): 175.
+
 
 ## Analysis using *vamos* output
 Please refer to [*tryvamos*](https://github.com/ChaissonLab/vamos/blob/master/tryvamos) for more details.
