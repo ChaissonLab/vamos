@@ -153,7 +153,7 @@ def IsPhased(s):
     else:
         return False
 
-def ExtractValue(spa, kept, phased, usePhase, val, minReads):
+def ExtractValue(spa, kept, phased, usePhase, val, meanOrStd, minReads):
     if kept is False:
         return []
 
@@ -165,14 +165,22 @@ def ExtractValue(spa, kept, phased, usePhase, val, minReads):
     res = []
     for i in range(0,len(readThres)):
         if readThres[i] > minReads:
-            res += [spa[val][idx[i]]]
+            res += [spa[val][idx[i]][meanOrStd]]
     return res
 
-def ExtractValues(spaRow, kept, phased, usePhase, val, minReads):
+def ExtractValues(spaRow, kept, phased, usePhase, val, meanOrStd, minReads):
     allRes = []
     for i in range(0,len(spaRow)):
-        allRes += ExtractValue(spaRow[i], kept[i], phased[i], usePhase, val, minReads)
+        allRes += ExtractValue(spaRow[i], kept[i], phased[i], usePhase, val, meanOrStd, minReads)
     return allRes
+
+
+
+getMotif = 1
+getLen   = 3
+
+getMean = 0
+getStd  = 1
 
 for regionLine in regionFile:
     vals=regionLine.split()
@@ -201,8 +209,8 @@ for regionLine in regionFile:
     isPhased = False
     if nPhased / nKept > 0.5:
         isPhased = True
-    meanVals = ExtractValues(samplePosAnno, keep, phased, isPhased, 0, 5)
-    stdVals = ExtractValues(samplePosAnno, keep, phased, isPhased, 1, 5)
+    meanVals = ExtractValues(samplePosAnno, keep, phased, isPhased, getMotif, getMean, 5)
+    stdVals = ExtractValues(samplePosAnno, keep, phased, isPhased, getMotif, getStd, 5)
 
     print(str(vals[0:3]))
     print(meanVals)
