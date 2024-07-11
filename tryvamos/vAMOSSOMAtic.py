@@ -78,9 +78,7 @@ def AdvanceToPos(chrom, start, end, curAnno, annoFile):
     # Check to see if the state of curAnnoPos is beyond the current start-end.
     # If this is the case, no need to parse a new region.
     #
-    print("Looking for region " + chrom + " " + str(start) + " " + str(end));
     if curAnno[0][0] == chrom and curAnno[0][1] >= start:
-        print("Cur anno is beyond this position " + str(curAnno[0]))
         return curAnno
     
     while curAnno[0][0] == None or curAnno[0][0] != chrom or curAnno[0][1] < start:
@@ -89,12 +87,13 @@ def AdvanceToPos(chrom, start, end, curAnno, annoFile):
         line = annoFile.readline().decode("utf-8")
         if len(line) > 0 and line[0] == "#":
             continue
-        
+
         vals=line.split()
         annoChrom = vals[0]
         annoStart = int(vals[1])
         annoEnd   = int(vals[2])
         curAnnoPos = [annoChrom, annoStart, annoEnd]
+#
         if annoStart != start:
             print("  Potential out of sync with " + str(vals[0:3]) + "\t" + str(start) + "\t" + str(end))
         if annoChrom is not None and annoChrom < chrom:
@@ -125,8 +124,6 @@ def AdvanceToPos(chrom, start, end, curAnno, annoFile):
                     lengthStats[i] = GetLengthStats(hapAnnos[i])
                     motifLengths[i] = GetLenByMotif(hapAnnos[i])
                     seqLengths[i] = GetLenBySeq(hapAnnos[i])                    
-                    
-        print("  Returning annotation at " + str(curAnnoPos))
         return (curAnnoPos, motifStats, motifLengths, lengthStats, seqLengths)
     return None
         
@@ -141,6 +138,41 @@ regionFile = open(args.ref)
 # Each sample has a position in the current file, and motif/length stats at that position.
 samplePosAnno = [ [ [None, 0, 0], [], [], [], [] ] for a in sampleFiles ]
 
+#
+# Order for sample pos anno: 
+# spa[0]  - coordinates of variant
+# spa[1]  - motif stats
+# spa[1][0,1,2] - unphased, hap1, hap2 motif mean/sd
+# spa[2][0,1,2] - unphased, hap1, hap2 motif lengths
+# spa[3][0,1,2] - unphased, hap1, hap2 length mean/sd
+# spa[4][0,1,2] - unphasdd, hap1, hap2 seq lengths
+
+def IsPhased(s):
+    if len(s[1][1]) > 0 and len(s[1][2]) > 0:
+        return True
+    else:
+        return False
+
+def ExtractValue(spa, kept, phased, usePhase, val, minReads):
+    if kept is False:
+        return []
+
+    idx = [0]
+    if usePhase and phased:
+        idx = [1,2]
+
+    readThres = [len(spa[val+1][p]) for p in idx]
+    res = []
+    for i in range(0,len(readThres)):
+        if readThres[i] > minReads:
+            res += [spa[val][idx[i]]]
+    return res
+
+def ExtractValues(spaRow, kept, phased, usePhase, val, minReads):
+    allRes = []
+    for i in range(0,len(spaRow)):
+        allRes += ExtractValue(spaRow[i], kept[i], phased[i], usePhase, val, minReads)
+    return allRes
 
 for regionLine in regionFile:
     vals=regionLine.split()
@@ -149,8 +181,35 @@ for regionLine in regionFile:
     rgnEnd   = int(vals[2])
     for i in range(0,nSamples):
         samplePosAnno[i] = AdvanceToPos(rgnChrom, rgnStart, rgnEnd, samplePosAnno[i], sampleFiles[i])
-        if samplePosAnno[i][0] == rgnChrom and samplePosAnno[i] != rgnStart:
-            print("Skipping region " + str(vals))
+    #
+    # Now samples have been loaded for the next
+    #
+    keep = [False ] * nSamples
+    phased = [False ] * nSamples
+    nKept=0
+    nPhased =0
+    for i in range(0,nSamples):
+        if samplePosAnno[i][0][0] == rgnChrom and samplePosAnno[i][0][1] == rgnStart:
+            keep[i]= True
+            nKept+=1
+            isPhased = IsPhased(samplePosAnno[i])
+            phased[i] = isPhased
+            if isPhased:
+                nPhased+=1
+    if nKept < 0.5 * nSamples:
+        continue
+    isPhased = False
+    if nPhased / nKept > 0.5:
+        isPhased = True
+    meanVals = ExtractValues(samplePosAnno, keep, phased, isPhased, 0, 5)
+    stdVals = ExtractValues(samplePosAnno, keep, phased, isPhased, 1, 5)
+
+    print(str(vals[0:3]))
+    print(meanVals)
+    print(stdVals)
+    print("\n")
+    
+    
     
 
                     
