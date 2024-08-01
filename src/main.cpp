@@ -275,6 +275,7 @@ void printUsage(IO &io, OPTION &opt)
     // printf("vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
     printf("vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
     printf("vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");
+    printf("vamos --somatic [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");    
     printf("vamos -m [verison of efficient motif set]\n");
     printf("\n");
     printf("   Input: \n");
