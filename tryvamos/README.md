@@ -35,7 +35,7 @@ chr1	9240	.	N	<VNTR>	.	PASS	END=9259;RU=GATGAGCAGC,ATGAGCAGC,GATGAGCAG;SVTYPE=VN
 chr1	52377	.	N	<VNTR>	.	PASS	END=52421;RU=GT;SVTYPE=VNTR;ALTANNO=0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0,0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0	GT	1/1	2/1
 ```
 ### Generate feature matrix from combined vcf
-Parsing combined vcf of large number of samples for all TR annotations is time consuming. To facilitate repetitive analysis using the combined vcf, we developed the quickFeature module in *tryvamos* to generate sample (row) by feature (column) matrix for convenient high-dimentional data analysis. Currently three features are supported, including "TR length by number of motifs", "counts of the most frequent motif", and "reconstructed nucleotide sequence using motif annotations".
+Parsing combined vcf of large number of samples for all TR annotations is time consuming. To facilitate repetitive analysis using the combined vcf, we developed the quickFeature module in *tryvamos* to generate sample (row) by feature (column) matrix for convenient high-dimentional data analysis. Currently the following features are supported: "TR length by number of motifs" (annoLen), "TR allele by motif annotations" (annoStr), "counts of the most frequent motif" (topCount), and "reconstructed nucleotide sequence using motif annotations" (nt).
 ```
 python tryvamos.py quickFeature example/example.vcf example/example.topCount.tsv --feature topCount
 ```
