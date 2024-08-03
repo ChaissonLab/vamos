@@ -205,19 +205,43 @@ int main(int argc, char* argv[]) {
     samples[i-4].Init(argv[i]);
   }
   int numOutput=0;
-  for (auto locusIndex=0; locusIndex < regionChrom.size(); locusIndex++) {
+  int locusIndex=0;
+  for (auto s=0; s < samples.size(); s++) {
+    //
+    // Initialize each sample.
+    //
+    int retval;
+    retval = samples[s].GetNext();
+    if (retval) {
+      //
+      // Allow for the case that the table starts in the middle of the vamos output.
+      //
+      int nSkipped=0;
+      while(!samples[s].MatchesRegion(regionChrom[0], regionStart[0], regionEnd[0])) {
+	retval = samples[s].GetNext();
+	if (retval == 0) {
+	  break;
+	}
+	nSkipped++;
+      }
+      if (nSkipped > 0) {
+	cout << "Sample " << s << " skipped " << nSkipped << " starting on " << samples[s].locus.chrom << ":" << samples[s].locus.start << "-" << samples[s].locus.end << endl;
+      }
+    }
+  }
+  
+  for (locusIndex=0; locusIndex < regionChrom.size(); locusIndex++) {
     //
     // Advance all samples until the next region, possibly.
     //
     statsFile << regionChrom[locusIndex] << "\t" <<  regionStart[locusIndex] << "\t" <<  regionEnd[locusIndex] << endl;
     iqrFile   << regionChrom[locusIndex] << "\t" <<  regionStart[locusIndex] << "\t" <<  regionEnd[locusIndex] << endl;    
     for (auto s=0; s < samples.size(); s++) {
-      /*
-      if (locusIndex > 0) {
-	cout << "Advancing: " << locusIndex << "\t" << s << "\t" << regionChrom[locusIndex-1] << "\t" <<  regionStart[locusIndex-1] << "\t" << samples[s].locus.chrom << "\t" << samples[s].locus.start << endl;
-      }
-      */
-      if (samples[s].locus.start == -1 or 
+      //
+      // Advance past last locus if this was a match. If not a match, this
+      // locus must be one later in the table.
+      //
+      if (locusIndex > 0 and 
 	  samples[s].MatchesRegion(regionChrom[locusIndex-1], regionStart[locusIndex-1], regionEnd[locusIndex-1])) {
 	samples[s].GetNext();
       }
