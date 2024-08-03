@@ -50,11 +50,14 @@ public:
     return chrom == qchrom and start == qstart and end == qend;
   }
   
-  int ParseLine(string &line) {
+  int ParseLine(string &line, string startOn="") {
 
     stringstream strm(line);
     strm >> chrom >> start >> end;
     if (chrom == "") { return 0;}
+    if (startOn != "" and chrom!= startOn) {
+      return 1;
+    }
     string motifStr;
     strm >> motifStr;
     if (motifStr == "") { return 0;}
@@ -153,12 +156,12 @@ public:
     inStream= new std::istream(&fileIn);
     return inStream->good();
   }
-  int GetNext() {
+  int GetNext(string startOn="") {
     string line;
     getline(*inStream, line);
     int retval;
     if (line == "") { return 0;}
-    retval = locus.ParseLine(line);
+    retval = locus.ParseLine(line, startOn);
     return retval;
   }
   int MatchesRegion(string qchrom, int qstart, int qend) {
@@ -218,7 +221,7 @@ int main(int argc, char* argv[]) {
       //
       int nSkipped=0;
       while(!samples[s].MatchesRegion(regionChrom[0], regionStart[0], regionEnd[0])) {
-	retval = samples[s].GetNext();
+	retval = samples[s].GetNext(regionChrom[0]);
 	if (retval == 0) {
 	  break;
 	}
