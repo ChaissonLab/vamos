@@ -121,7 +121,7 @@ public:
 	normSumSq += lenNorm[j] * lenNorm[j];
       }
       float normMean = normSum / lengths[i].size();
-      vars[i] = normMean * normMean - normSumSq/lengths[i].size();
+      vars[i] = normSumSq/lengths[i].size() - normMean * normMean;
 
       //
       // Store iqrs;
