@@ -49,7 +49,7 @@ parser_combineVCF.add_argument(combineVCFPosList[1], type=str, \
 ######################### quickFeature mode #########################
 parser_quickFeature = subparsers.add_parser('quickFeature', help=
 '''quickFeature command generates feature matrix for each
-sample and alleles from the input vamos diploid vcf.
+haplotype/sample and alleles from the input vamos diploid vcf.
 Currently 4 feature types are supported:
     annoLen: allele length in motif unit
     annoStr: allele by motif string
@@ -58,7 +58,7 @@ Currently 4 feature types are supported:
     nt: allele by annotated nucleotide string
 ''')
 quickFeaturePosList = ['inVCF', 'outFile']
-quickFeatureOptList = ['feature', 'demographics', 'skipLoci']
+quickFeatureOptList = ['feature', 'byDip', 'demographics', 'skipLoci']
 parserDict['quickFeature'] = [quickFeaturePosList, quickFeatureOptList]
 # positional arguments
 parser_quickFeature.add_argument(quickFeaturePosList[0], type=str, \
@@ -70,10 +70,13 @@ parser_quickFeature.add_argument('-f', '--'+quickFeatureOptList[0], \
     type=str, metavar='', default='annoLen', \
     choices=['annoLen','annoStr','topCount','nt'], \
     help='{annoLen,annoStr,topCount,nt}\tfeature type, default annoLen')
-parser_quickFeature.add_argument('-d', '--'+quickFeatureOptList[1], \
+parser_quickFeature.add_argument('-D', '--'+quickFeatureOptList[1], \
+    action='store_true', \
+    help='\toutput features by diploid sample, homozygote as "feature/-"')
+parser_quickFeature.add_argument('-d', '--'+quickFeatureOptList[2], \
     type=str, metavar='', default=None, \
     help='string\tdemographics info,  default None')
-parser_quickFeature.add_argument('-s', '--'+quickFeatureOptList[2], \
+parser_quickFeature.add_argument('-s', '--'+quickFeatureOptList[3], \
     type=str, metavar='', default=None, \
     help='string\tlist of loci to skip (in bed format),  default None')
 
@@ -96,8 +99,8 @@ parser_waterfallPlot.add_argument('-l', '--'+waterfallPlotOptList[0],
     type=str, metavar='', default=None, \
     help='string\tinput bed of loci for plotting, default None')
 parser_waterfallPlot.add_argument('-s', '--'+waterfallPlotOptList[1], \
-    action='store_true', default=False, \
-    help='bool\tshould the plot alleles be sorted, default False')
+    action='store_true', \
+    help='\tshould the plot alleles be sorted, default False')
 
 
 ######################### testTwoPanels mode #########################
@@ -183,7 +186,7 @@ if __name__ == "__main__":
         import lib.quickFeature as quickFeature
 
         logging.info(f'Reading input vcf to generate feature matrix...')
-        quickFeature.writeFeature(inVCF, feature, outFile, \
+        quickFeature.writeFeature(inVCF, feature, byDip, outFile, \
                                   skipLoci, demographics)
 
     ######################### waterfallPlot mode #########################

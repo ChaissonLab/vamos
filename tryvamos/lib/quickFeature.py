@@ -22,7 +22,7 @@ def parseDemo(demographics):
     return demoDict
 
 
-def writeFeature(vcf, feature, outFile, skipLoci, demographics):
+def writeFeature(vcf, feature, byDip, outFile, skipLoci, demographics):
 
     if demographics:
         logging.info('Reading input demographics...')
@@ -43,14 +43,20 @@ def writeFeature(vcf, feature, outFile, skipLoci, demographics):
             if line.startswith('##'): continue
             if line.startswith('#'):
                 samples = line.strip().split()[9:]
-                temp = []
-                for s in samples: temp += s.split('/')
-                out.write('\t'.join(['#chr','start','end']+temp)+'\n')
+                haps = []
+                for s in samples: haps += s.split('/')
+                if byDip:
+                    out.write('\t'.join(['#chr','start','end']+samples)+'\n')
+                else:
+                    out.write('\t'.join(['#chr','start','end']+haps)+'\n')
 
                 # writing demographic tags for each sample (each tag as one row)
                 if demoDict:
-                    for j in range(len(demoDict[temp[0]])):
-                        tags = [ demoDict[s][j] for s in temp ]
+                    for j in range(len(demoDict[haps[0]])):
+                        if byDip:
+                            tags = [ demoDict[s][j] for s in samples ]
+                        else:
+                            tags = [ demoDict[s][j] for s in haps ]
                         out.write('\t'.join(['#chr','start','end']+tags)+'\n')
                 continue
 
@@ -63,23 +69,33 @@ def writeFeature(vcf, feature, outFile, skipLoci, demographics):
             if tr.chr in skipDict:
                 if (tr.start,tr.end) in skipDict[tr.chr]: continue
 
-            alleles = []
+            alleles = {}
             for s,a in tr.annosByUsed.items():
                 if a == ['.']:
-                    alleles.append('NA')
+                    alleles[s] = 'NA'
                 else:
                     if feature == 'annoLen':
-                        alleles.append( str(len(a)) )
+                        alleles[s] = str(len(a))
                     elif feature == 'annoStr':
-                        alleles.append( '-'.join(a) )
+                        alleles[s] = '-'.join(a)
                     elif feature == 'topCount':
-                        alleles.append( str(a.count('0')) )
+                        alleles[s] = str(a.count('0'))
                     else:
                         motifsDict = {v:k for k,v in tr.motifsUsed.items()}
-                        alleleNT = '-'.join( [motifsDict[int(i)] for i in a] )
-                        alleles.append( alleleNT )
+                        alleles[s] = '-'.join( [motifsDict[int(i)] for i in a] )
 
-            out.write('\t'.join([tr.chr,tr.start,tr.end]+alleles) +'\n')
+            if byDip:
+                allelesOut = []
+                for s in samples:
+                    allele1, allele2 = alleles[s+'_h1'], alleles[s+'_h2']
+                    if allele1 == allele2:
+                        allelesOut.append(f"{allele1}/-")
+                    else:
+                        allelesOut.append(f"{allele1}/{allele2}")
+            else:
+                allelesOut = [ a for s,a in alleles.items() ]
+
+            out.write('\t'.join([tr.chr,tr.start,tr.end]+allelesOut) +'\n')
 
     out.close()
 
