@@ -1,0 +1,4 @@
+assembly1,/path/to/assembly1.fasta,/path/to/assembly1.bam,/path/to/assembly1.trf.tsv,/path/to/assembly1.repeatMasker.tsv
+assembly2,/path/to/assembly2.fasta,/path/to/assembly2.bam,/path/to/assembly2.trf.tsv,/path/to/assembly2.repeatMasker.tsv
+assembly3,/path/to/assembly3.fasta,/path/to/assembly3.bam,/path/to/assembly3.trf.tsv,/path/to/assembly3.repeatMasker.tsv
+assembly4,/path/to/assembly4.fasta,/path/to/assembly4.bam,/path/to/assembly4.trf.tsv,/path/to/assembly4.repeatMasker.tsv

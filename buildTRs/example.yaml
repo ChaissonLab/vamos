@@ -1,0 +1,43 @@
+lib: /usr/bin/vamos/buildTRs/lib # path of the "vamos/buildTRs/lib" directory
+
+input:
+    manifest: /path/to/input.csv # path of input csv file containing 5 fields: assemblyID, assembly.fasta, assembly.bam, assembly-TRF.tsv, assembly-RepeatMasker.tsv
+
+database:
+    transposable: transposable_T2T-CHM13v2.0.tsv
+    centromere: centromere_T2T-CHM13v2.0.tsv
+    header: header.tsv
+
+software:
+    python3: /home1/bidagu/miniconda3/bin/python
+
+tool:
+    boundaryDecompose: boundaryDecompose.py
+    boundaryDecomposeLift: boundaryDecomposeLift.py
+    boundaryDecomposeLiftRefine: boundaryDecomposeLiftRefine.py
+    boundaryDecomposeLiftRefineAggregate: boundaryDecomposeLiftRefineAggregate.py
+    oriMotifLift: oriMotifLift.py
+    oriMotifLiftDecompose: oriMotifLiftDecompose.py
+    oriMotifFinal: oriMotifFinal.py
+    effMotifSplit: effMotifSplit.py
+    effMotifILP: effMotifILP.py
+
+parameter:
+    splits: 200
+    threadsILP: 16
+    timeLimitILP: 300
+    q: 0.1
+    chrs: chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22,chrX,chrY
+
+cluster:
+    boundaryDecompose: sbatch --partition=qcb --time=24:00:00 --cpus-per-task=1 --mem=10G
+    boundaryDecomposeLift: sbatch --partition=qcb --time=24:00:00 --cpus-per-task=1 --mem=50G
+    boundaryDecomposeLiftRefine: sbatch --partition=qcb --time=24:00:00 --cpus-per-task=1 --mem=10G
+    boundaryDecomposeLiftRefineAggregate: sbatch --partition=qcb --time=24:00:00 --cpus-per-task=1 --mem=10G --constraint="xeon-4116|xeon-6130"
+    boundaryFinal: sbatch --partition=qcb --time=24:00:00 --cpus-per-task=1 --mem=50G
+    oriMotifLift: sbatch --partition=qcb --time=24:00:00 --cpus-per-task=1 --mem=50G
+    oriMotifLiftDecompose: sbatch --partition=qcb --time=24:00:00 --cpus-per-task=1 --mem=10G
+    oriMotifFinal: sbatch --partition=qcb --time=24:00:00 --cpus-per-task=1 --mem=20G
+    effMotifSplit: sbatch --partition=qcb --time=24:00:00 --cpus-per-task=1 --mem=20G
+    effMotifILP: sbatch --partition=qcb --time=24:00:00 --cpus-per-task=16 --mem=32G
+    effMotifFinal: sbatch --partition=qcb --time=24:00:00 --cpus-per-task=1 --mem=50G
