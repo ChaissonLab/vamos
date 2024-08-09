@@ -45,4 +45,12 @@ Waterfall plot is a plot where TR alleles are visualized as concatenation of var
 python tryvamos.py waterfallPlot example/example.vcf example/plot --useLoci example/loci_for_waterfall.bed
 ```
 ### Genomew-wide tests of significance of TRs on two panel of samples
-
+The testTwoPanels module performs genome-wide tests for input TRs on two panel of samples. Currently the t-test is performed on TR length by motif counts and the KS-test is performed on distibution of motif counts.
+```
+python tryvamos.py testTwoPanels panel1.vcf panel2.vcf
+```
+### Pairwise comparison of TRs on two panel of samples
+The pairwiseCompare module performs pairwise comparison of TRs for two haplotype vamos vcfs.
+```
+python tryvamos.py pairwiseCompare sample1.vcf sample2.vcf
+```
