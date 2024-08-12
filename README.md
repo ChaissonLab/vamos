@@ -34,7 +34,7 @@ cd vamos*/src/ && make
 
 Next you should download a locus list. These are in BED format, with the coordinates of the tandem repeat as the BED coordinates, and the list of observed motifs from the Human Pangenome Reference Consortium given as the extra field.
 
-The latest motif sets as of v2.1 can be downloaded via: https://zenodo.org/records/11625069
+The latest motif sets as of v2.1 can be downloaded via: https://zenodo.org/records/13263615
 
 For annotation on GRCh38 using the *vamos* **efficient** motifs:
 ```
