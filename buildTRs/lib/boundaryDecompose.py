@@ -83,7 +83,7 @@ if __name__ == "__main__":
             for index,line in enumerate(f):
                 contig,start,end,consensus = line.strip().split()[:4]
                 start,end = int(start),int(end)
-                consensus = line.strip().split()[14]
+                #consensus = line.strip().split()[14]
 
                 if contig not in allDict: allDict[contig] = []
                 if [start,end,end-start,consensus] not in allDict[contig]:
