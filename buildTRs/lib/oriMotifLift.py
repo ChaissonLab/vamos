@@ -82,12 +82,13 @@ if __name__ == "__main__":
     logging.info('Reading input files...')
     seqDict = {s.id:str(s.seq).upper() for s in SeqIO.parse(inFA, 'fasta')}
     samfile = pysam.AlignmentFile(inBam, 'rb')
-    bedDict = {}
+    bedDict, inChrList = {}, []
     with open(inBed) as f:
         for line in f:
             chr,start,end = line.strip().split('\t')[:3]
             # skip alternative chromosomes
             if chr not in chrList: continue
+            if chr not in inChrList: inChrList.append(chr)
             bedDict[(chr,start,end)] = '_'.join([chr,start,end])
     logging.info('Reading input files finish')
 
@@ -103,6 +104,8 @@ if __name__ == "__main__":
         if read.reference_name not in chrList: continue
         if read.is_secondary: continue
         if read.mapping_quality < 60: continue
+        # skip reads that doesn't have any bed to map
+        if read.reference_name not in inChrList: continue
 
         id = read.query_name
         chr = read.reference_name
