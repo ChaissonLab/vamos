@@ -153,14 +153,16 @@ class TR:
                     key=lambda item: len(item[1]), reverse=True)
             self.annosByUsed = {k: v for k, v in temp}
 
+        nMotifs = len(self.motifsUsed)
+        whiteMotif = str(nMotifs+1)
         maxLen = self.maxLen + 1
 
         # extend alleles to maxLen
         for sample in self.annosByUsed.keys():
             if len(self.annosByUsed[sample]) < maxLen:
-                self.annosByUsed[sample].extend( ['257']*(maxLen - \
+                self.annosByUsed[sample].extend( [whiteMotif]*(maxLen - \
                                             len(self.annosByUsed[sample])) )
-                self.space = 1
+                self.space = True
 
 
     def heat(self, outPlot:str):
@@ -171,16 +173,22 @@ class TR:
         """
 
         samples = list(self.annosByUsed.keys())
+        # remove uncovered samples
+        samples = [ s for s in samples if '.' not in self.annosByUsed[s] ]
         annos = np.array([ [int(m) for m in self.annosByUsed[s]] \
                                    for s in samples ])
 
+        nMotifs = len(self.motifsUsed)
+        whiteMotif = str(nMotifs+1)
         maxLen = self.maxLen + 1
 
-        if self.space == 1:
-            cmap = sns.color_palette(cc.glasbey_hv, 257)
-            cmap.append((1,1,1))
-        else:
-            cmap = sns.color_palette(cc.glasbey_hv, maxLen)
+        # set up and output color code
+        cmap = sns.color_palette(cc.glasbey_hv, nMotifs)
+        cmap.append((1,1,1))
+        out = open(outPlot.replace('.png','.tsv'), 'w')
+        for i,m in enumerate(self.motifsUsed):
+            out.write('\t'.join([cmap.as_hex()[i],m])+'\n')
+        out.close()
 
         numTicks = len(samples)
         yticks = np.linspace(0, len(samples) - 1, numTicks, dtype=int)

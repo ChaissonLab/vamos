@@ -193,7 +193,7 @@ if __name__ == "__main__":
     elif command == 'waterfallPlot':
         import lib.waterfallPlot as waterfallPlot
 
-        logging.info(f'Gnerating waterfall plot...')
+        logging.info(f'Generating waterfall plot...')
         waterfallPlot.plot(inVCF, outDir, useLoci, sort)
 
 
