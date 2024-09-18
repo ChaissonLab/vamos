@@ -707,10 +707,9 @@ string &FlankSeq(READ* read, int side) {
 }
 
 void IO::initializeBam() {
-  fp_in = hts_open(input_bam.c_str(), "r"); //open bam file
+    fp_in = hts_open(input_bam.c_str(), "r"); //open bam file
     bamHdr = sam_hdr_read(fp_in); //read header
-    bai = input_bam + ".bai";
-    idx = sam_index_load(fp_in, bai.c_str());
+    idx = sam_index_load(fp_in, input_bam.c_str()); //samtools will implicitly search for the appropriate header if given the filename
     for (int i = 0; i < bamHdr->n_targets; ++i) {
       chromosomeNames.push_back(bamHdr->target_name[i]);
       chromosomeLengths.push_back(bamHdr->target_len[i]);      
