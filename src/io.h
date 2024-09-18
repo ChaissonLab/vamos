@@ -328,6 +328,7 @@ public:
     string region_and_motifs;
     string input_fasta;
     string input_bam;
+    string reference;
     string vntr_bed;
     string motif_csv;
     string out_vcf;
@@ -359,6 +360,7 @@ public:
       version = "2.1.4";
         region_and_motifs = "";
         input_bam = "";
+        reference = "";
         vntr_bed = "";
         motif_csv = "";
         out_vcf = "";
