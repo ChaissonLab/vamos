@@ -693,10 +693,10 @@ int main (int argc, char **argv)
             procInfo[i].opt = &opt;
             procInfo[i].io = new IO;
             procInfo[i].io->input_bam = io.input_bam;
+	    procInfo[i].io->reference = io.reference;
 	    procInfo[i].io->initializeBam();
 	    procInfo[i].io->chromosomeNames = io.chromosomeNames;
             procInfo[i].io->ioLock = &ioLock;
-            procInfo[i].io->idx = io.idx;
             procInfo[i].io->numProcessed = &num_processed;
 	    procInfo[i].io->thread = i;
             procInfo[i].mtx = &mtx;
