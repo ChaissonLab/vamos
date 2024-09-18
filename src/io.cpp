@@ -708,6 +708,9 @@ string &FlankSeq(READ* read, int side) {
 
 void IO::initializeBam() {
     fp_in = hts_open(input_bam.c_str(), "r"); //open bam file
+    if (!reference.empty()) {
+        hts_set_opt(fp_in, CRAM_OPT_REFERENCE, reference.c_str());
+    }
     bamHdr = sam_hdr_read(fp_in); //read header
     idx = sam_index_load(fp_in, input_bam.c_str()); //samtools will implicitly search for the appropriate header if given the filename
     for (int i = 0; i < bamHdr->n_targets; ++i) {
