@@ -353,6 +353,7 @@ int main (int argc, char **argv)
         {"accuracy"        ,required_argument,       0, 'a'},
         {"phase_flank"     ,required_argument,       0, 'p'},
         {"download_db"     ,required_argument,       0, 'm'},
+	{"reference"       ,required_argument,       0, 'R'},
         // {"input",           required_argument,       0, 'i'},
         // {"motif",           required_argument,       0, 'm'},
 
@@ -360,7 +361,7 @@ int main (int argc, char **argv)
     };
     /* getopt_long stores the option index here. */
     int option_index = 0;
-    while ((c = getopt_long (argc, argv, "Sb:r:a:o:C:s:t:f:d:c:x:v:m:p:hL:", long_options, &option_index)) != -1)
+    while ((c = getopt_long (argc, argv, "Sb:r:a:o:C:s:t:f:d:c:x:v:m:R:p:hL:", long_options, &option_index)) != -1)
     {
         switch (c)
         {
@@ -388,7 +389,10 @@ int main (int argc, char **argv)
                 fprintf (stderr, "option --bam with `%s'\n", optarg);
 		io.input_bam = optarg;
                 break;
-
+	    case 'R':
+                fprintf (stderr, "option --reference with `%s'\n", optarg);
+                io.reference = optarg;
+                break;
             case 'v':
                 fprintf (stderr, "option --vntr with `%s'\n", optarg);
                 io.vntr_bed = optarg;
@@ -689,10 +693,10 @@ int main (int argc, char **argv)
             procInfo[i].opt = &opt;
             procInfo[i].io = new IO;
             procInfo[i].io->input_bam = io.input_bam;
+	    procInfo[i].io->reference = io.reference;
 	    procInfo[i].io->initializeBam();
 	    procInfo[i].io->chromosomeNames = io.chromosomeNames;
             procInfo[i].io->ioLock = &ioLock;
-            procInfo[i].io->idx = io.idx;
             procInfo[i].io->numProcessed = &num_processed;
 	    procInfo[i].io->thread = i;
             procInfo[i].mtx = &mtx;
