@@ -54,14 +54,14 @@ void OutWriter::writeHeader_locuswise(ofstream &out)
 	out	<< "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant\">" << "\n"
 		<< "##INFO=<ID=RU,Number=1,Type=String,Description=\"Comma separated motif sequences list in the reference orientation\">" << "\n"
 		<< "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"Type of structural variant\">" << "\n"
-		<< "##INFO=<ID=ALTANNO_H1,Number=1,Type=String,Description=\"\"Motif representation for the h1 alternate allele>" << "\n"
-		<< "##INFO=<ID=ALTANNO_H2,Number=1,Type=String,Description=\"\"Motif representation for the h2 alternate allele>" << "\n";
+		<< "##INFO=<ID=ALTANNO_H1,Number=1,Type=String,Description=\"Motif representation for the h1 alternate allele\">" << "\n"
+		<< "##INFO=<ID=ALTANNO_H2,Number=1,Type=String,Description=\"Motif representation for the h2 alternate allele\">" << "\n";
 
 	if (output_read_anno_flag)
-		out << "##INFO=<ID=READANNO,Number=1,Type=String,Description=\"\"Motif representation for the read>" << "\n";
+		out << "##INFO=<ID=READANNO,Number=1,Type=String,Description=\"Motif representation for the read\">" << "\n";
 
-	out << "##INFO=<ID=LEN_H1,Number=1,Type=Integer,Description=\"\"Length of the motif annotation for the h1 alternate allele>" << "\n"
-		<< "##INFO=<ID=LEN_H2,Number=1,Type=Integer,Description=\"\"Length of the motif annotation for the h2 alternate allele>" << "\n"
+	out << "##INFO=<ID=LEN_H1,Number=1,Type=Integer,Description=\"Length of the motif annotation for the h1 alternate allele\">" << "\n"
+		<< "##INFO=<ID=LEN_H2,Number=1,Type=Integer,Description=\"Length of the motif annotation for the h2 alternate allele\">" << "\n"
 		<< "##FILTER=<ID=PASS,Description=\"All filters passed\">" << "\n"
 		<< "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << "\n"
 		<< "##ALT=<ID=VNTR,Description=\"Allele comprised of VNTR repeat units\">" << "\n";
