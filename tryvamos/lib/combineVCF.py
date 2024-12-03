@@ -220,7 +220,7 @@ def GetFiltListMin(vals, filt):
     filtVals = []
     for i in range(0,len(vals)):
         if filt[i]:
-            filtVals.append(vals[i])
+            filtVals.append(int(vals[i]))
     return min(filtVals)
     
 def GetCurVal(l, p):
@@ -229,6 +229,12 @@ def GetCurVal(l, p):
     else:
         return l[p]
 
+def GetCurPos(l, p):
+    if l is None:
+        return None
+    else:
+        return int(l[p])
+    
 def AllEqual(l):
     if len(l) <= 1:
         return True
@@ -260,11 +266,18 @@ def greedyCombineVcfs(inFofnName, outVcf):
     procChrom = None
     minPos   = None
     parsedLines = [None for i in range(0,nVcfs)]
+    iter=0
     while True:
         #
         # Move each file pointer forward for vcfs that have cur chrom and cur pos
         # matching min chrom and pos.
         #
+#        print("------------------------------------------")
+#        print(str(iter))
+#        print(str(procChrom))
+#        print(str(curChrom))
+#        print(str(curPos))
+        iter+=1
         parsedLines = [AdvanceLine(curChrom[i], curPos[i], procChrom, minPos, parsedLines[i], inVcfs[i]) for i in range(0,nVcfs)]
         if RemainingLines(parsedLines) == False:
             break
@@ -293,7 +306,7 @@ def greedyCombineVcfs(inFofnName, outVcf):
                 
         onCurChrom = [chrom == procChrom for chrom in curChrom]
         
-        curPos   = [GetCurVal(parsedLines[i], 1) for i in range(nVcfs)]
+        curPos   = [GetCurPos(parsedLines[i], 1) for i in range(nVcfs)]
         foundPos = False
         for p in curPos:
             if p is not None:
