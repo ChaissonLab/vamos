@@ -20,6 +20,15 @@ def getVCFSampleName(vcf):
     return sample
 
 
+def AdvanceToChrom(fh):
+    header=[]
+    for line in fh:
+        if len(line) > 0 and "#CHROM" in line[0:7]:
+            return (header, line)
+        else:
+            header.append(line)
+    
+
 def parseSingleVCFOneLine(line):
 
     chr,pos,id,ref,alt,qual,filter,info,_,gt = line.strip().split('\t')
@@ -178,9 +187,164 @@ def allele(vcfDict):
 
                 coorDict['genotype'][i] = gt1 +'/'+ gt2
 
+                
+def RemainingLines(lines):
+    if False not in lines:
+        return True
+    else:
+        return False
 
-def combineVCF(inVCFs, outVCF):
+def GetGTIndex(isMatching, annoStrs, anno):
+    if (isMatching == False or anno == "." or anno is None):
+        return "."
+    else:
+        return annoStrs[anno]
 
+def AdvanceLine(curChrom, curPos, minChrom, minPos, curParsedLine, fh):
+    if curChrom is None or minChrom is None or (curChrom == minChrom and curPos == minPos):
+        nextLine =fh.readline()
+        if nextLine is None or nextLine == '':
+            return None
+        else:
+            return parseSingleVCFOneLine(nextLine)
+    else:
+        return curParsedLine
+
+
+def GetListMin(chroms):
+    if None in chroms:
+        return None
+    return min(chroms)
+
+def GetFiltListMin(vals, filt):
+    filtVals = []
+    for i in range(0,len(vals)):
+        if filt[i]:
+            filtVals.append(vals[i])
+    return min(filtVals)
+    
+def GetCurVal(l, p):
+    if l is None:
+        return None
+    else:
+        return l[p]
+
+def AllEqual(l):
+    if len(l) <= 1:
+        return True
+    else:
+        for i in range(1,len(l)):
+            if l[0] != l[i]:
+                return False
+        return True
+    
+def greedyCombineVcfs(inFofnName, outVcf):
+    vcfFofn=open(inFofnName)
+    vcfFileNames = [l.strip() for l in vcfFofn]
+    inVcfs = [open(f) for f in vcfFileNames ]
+    headers = [AdvanceToChrom(fh) for fh in inVcfs]
+    outFile=open(outVcf, 'w')
+    #
+    # Print the shared header
+    #
+    outFile.write(''.join(headers[0][0]))
+    #
+    # Form the chrom line assuming every pair of samples are from two haplotypes
+    #
+    chromLine=headers[0][1].split()[:8]
+    chromLine+= [headers[i][1].split()[9] for i in range(0,len(headers),2)]
+    outFile.write("\t".join(chromLine) + "\n")
+    nVcfs=len(inVcfs)
+    curChrom = [None for i in range(0,nVcfs)]
+    curPos   = [None for i in range(0,nVcfs)]
+    procChrom = None
+    minPos   = None
+    parsedLines = [None for i in range(0,nVcfs)]
+    while True:
+        #
+        # Move each file pointer forward for vcfs that have cur chrom and cur pos
+        # matching min chrom and pos.
+        #
+        parsedLines = [AdvanceLine(curChrom[i], curPos[i], procChrom, minPos, parsedLines[i], inVcfs[i]) for i in range(0,nVcfs)]
+        if RemainingLines(parsedLines) == False:
+            break
+        
+        curChrom = [GetCurVal(parsedLines[i], 0) for i in range(nVcfs)]
+        #
+        # Special case where first entry is processed.
+        if procChrom is None:
+            if AllEqual(curChrom) == False:
+                print("ERROR, the first line contains different chromosomes, a case not currently handled.")
+                sys.exit(0)
+            procChrom = curChrom[0]
+        else:
+            #
+            # Check to see if all files have processed the current chromosomes.
+            onNext = True
+            for c in curChrom:
+                if c == procChrom:
+                    onNext = False
+            if onNext:
+                # Moved to the next chromosome. Should all be on the same.
+                if AllEqual(curChrom) == False:
+                    print("ERROR, the first line contains different chromosomes, a case not currently handled.")
+                    sys.exit(0)
+                procChrom = curChrom[0]
+                
+        onCurChrom = [chrom == procChrom for chrom in curChrom]
+        
+        curPos   = [GetCurVal(parsedLines[i], 1) for i in range(nVcfs)]
+        foundPos = False
+        for p in curPos:
+            if p is not None:
+                foundPos = True
+                break
+        if foundPos == False:
+            break
+            
+        minPos   = GetFiltListMin(curPos, onCurChrom)
+        isMatching = [ curChrom[i] == procChrom and curPos[i] == minPos for i in range(0,nVcfs) ]
+        
+        annoStrs = {}
+        annoIdx  = {}
+        #
+        # Aggregate all the anno strs for the lines that match the current chrom, pos
+        #
+        foundMatch = False
+        for p in curPos:
+            if p != None:
+                foundMatch = True
+        if foundMatch is False:
+            break
+        for i in range(0,nVcfs):
+            if isMatching[i] == False:
+                continue
+            alleleStr = parsedLines[i][3]
+            if alleleStr != "." and alleleStr not in annoStrs:
+                idx = len(annoStrs)+1
+                annoStrs[alleleStr] = idx 
+                annoIdx[idx] = alleleStr.replace(',','-')
+        firstValid=0
+        for i in range(0,len(parsedLines)):
+            if isMatching[i]:
+                firstValid = i
+                break
+        infoStr = "{};{};SVTYPE=VNTR;ALTANNO={}".format(parsedLines[firstValid][2][7], parsedLines[firstValid][2][8], ",".join(annoIdx[i] for i in range(1,len(annoStrs)+1)))
+        nPairs = int(len(parsedLines)/2)
+        gtStrs = [str(GetGTIndex(isMatching[i*2], annoStrs, GetCurVal(parsedLines[i*2],3))) + "|" + str(GetGTIndex(isMatching[i*2+1], annoStrs, GetCurVal(parsedLines[i*2+1],3))) for i in range(0,nPairs)]
+        gtLine = "\t".join(parsedLines[firstValid][2][0:7]) + "\t" + infoStr + "\tGT\t" + "\t".join(gtStrs) + "\n"
+        outFile.write(gtLine)
+    
+        
+                
+
+            
+def combineVCF(inVCFs, outVCF, greedy):
+
+    if greedy:
+        greedyCombineVcfs(inVCFs, outVCF)
+        return
+    
     samplesAll, header, vcfDict = readAllVCF(inVCFs)
 
     logging.info(f'Summarizing alleles for each locus...')

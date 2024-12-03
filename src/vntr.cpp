@@ -294,7 +294,7 @@ void VNTR::commaSeparatedMotifAnnoForConsensus(bool h1, string &motif_anno)
 	if (consensus.size() > 0) {
 	  for (auto &it : consensus[0])
 	    {
-	      motif_anno += to_string(it) + ",";
+	      motif_anno += to_string(it) + "-";
 	      len_h1 += 1;
 	    }
 	}
@@ -309,7 +309,7 @@ void VNTR::commaSeparatedMotifAnnoForConsensus(bool h1, string &motif_anno)
       if (consensus.size() > 1) {
         for (auto &it : consensus[1])
 	  {
-            motif_anno += to_string(it) + ",";
+            motif_anno += to_string(it) + "-";
             len_h2 += 1;
 	  }
       }
@@ -323,7 +323,7 @@ void VNTR::commaSeparatedMotifAnnoForConsensus(bool h1, string &motif_anno)
 	if (consensus.size() > 0) {
 	  for (auto &it : consensus[0])
 	    {
-	      motif_anno += to_string(it) + ",";
+	      motif_anno += to_string(it) + "-";
 	      len_h2 += 1;
 	    }
 	}

@@ -29,11 +29,16 @@ parser = argparse.ArgumentParser(\
 subparsers = parser.add_subparsers(dest='command')
 
 ######################### combineVCF mode #########################
+
+
 parser_combineVCF = subparsers.add_parser('combineVCF', help=
 '''quickFeature command generates diploid multi-sample
 vcf from given haploid or diploid single sample vcfs.
 Each line of the input csv file can be a single diploid
 vcf or two haploid vcf as "hap1.vcf,hap2.vcf".
+Using --greedy, this uses line-sweep to generates diploid multi-sample
+vcf from a list of pairs of haploid vcfs. The vcfs must be
+in the same order, but may be missing entries
 ''')
 combineVCFPosList = ['inVCFs', 'outVCF']
 combineVCFOptList = []
@@ -43,6 +48,9 @@ parser_combineVCF.add_argument(combineVCFPosList[0], type=str, \
     help='string\tinput list of vcfs,  e.g. /in/samples.csv')
 parser_combineVCF.add_argument(combineVCFPosList[1], type=str, \
     help='string\toutput combined vcf,  e.g. /out/combined.vcf')
+parser_combineVCF.add_argument("--greedy", action="store_true", \
+    help='Use line-sweep so that only one line at a time is read from each file.')
+
 # optional arguments
 
 
@@ -159,6 +167,10 @@ parser_pairwiseCompare.add_argument('-s', '--'+pairwiseCompareOptList[0], \
 
 ########## strict positional/optional arguments checking ##########
 argsDict = vars(parser.parse_args())
+if argsDict['command'] is None:
+    parser.print_help()
+    sys.exit(0)
+    
 posList, optList = parserDict[argsDict['command']]
 logging.info('Parsing Input Arguements...')
 logging.info(f'Required Argument - mode: {argsDict["command"]}')
@@ -178,7 +190,7 @@ if __name__ == "__main__":
         import lib.combineVCF as combineVCF
 
         logging.info(f'Combing vcfs...')
-        combineVCF.combineVCF(inVCFs, outVCF)
+        combineVCF.combineVCF(inVCFs, outVCF, greedy)
 
     ######################### quickFeature mode #########################
     if command == 'quickFeature':
