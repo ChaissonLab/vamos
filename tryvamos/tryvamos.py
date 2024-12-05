@@ -17,7 +17,7 @@ logging.basicConfig(
 parserDict = {}
 # author and version info
 usage = ' <mode> <options> \n'
-version = 'Version: 1.0.0.0'
+version = 'Version: 1.1.0.0'
 description = '''\nDescription:
 This program provides a tool set for various downstream analysis using TR
 annotation output from the Vamos software.
@@ -31,15 +31,17 @@ subparsers = parser.add_subparsers(dest='command')
 ######################### combineVCF mode #########################
 
 
-parser_combineVCF = subparsers.add_parser('combineVCF', help=
-'''quickFeature command generates diploid multi-sample
-vcf from given haploid or diploid single sample vcfs.
-Each line of the input csv file can be a single diploid
-vcf or two haploid vcf as "hap1.vcf,hap2.vcf".
-Using --greedy, this uses line-sweep to generates diploid multi-sample
-vcf from a list of pairs of haploid vcfs. The vcfs must be
-in the same order, but may be missing entries
-''')
+parser_combineVCF = subparsers.add_parser('combineVCF', description=
+'''combineVCF:
+This command generates diploid multi-sample vcf from given haploid or diploid
+single sample vcfs.
+Each line of the input csv file can be a single diploid vcf as "dip.vcf" or two
+comma delimited haploid vcfs as "hap1.vcf,hap2.vcf".
+The best chromosome orders in the combined vcf are determined from the
+chromosome orders of all input vcf (as ordered in the vcf headers).
+For each locus, allele index is ordered by the order it appears in all samples.
+Samples are ordered as in the input csv file.
+''', formatter_class=argparse.RawTextHelpFormatter)
 combineVCFPosList = ['inVCFs', 'outVCF']
 combineVCFOptList = []
 parserDict['combineVCF'] = [combineVCFPosList, combineVCFOptList]
@@ -48,23 +50,21 @@ parser_combineVCF.add_argument(combineVCFPosList[0], type=str, \
     help='string\tinput list of vcfs,  e.g. /in/samples.csv')
 parser_combineVCF.add_argument(combineVCFPosList[1], type=str, \
     help='string\toutput combined vcf,  e.g. /out/combined.vcf')
-parser_combineVCF.add_argument("--greedy", action="store_true", \
-    help='Use line-sweep so that only one line at a time is read from each file.')
-
 # optional arguments
 
 
 ######################### quickFeature mode #########################
-parser_quickFeature = subparsers.add_parser('quickFeature', help=
-'''quickFeature command generates feature matrix for each
-haplotype/sample and alleles from the input vamos diploid vcf.
+parser_quickFeature = subparsers.add_parser('quickFeature', description=
+'''quickFeature:
+This command generates feature matrix for each haplotype/sample and alleles from
+the input vamos diploid vcf.
 Currently 4 feature types are supported:
-    annoLen: allele length in motif unit
-    annoStr: allele by motif string
-    topCount: allele by count of the most frequent motif
-              (i.e., motif "0" in the annotation string)
-    nt: allele by annotated nucleotide string
-''')
+    annoLen:    allele length in motif unit
+    annoStr:    allele by motif string
+    topCount:   allele by count of the most frequent motif (i.e., motif "0" in
+                the annotation string)
+    nt:         allele by annotated nucleotide string
+''', formatter_class=argparse.RawTextHelpFormatter)
 quickFeaturePosList = ['inVCF', 'outFile']
 quickFeatureOptList = ['feature', 'byDip', 'demographics', 'skipLoci']
 parserDict['quickFeature'] = [quickFeaturePosList, quickFeatureOptList]
@@ -93,10 +93,11 @@ parser_quickFeature.add_argument('-s', '--'+quickFeatureOptList[3], \
 waterfallPlotPosList = ['inVCF', 'outDir']
 waterfallPlotOptList = ['useLoci', 'sort']
 parserDict['waterfallPlot'] = [waterfallPlotPosList, waterfallPlotOptList]
-parser_waterfallPlot = subparsers.add_parser('waterfallPlot', help=
-'''waterfallPlot command generates waterfall plots of all
-loci or selected loci in the input vamos diploid vcf.
-''')
+parser_waterfallPlot = subparsers.add_parser('waterfallPlot', description=
+'''waterfallPlot:
+This command generates waterfall plots of all loci or selected loci in the input
+vamos diploid vcf.
+''', formatter_class=argparse.RawTextHelpFormatter)
 # positional arguments
 parser_waterfallPlot.add_argument(waterfallPlotPosList[0], type=str, \
     help='string\tinput combined diploid vamos vcf,  e.g. /in/samples.vcf')
@@ -115,13 +116,13 @@ parser_waterfallPlot.add_argument('-s', '--'+waterfallPlotOptList[1], \
 testTwoPanelsPosList = ['inVCF1', 'inVCF2', 'outFile']
 testTwoPanelsOptList = ['skipLoci', 'testType', 'varCut', 'outPlotDir']
 parserDict['testTwoPanels'] = [testTwoPanelsPosList, testTwoPanelsOptList]
-parser_testTwoPanels = subparsers.add_parser('testTwoPanels', help=
-'''testTwoPanels command performs statistical tests to
-compare alleles for each TR locus on two given panel of
-samples. Currently 2 test types are supported:
+parser_testTwoPanels = subparsers.add_parser('testTwoPanels', description=
+'''testTwoPanels:
+This command performs statistical tests to compare alleles for each TR locus on
+two given panel of samples. Currently 2 test types are supported:
     tf: t-test and f-test of annotation length
     ks: ks-test of motif count distribution
-''')
+''', formatter_class=argparse.RawTextHelpFormatter)
 # positional arguments
 parser_testTwoPanels.add_argument(testTwoPanelsPosList[0], type=str, \
     help='string\tinput vcf file 1,  e.g. /in/1.vcf')
@@ -148,10 +149,11 @@ parser_testTwoPanels.add_argument('-o', '--'+testTwoPanelsOptList[3], \
 pairwiseComparePosList = ['inVCF1', 'inVCF2', 'outFile']
 pairwiseCompareOptList = ['skipLoci']
 parserDict['pairwiseCompare'] = [pairwiseComparePosList, pairwiseCompareOptList]
-parser_pairwiseCompare = subparsers.add_parser('pairwiseCompare', help=
-'''pairwiseCompare command generates allele comparison for
-TR loci of given pair of single haplotype vamos vcfs.
-''')
+parser_pairwiseCompare = subparsers.add_parser('pairwiseCompare', description=
+'''pairwiseCompare:
+This command generates allele comparison for TR loci of given pair of single
+haplotype vamos vcfs.
+''', formatter_class=argparse.RawTextHelpFormatter)
 # positional arguments
 parser_pairwiseCompare.add_argument(pairwiseComparePosList[0], type=str, \
     help='string\tinput vcf file 1,  e.g. /in/1.vcf')
@@ -190,7 +192,7 @@ if __name__ == "__main__":
         import lib.combineVCF as combineVCF
 
         logging.info(f'Combing vcfs...')
-        combineVCF.combineVCF(inVCFs, outVCF, greedy)
+        combineVCF.combineVcfs(inVCFs, outVCF)
 
     ######################### quickFeature mode #########################
     if command == 'quickFeature':

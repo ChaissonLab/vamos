@@ -201,4 +201,5 @@ class TR:
         #ax.set_yticklabels(yticklabels, rotation=0, fontsize="3")
         #print(yticklabels)
         plt.savefig(outPlot, bbox_inches='tight', dpi=300, format='png')
+        plt.close()
 

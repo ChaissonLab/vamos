@@ -10,28 +10,9 @@ logging.basicConfig(
         level=logging.DEBUG)
 
 
-def getVCFSampleName(vcf):
-    with open(vcf) as f:
-        for line in f:
-            if line.startswith('#CHROM'):
-                sample = line.strip().split('\t')[-1]
-                break
+def parseSingleVcfOneLine(line):
 
-    return sample
-
-
-def AdvanceToChrom(fh):
-    header=[]
-    for line in fh:
-        if len(line) > 0 and "#CHROM" in line[0:7]:
-            return (header, line)
-        else:
-            header.append(line)
-    
-
-def parseSingleVCFOneLine(line):
-
-    chr,pos,id,ref,alt,qual,filter,info,_,gt = line.strip().split('\t')
+    chrom,pos,id,ref,alt,qual,filter,info,_,gt = line.strip().split('\t')
     if 'ALTANNO_H2' in info:
         end,ru,_,altH1,_,altH2,_ = info.split(';')[:-1]
     else:
@@ -43,344 +24,187 @@ def parseSingleVCFOneLine(line):
     gt1 = [altH1, altH2][int(gt1)-1]
     gt2 = [altH1, altH2][int(gt2)-1]
 
-    constant = [chr, pos, id, ref, alt, qual, filter, end, ru]
+    constant = [chrom, pos, id, ref, alt, qual, filter, end, ru]
 
-    return(chr, pos, constant, gt1, gt2)
-
-
-# read one haploid/diploid vcf
-def readSingleVCF(vcf,vcfDict):
-
-    with open(vcf) as f:
-        for line in f:
-
-            if line.startswith('#CHROM'):
-                sample = line.strip().split('\t')[-1]
-            if line.startswith('#'): continue
-
-            chr, start, constant, altH1, altH2 = parseSingleVCFOneLine(line)
-
-            if chr not in vcfDict: vcfDict[chr] = {}
-            if start not in vcfDict[chr]:
-                vcfDict[chr][start] = { 'constant':constant, 'sample':[], \
-                    'altH1':[], 'altH2':[], 'genotype':[], 'alleles':[] }
-
-            vcfDict[chr][start]['sample'].append(sample)
-            vcfDict[chr][start]['altH1'].append(altH1)
-            vcfDict[chr][start]['altH2'].append(altH2)
-            vcfDict[chr][start]['genotype'].append('NULL')
+    return(chrom, pos, constant, gt1, gt2)
 
 
-# read two haploid vcfs (note that "altH1" is always taken for each vcf)
-def readPairedVCF(vcf1,vcf2,vcfDict):
-
-    tempDict = {}
-    with open(vcf1) as f:
-        for line in f:
-
-            if line.startswith('#CHROM'):
-                sample1 = line.strip().split('\t')[-1]
-            if line.startswith('#'): continue
-            chr, start, constant, altH1, altH2 = parseSingleVCFOneLine(line)
-            tempDict[(chr,start)] = [altH1, '.']
-
-            if chr not in vcfDict: vcfDict[chr] = {}
-            if start not in vcfDict[chr]:
-                vcfDict[chr][start] = { 'constant':constant, 'sample':[], \
-                    'altH1':[], 'altH2':[], 'genotype':[], 'alleles':[] }
-
-    with open(vcf2) as f:
-        for line in f:
-
-            if line.startswith('#CHROM'):
-                sample2 = line.strip().split('\t')[-1]
-            if line.startswith('#'): continue
-            chr, start, constant, altH1, altH2 = parseSingleVCFOneLine(line)
-            if (chr,start) in tempDict:
-                tempDict[(chr,start)][1] = altH1
-            else:
-                tempDict[(chr,start)] = ['.', altH1]
-
-            if chr not in vcfDict: vcfDict[chr] = {}
-            if start not in vcfDict[chr]:
-                vcfDict[chr][start] = { 'constant':constant, 'sample':[], \
-                    'altH1':[], 'altH2':[], 'genotype':[], 'alleles':[] }
-
-    sample = sample1+'/'+sample2
-    for (chr,start),(altH1,altH2) in tempDict.items():
-
-        vcfDict[chr][start]['sample'].append(sample)
-        vcfDict[chr][start]['altH1'].append(altH1)
-        vcfDict[chr][start]['altH2'].append(altH2)
-        vcfDict[chr][start]['genotype'].append('NULL')
-
-
-def readAllVCF(inVCFs):
-
-    with open(inVCFs) as f:
-        vcfList = [ line.strip() for line in f ]
-    vcfList = [ vcf.split(',') for vcf in vcfList ]
-
-    # get all sample names
-    samplesAll = []
-    for vcfs in vcfList:
-        if len(vcfs) == 1:
-            samplesAll.append(getVCFSampleName(vcfs[0]))
+# read header lines, ordered chrom list, and sample id for one vamos vcf
+def advanceToChromForOneVcf(fileObject):
+    meta, contigInfo = [], {}
+    for line in fileObject:
+        if line.startswith('##'):
+            if line.startswith('##contig='):
+                contigInfo[line.split(',')[0].split('ID=')[1]] = line
+            if line.startswith('##fileformat') or line.startswith('##source'):
+                meta.append(line)
+        elif line.startswith('#CHROM'): # reach the "#Chrom" line
+            sampleID = line.strip().split('\t')[-1]
+            return(meta, contigInfo, sampleID)
         else:
-            sample = getVCFSampleName(vcfs[0]) +'/'+ getVCFSampleName(vcfs[1])
-            samplesAll.append(sample)
+            sys.exit('Error on input vcf header!')
 
-    # make header for the combined vcf
-    with open(vcfList[0][0]) as f:
-        header = [line for line in f if line.startswith('#')]
-    header = [ h for h in header[:len(header)-1] if 'INFO=<ID=' not in h ]
+# obtain the overall header, ordered chrom list, and sample id of all vamos vcf 
+def getHeader(headerInfo, pairingInfo):
+    firstChrom, ordering, contigInfoOverall = [], {}, {}
+    sampleIDs = [ h[2] for h in headerInfo ]
+    for meta,contigInfo,sampleID in headerInfo:
+        chroms = list(contigInfo.keys())
+        contigInfoOverall.update(contigInfo)
+        if len(chroms) > 0: firstChrom.append(chroms[0]) # store the "first" chrom of all samples
+        for i in range(len(chroms)-1): # count the chrom orders in all samples
+            if chroms[i] not in ordering: ordering[chroms[i]] = {}
+            if chroms[i+1] not in ordering[chroms[i]]:
+                ordering[chroms[i]][chroms[i+1]] = 0
+            ordering[chroms[i]][chroms[i+1]] += 1
+
+    # find the most frequent "first" chrom in all samples
+    firstChrom = max(set(firstChrom), key=firstChrom.count)
+
+    # find the best chrom order in all samples
+    for chrom,chromDict in ordering.items():
+        ordering[chrom] = max(chromDict, key=chromDict.get)
+
+    # config the final chrom list
+    chroms = [firstChrom]
+    currentChrom, nextChrom = firstChrom, ordering[firstChrom]
+    while True:
+        chroms.append(ordering[currentChrom])
+        currentChrom = nextChrom
+        if currentChrom not in ordering: break # currentChrom is the last chrom
+        nextChrom = ordering[currentChrom]
+
+    logging.info(f"configured chromosome orders: {','.join(chroms)}")
+
+    # config the output sampleIDs
+    sampleIDsOut, dipSampleIDs = [], []
+    for i,pair in enumerate(pairingInfo):
+        if pair == 'Dip':
+            sampleIDsOut.append(sampleIDs[i])
+            dipSampleIDs.append(sampleIDs[i])
+        elif pair == 'Hap1':
+            sampleIDsOut.append(f'{sampleIDs[i]}/{sampleIDs[i+1]}')
+            dipSampleIDs.append(f'{sampleIDs[i]}/{sampleIDs[i+1]}')
+            dipSampleIDs.append(f'{sampleIDs[i]}/{sampleIDs[i+1]}')
+        else:
+            pass
+
+    logging.info(f"configured diploid sample IDs: {','.join(sampleIDsOut)}")
+
+    # config the final header
+    header = headerInfo[0][0] + [contigInfoOverall[c] for c in chroms]
+    header.append('##FILTER=<ID=PASS,Description="All filters passed">\n')
+    header.append('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n')
+    header.append('##ALT=<ID=VNTR,Description="Allele comprised of VNTR repeat units">\n')
     header.append('##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant">\n')
     header.append('##INFO=<ID=RU,Number=1,Type=String,Description="Comma separated motif sequences list in the reference orientation">\n')
     header.append('##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">\n')
     header.append('##INFO=<ID=ALTANNO,Number=A,Type=String,Description="Motif representation for all alleles">\n')
-    header.append('#' + '\t'.join(['CHROM','POS','ID','REF','ALT','QUAL','FILTER','INFO','FORMAT'] + samplesAll) +'\n')
+    header.append('\t'.join(['#CHROM','POS','ID','REF','ALT','QUAL','FILTER','INFO','FORMAT'] + sampleIDsOut) +'\n')
 
-    vcfDict = {}
-    for vcfs in vcfList:
-        if len(vcfs) == 1:
-            logging.info(f'Reading single vcf: {vcfs[0]}')
-            readSingleVCF(vcfs[0], vcfDict)
-        elif len(vcfs) == 2:
-            logging.info(f'Reading pair of vcfs: {vcfs[0]} & {vcfs[1]}')
-            readPairedVCF(vcfs[0], vcfs[1], vcfDict)
-        else:
-            sys.exit('Error on input! Please check the input instructions.')
-
-    # sort vcfDict by start for each chr
-    for chr,chrDict in vcfDict.items():
-        vcfDict[chr] = {k:v for k,v in sorted(chrDict.items(), \
-                                              key=lambda x: int(x[0]))}
-
-    return(samplesAll, header, vcfDict)
+    return(header, chroms, sampleIDs, dipSampleIDs)
 
 
-def allele(vcfDict):
-
-    for chr,chrDict in vcfDict.items():
-        for start,coorDict in chrDict.items():
-
-            # save all alleles to coorDict['alleles'] for allele indexing
-            for a in coorDict['altH1']:
-                if a not in coorDict['alleles'] and a != '.':
-                    coorDict['alleles'].append(a)
-            for a in coorDict['altH2']:
-                if a not in coorDict['alleles'] and a != '.':
-                    coorDict['alleles'].append(a)
-
-            # allele indexing
-            for i,sample in enumerate(coorDict['sample']):
-
-                if not coorDict['altH1'][i] == '.':
-                    gt1 = str(coorDict['alleles'].index(coorDict['altH1'][i])+1)
-                else:
-                    gt1 = '.'
-
-                if not coorDict['altH2'][i] == '.':
-                    gt2 = str(coorDict['alleles'].index(coorDict['altH2'][i])+1)
-                else:
-                    gt2 = '.'
-
-                coorDict['genotype'][i] = gt1 +'/'+ gt2
-
-                
-def RemainingLines(lines):
-    if False not in lines:
-        return True
-    else:
-        return False
-
-def GetGTIndex(isMatching, annoStrs, anno):
-    if (isMatching == False or anno == "." or anno is None):
-        return "."
-    else:
-        return annoStrs[anno]
-
-def AdvanceLine(curChrom, curPos, minChrom, minPos, curParsedLine, fh):
-    if curChrom is None or minChrom is None or (curChrom == minChrom and curPos == minPos):
-        nextLine =fh.readline()
+# check if need to read the next line for one vcf
+def advanceLineForOneVcf(curChrom, curStart, minChrom, minStart, parsedLine, vcfFileObject):
+    if curChrom is None or (curChrom == minChrom and curStart == minStart):
+        nextLine = vcfFileObject.readline()
         if nextLine is None or nextLine == '':
             return None
         else:
-            return parseSingleVCFOneLine(nextLine)
+            return parseSingleVcfOneLine(nextLine)
     else:
-        return curParsedLine
+        return parsedLine
 
 
-def GetListMin(chroms):
-    if None in chroms:
-        return None
-    return min(chroms)
+def combineVcfs(inVcfs, outVcf):
 
-def GetFiltListMin(vals, filt):
-    filtVals = []
-    for i in range(0,len(vals)):
-        if filt[i]:
-            filtVals.append(int(vals[i]))
-    return min(filtVals)
-    
-def GetCurVal(l, p):
-    if l is None:
-        return None
-    else:
-        return l[p]
-
-def GetCurPos(l, p):
-    if l is None:
-        return None
-    else:
-        return int(l[p])
-    
-def AllEqual(l):
-    if len(l) <= 1:
-        return True
-    else:
-        for i in range(1,len(l)):
-            if l[0] != l[i]:
-                return False
-        return True
-    
-def greedyCombineVcfs(inFofnName, outVcf):
-    vcfFofn=open(inFofnName)
-    vcfFileNames = [l.strip() for l in vcfFofn]
-    inVcfs = [open(f) for f in vcfFileNames ]
-    headers = [AdvanceToChrom(fh) for fh in inVcfs]
-    outFile=open(outVcf, 'w')
-    #
-    # Print the shared header
-    #
-    outFile.write(''.join(headers[0][0]))
-    #
-    # Form the chrom line assuming every pair of samples are from two haplotypes
-    #
-    chromLine=headers[0][1].split()[:8]
-    chromLine+= [headers[i][1].split()[9] for i in range(0,len(headers),2)]
-    outFile.write("\t".join(chromLine) + "\n")
-    nVcfs=len(inVcfs)
-    curChrom = [None for i in range(0,nVcfs)]
-    curPos   = [None for i in range(0,nVcfs)]
-    procChrom = None
-    minPos   = None
-    parsedLines = [None for i in range(0,nVcfs)]
-    iter=0
-    while True:
-        #
-        # Move each file pointer forward for vcfs that have cur chrom and cur pos
-        # matching min chrom and pos.
-        #
-#        print("------------------------------------------")
-#        print(str(iter))
-#        print(str(procChrom))
-#        print(str(curChrom))
-#        print(str(curPos))
-        iter+=1
-        parsedLines = [AdvanceLine(curChrom[i], curPos[i], procChrom, minPos, parsedLines[i], inVcfs[i]) for i in range(0,nVcfs)]
-        if RemainingLines(parsedLines) == False:
-            break
-        
-        curChrom = [GetCurVal(parsedLines[i], 0) for i in range(nVcfs)]
-        #
-        # Special case where first entry is processed.
-        if procChrom is None:
-            if AllEqual(curChrom) == False:
-                print("ERROR, the first line contains different chromosomes, a case not currently handled.")
-                sys.exit(0)
-            procChrom = curChrom[0]
+    # config input vcf files and the hap/dip pairing information
+    inVcfsInfo = [ l.strip().split(',') for l in open(inVcfs) ]
+    vcfs, pairingInfo = [], []
+    for vcf in inVcfsInfo:
+        if len(vcf) == 1:
+            logging.info(f'input single diploid vcf: {vcf[0]}')
+            pairingInfo += ['Dip']
+        elif len(vcf) == 2:
+            logging.info(f'input pair of haploid vcfs: {vcf[0]} & {vcf[1]}')
+            pairingInfo += ['Hap1', 'Hap2']
         else:
-            #
-            # Check to see if all files have processed the current chromosomes.
-            onNext = True
-            for c in curChrom:
-                if c == procChrom:
-                    onNext = False
-            if onNext:
-                # Moved to the next chromosome. Should all be on the same.
-                if AllEqual(curChrom) == False:
-                    print("ERROR, the first line contains different chromosomes, a case not currently handled.")
-                    sys.exit(0)
-                procChrom = curChrom[0]
-                
-        onCurChrom = [chrom == procChrom for chrom in curChrom]
-        
-        curPos   = [GetCurPos(parsedLines[i], 1) for i in range(nVcfs)]
-        foundPos = False
-        for p in curPos:
-            if p is not None:
-                foundPos = True
-                break
-        if foundPos == False:
-            break
-            
-        minPos   = GetFiltListMin(curPos, onCurChrom)
-        isMatching = [ curChrom[i] == procChrom and curPos[i] == minPos for i in range(0,nVcfs) ]
-        
-        annoStrs = {}
-        annoIdx  = {}
-        #
-        # Aggregate all the anno strs for the lines that match the current chrom, pos
-        #
-        foundMatch = False
-        for p in curPos:
-            if p != None:
-                foundMatch = True
-        if foundMatch is False:
-            break
-        for i in range(0,nVcfs):
-            if isMatching[i] == False:
-                continue
-            alleleStr = parsedLines[i][3]
-            if alleleStr != "." and alleleStr not in annoStrs:
-                idx = len(annoStrs)+1
-                annoStrs[alleleStr] = idx 
-                annoIdx[idx] = alleleStr.replace(',','-')
-        firstValid=0
-        for i in range(0,len(parsedLines)):
+            sys.exit('Error on input! Please check the input instructions.')
+        vcfs += vcf
+    vcfFileObjects = [ open(f) for f in vcfs ]
+
+    # obtain the overall header, ordered chrom list, and sample IDs
+    headerInfo = [ advanceToChromForOneVcf(fo) for fo in vcfFileObjects ]
+    header, chroms, sampleIDs, dipSampleIDs = getHeader(headerInfo, pairingInfo)
+
+    out = open(outVcf, 'w')
+    # output the header
+    out.write(''.join(header))
+
+    nVcfs, minChrom, minStart = len(vcfs), chroms[0], None
+    curChroms = [ None for i in range(0,nVcfs) ]
+    curStarts = [ None for i in range(0,nVcfs) ]
+    parsedLines = [ None for i in range(0,nVcfs) ]
+    logging.info(f'handling chromosome: {minChrom}')
+
+    while True:
+        # update the parsed lines of each vcf
+        parsedLines = [advanceLineForOneVcf(curChroms[i], curStarts[i], minChrom, minStart, parsedLines[i], \
+                                            vcfFileObjects[i]) for i in range(0,nVcfs)]
+        # break if no more remaining lines in any vcf
+        if sum([ l is None for l in parsedLines ]) == nVcfs: break
+
+        # update the current chrom and starts of each vcf
+        curChroms = [ parsedLines[i][0] if parsedLines[i] else None for i in range(nVcfs) ]
+        curStarts = [ parsedLines[i][1] if parsedLines[i] else None for i in range(nVcfs) ]
+        # update the minChrom and minStart
+        temp = minChrom
+        minChrom = min([c for c in curChroms if c], key=chroms.index)
+        minStart = str(min([int(s) for i,s in enumerate(curStarts) if curChroms[i]==minChrom]))
+        # switch to a new chrom detected
+        if minChrom != temp: logging.info(f'handling chromosome: {minChrom}')
+
+        # determine which vcf to read (minChrom, minStart is the locus to read)
+        isMatching = [ curChroms[i] == minChrom and curStarts[i] == minStart for i in range(0,nVcfs) ]
+
+        # read all vcf alleles and get the genotype index of each allele
+        alleles, gts = [], []
+        for i,sampleID in enumerate(sampleIDs):
+            # the vcf has matched locus with "minChrom, minStart"
             if isMatching[i]:
-                firstValid = i
-                break
-        infoStr = "{};{};SVTYPE=VNTR;ALTANNO={}".format(parsedLines[firstValid][2][7], parsedLines[firstValid][2][8], ",".join(annoIdx[i] for i in range(1,len(annoStrs)+1)))
-        nPairs = int(len(parsedLines)/2)
-        gtStrs = [str(GetGTIndex(isMatching[i*2], annoStrs, GetCurVal(parsedLines[i*2],3))) + "|" + str(GetGTIndex(isMatching[i*2+1], annoStrs, GetCurVal(parsedLines[i*2+1],3))) for i in range(0,nPairs)]
-        gtLine = "\t".join(parsedLines[firstValid][2][0:7]) + "\t" + infoStr + "\tGT\t" + "\t".join(gtStrs) + "\n"
-        outFile.write(gtLine)
-    
-        
-                
-
-            
-def combineVCF(inVCFs, outVCF, greedy):
-
-    if greedy:
-        greedyCombineVcfs(inVCFs, outVCF)
-        return
-    
-    samplesAll, header, vcfDict = readAllVCF(inVCFs)
-
-    logging.info(f'Summarizing alleles for each locus...')
-    allele(vcfDict)
-
-    logging.info(f'Writting combined vcf...')
-    out = open(outVCF, 'w')
-    for h in header: out.write(h)
-    for chr,chrDict in vcfDict.items():
-        for start,coorDict in chrDict.items():
-
-            alleles = ','.join([ a.replace(',','-') \
-                                for i,a in enumerate(coorDict['alleles']) ])
-
-            info = '%s;%s;SVTYPE=VNTR;ALTANNO=%s' \
-                %(coorDict['constant'][7], coorDict['constant'][8], alleles)
-
-            # if the sample is present in 
-            genotypes = [coorDict['genotype'][coorDict['sample'].index(s)] \
-                if s in coorDict['sample'] else './.' for s in samplesAll]
-
-            temp = coorDict['constant'][:7] + [info,'GT'] + genotypes
-            out.write('\t'.join(temp) + '\n')
+                chrom, start, constant, altH1, altH2 = parsedLines[i]
+                # for one diploid vcf
+                if pairingInfo[i] == 'Dip':
+                    if altH1 not in alleles: alleles.append(altH1)
+                    if altH2 not in alleles: alleles.append(altH2)
+                    gt1, gt2 = alleles.index(altH1)+1, alleles.index(altH2)+1
+                # for hap1 of a pair of hap1/hap2 vcfs
+                elif pairingInfo[i] == 'Hap1':
+                    if altH1 not in alleles: alleles.append(altH1)
+                    gt1 = alleles.index(altH1)+1
+                # for hap2 of a pair of hap1/hap2 vcfs
+                else:
+                    if altH1 not in alleles: alleles.append(altH1)
+                    gt2 = alleles.index(altH1)+1
+            # the vcf has no matched locus with "minChrom, minStart"
+            else:
+                # for one diploid vcf
+                if pairingInfo[i] == 'Dip':
+                    gt1, gt2 = '.', '.'
+                # for hap1 of a pair of hap1/hap2 vcfs
+                elif pairingInfo[i] == 'Hap1':
+                    gt1 = '.'
+                # for hap2 of a pair of hap1/hap2 vcfs
+                else:
+                    gt2 = '.'
+            # record the diploid genotypes
+            if pairingInfo[i] in ['Dip','Hap2']: gts.append(f'{gt1}/{gt2}')
+        alleles = ','.join([ a.replace(',','-') for i,a in enumerate(alleles) ])
+        info = f"{constant[7]};{constant[8]};SVTYPE=VNTR;ALTANNO={alleles}"
+        temp = constant[:7] + [info,'GT'] + gts
+        out.write('\t'.join(temp) + '\n')
 
     out.close()
+    for fo in vcfFileObjects: fo.close()
 
