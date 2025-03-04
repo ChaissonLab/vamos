@@ -68,7 +68,7 @@ class TR:
             line (str): one line from the combined vamos vcf
         """
 
-        fields = line.strip().split()
+        fields = line.strip().split('\t')
         self.chr,self.start,_,_,_,_,_,info,_ = fields[:9]
         end,ru,_,annos = info.split(';')
         self.end = end.split('=')[1]
@@ -149,8 +149,7 @@ class TR:
 
         # sort by length
         if sort:
-            temp = sorted(self.annosByUsed.items(), \
-                    key=lambda item: len(item[1]), reverse=True)
+            temp = sorted(self.annosByUsed.items(), key=lambda item: len(item[1]), reverse=False)
             self.annosByUsed = {k: v for k, v in temp}
 
         nMotifs = len(self.motifsUsed)
@@ -160,12 +159,11 @@ class TR:
         # extend alleles to maxLen
         for sample in self.annosByUsed.keys():
             if len(self.annosByUsed[sample]) < maxLen:
-                self.annosByUsed[sample].extend( [whiteMotif]*(maxLen - \
-                                            len(self.annosByUsed[sample])) )
+                self.annosByUsed[sample].extend( [whiteMotif]*(maxLen - len(self.annosByUsed[sample])) )
                 self.space = True
 
 
-    def heat(self, outPlot:str):
+    def heat(self, outPlot:str, width, height, ylabel):
         """generate the allele plot
 
         Args:
@@ -175,8 +173,7 @@ class TR:
         samples = list(self.annosByUsed.keys())
         # remove uncovered samples
         samples = [ s for s in samples if '.' not in self.annosByUsed[s] ]
-        annos = np.array([ [int(m) for m in self.annosByUsed[s]] \
-                                   for s in samples ])
+        annos = np.array([ [int(m) for m in self.annosByUsed[s]] for s in samples ])
 
         nMotifs = len(self.motifsUsed)
         whiteMotif = str(nMotifs+1)
@@ -190,16 +187,34 @@ class TR:
             out.write('\t'.join([cmap.as_hex()[i],m])+'\n')
         out.close()
 
-        numTicks = len(samples)
-        yticks = np.linspace(0, len(samples) - 1, numTicks, dtype=int)
-        yticklabels = [ samples[i] for i in yticks ]
-
-        plt.figure(figsize=(15, 12))
+        # set up plotting area
+        if not width: width = maxLen / 5
+        if not height: height = len(samples) / 10
+        plt.figure(figsize=(width,height)) #plt.figure(figsize=(15,12))
         sns.set(font_scale=2)
-        ax = sns.heatmap(annos, cmap=cmap, cbar=False)
-        #ax = sns.heatmap(np_annp, cmap=cmap, yticklabels=yticklabels)
-        #ax.set_yticklabels(yticklabels, rotation=0, fontsize="3")
-        #print(yticklabels)
+
+        # plot
+        if ylabel == 'empty':
+            wf = sns.heatmap(annos, cmap=cmap, cbar=False, linewidth=0.2, yticklabels=False)
+        else:
+            wf = sns.heatmap(annos, cmap=cmap, cbar=False, linewidth=0.2)
+
+        # set up x axis
+        xticks = np.linspace(0, maxLen, 10, dtype=int)
+        xlabels = np.linspace(0, maxLen, 10, dtype=int)
+        plt.xticks(xticks, xlabels, rotation=0, fontsize=15)
+        # set up y axis
+        if ylabel == 'id':
+            yticks = np.linspace(0, len(samples) - 1, len(samples), dtype=int)
+            ylabels = samples
+            plt.yticks(yticks+0.5, ylabels, rotation=0, fontsize=5)
+        elif ylabel == 'index':
+            #yticks = np.arrange(1, len(samples), )
+            yticks = np.linspace(1, len(samples), 10, dtype=int)
+            ylabels = np.linspace(1, len(samples), 10, dtype=int)
+            ylabels = [ f'genome {y}' for y in ylabels ]
+            plt.yticks(yticks+0.5, ylabels, rotation=0, fontsize=15)
+
         plt.savefig(outPlot, bbox_inches='tight', dpi=300, format='png')
         plt.close()
 

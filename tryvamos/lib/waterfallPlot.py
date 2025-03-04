@@ -11,7 +11,7 @@ logging.basicConfig(
         level=logging.INFO)
 
 
-def plot(inVCF, outDir, useLoci, sort):
+def plot(inVCF, outDir, useLoci, width, height, ylabel, sort):
 
     if useLoci:
         candidateLoci = general.parseBed(useLoci)
@@ -27,17 +27,19 @@ def plot(inVCF, outDir, useLoci, sort):
                 samples = line.strip().split()[9:]
                 continue
 
+            # skip chromosome(s) without candidate plotting loci
+            chr = line.strip().split()[0]
+            if chr not in candidateLoci: continue
             tr = TR()
             tr.parseDiploidVCFOneLine(samples, line)
 
-            # skip unwanted loci
+            # skip loci not in candidate plotting loci list
             if candidateLoci:
-                if tr.chr not in candidateLoci:
+                if (tr.start,tr.end) not in candidateLoci[tr.chr]:
                     continue
-                else:
-                    if (tr.start,tr.end) not in candidateLoci[tr.chr]:
-                        continue
+
+            logging.info(f'plotting locus: {tr.chr}:{tr.start}-{tr.end}')
 
             tr.appendLength(sort)
-            tr.heat(f'{outDir}/{tr.chr}_{tr.start}-{tr.end}.png')
+            tr.heat(f'{outDir}/{tr.chr}_{tr.start}-{tr.end}.png', width, height, ylabel)
 
