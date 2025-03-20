@@ -19,7 +19,7 @@ parserDict = {}
 usage = ' <mode> <options> \n'
 version = 'Version: 1.2.0.0'
 description = '''\nDescription:
-The tryvamos program provides a tool set for various downstream analysis using TR annotation output from the Vamos 
+The tryvamos program provides a tool set for various downstream analysis using TR annotation output from the Vamos
 software.
 '''
 
@@ -34,7 +34,7 @@ subparsers = parser.add_subparsers(dest='command')
 parser_combineVCF = subparsers.add_parser('combineVCF', description=
 '''combineVCF:
 This command generates diploid multi-sample vcf from given haploid or diploid single sample vcfs.
-Each line of the input csv file can be a single diploid vcf as "dip.vcf" or two comma delimited haploid vcfs as 
+Each line of the input csv file can be a single diploid vcf as "dip.vcf" or two comma delimited haploid vcfs as
 "hap1.vcf,hap2.vcf".
 The best chromosome orders in the combined vcf are determined from the chromosome orders of all input vcf (as ordered
 in the vcf headers).
@@ -42,7 +42,7 @@ For each locus, allele index is ordered by the order it appears in all samples.
 Samples are ordered as in the input csv file.
 ''', formatter_class=argparse.RawTextHelpFormatter)
 combineVCFPosList = ['inVCFs', 'outVCF']
-combineVCFOptList = []
+combineVCFOptList = ['chromOrders']
 parserDict['combineVCF'] = [combineVCFPosList, combineVCFOptList]
 # positional arguments
 parser_combineVCF.add_argument(combineVCFPosList[0], type=str, \
@@ -50,7 +50,10 @@ parser_combineVCF.add_argument(combineVCFPosList[0], type=str, \
 parser_combineVCF.add_argument(combineVCFPosList[1], type=str, \
     help='string\toutput combined vcf,  e.g. /out/combined.vcf')
 # optional arguments
-
+parser_combineVCF.add_argument('-c', '--'+combineVCFOptList[0],
+    type=str, metavar='string',
+    default='chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22,chrX,chrY',
+    help='ordered chromosomes, this order needs to be consistant with the order in the motif catalog used for vamos annotation, \ndefault chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22,chrX,chrY')
 
 ######################### quickFeature mode #########################
 parser_quickFeature = subparsers.add_parser('quickFeature', description=
@@ -101,7 +104,7 @@ parser_waterfallPlot.add_argument(waterfallPlotPosList[0], type=str,
 parser_waterfallPlot.add_argument(waterfallPlotPosList[1], type=str,
     help='string\toutput directory,  e.g. /out/Dir')
 # optional arguments
-parser_waterfallPlot.add_argument('-l', '--'+waterfallPlotOptList[0], 
+parser_waterfallPlot.add_argument('-l', '--'+waterfallPlotOptList[0],
     type=str, metavar='string', default=None,
     help='input bed of loci for plotting, default None')
 parser_waterfallPlot.add_argument('-W', '--'+waterfallPlotOptList[1],
@@ -178,7 +181,7 @@ argsDict = vars(parser.parse_args())
 if argsDict['command'] is None:
     parser.print_help()
     sys.exit(0)
-    
+
 posList, optList = parserDict[argsDict['command']]
 logging.info('Parsing Input Arguements...')
 logging.info(f'Required Argument - mode: {argsDict["command"]}')
@@ -198,7 +201,7 @@ if __name__ == "__main__":
         import lib.combineVCF as combineVCF
 
         logging.info(f'Combing vcfs...')
-        combineVCF.combineVcfs(inVCFs, outVCF)
+        combineVCF.combineVcfs(inVCFs, outVCF, chromOrders)
 
     ######################### quickFeature mode #########################
     if command == 'quickFeature':

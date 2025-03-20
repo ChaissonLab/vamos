@@ -44,8 +44,8 @@ def advanceToChromForOneVcf(fileObject):
         else:
             sys.exit('Error on input vcf header!')
 
-# obtain the overall header, ordered chrom list, and sample id of all vamos vcf 
-def getHeader(headerInfo, pairingInfo):
+# obtain the overall header, ordered chrom list, and sample id of all vamos vcf
+def getHeader(headerInfo, pairingInfo, chromOrders):
     firstChrom, ordering, contigInfoOverall = [], {}, {}
     sampleIDs = [ h[2] for h in headerInfo ]
     for meta,contigInfo,sampleID in headerInfo:
@@ -58,6 +58,7 @@ def getHeader(headerInfo, pairingInfo):
                 ordering[chroms[i]][chroms[i+1]] = 0
             ordering[chroms[i]][chroms[i+1]] += 1
 
+    '''
     # find the most frequent "first" chrom in all samples
     firstChrom = max(set(firstChrom), key=firstChrom.count)
 
@@ -73,6 +74,12 @@ def getHeader(headerInfo, pairingInfo):
         currentChrom = nextChrom
         if currentChrom not in ordering: break # currentChrom is the last chrom
         nextChrom = ordering[currentChrom]
+    '''
+    chroms = chromOrders.split(',')
+    for chrom in chroms:
+        if chrom not in contigInfoOverall:
+            sys.exit(f'No input vcf headers contain information of {chrom}. \
+                    \nPlease double check input vcfs or remove this chromosome from the "-c/--chromOrders" option.')
 
     logging.info(f"configured chromosome orders: {','.join(chroms)}")
 
@@ -117,7 +124,7 @@ def advanceLineForOneVcf(curChrom, curStart, minChrom, minStart, parsedLine, vcf
         return parsedLine
 
 
-def combineVcfs(inVcfs, outVcf):
+def combineVcfs(inVcfs, outVcf, chromOrders):
 
     # config input vcf files and the hap/dip pairing information
     inVcfsInfo = [ l.strip().split(',') for l in open(inVcfs) ]
@@ -136,7 +143,7 @@ def combineVcfs(inVcfs, outVcf):
 
     # obtain the overall header, ordered chrom list, and sample IDs
     headerInfo = [ advanceToChromForOneVcf(fo) for fo in vcfFileObjects ]
-    header, chroms, sampleIDs, dipSampleIDs = getHeader(headerInfo, pairingInfo)
+    header, chroms, sampleIDs, dipSampleIDs = getHeader(headerInfo, pairingInfo, chromOrders)
 
     out = open(outVcf, 'w')
     # output the header
