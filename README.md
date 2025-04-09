@@ -36,6 +36,19 @@ Next you should download a locus list. These are in BED format, with the coordin
 
 The latest motif sets as of v2.1 can be downloaded via: https://zenodo.org/records/13263615
 
+Explanation of the motif catalog columns:
+| Column | Explanation |
+|:-------|:---|
+| 1 | Chromosome of the locus |
+| 2 | Start coordinate of the locus |
+| 3 | End coordinate of the locus |
+| 4 | Motifs of the locus to be used for annotation (separated by ",") |
+| 5 | Version of the motif catalog |
+| 6 | Type of the locus (VNTR or STR) |
+| 7 | Period size (bp) of the motif consensus of the locus |
+| 8 | How much proportion the biggest overlap between the locus and a transposable element takes up the TR locus |
+| 9 | How much proportion the biggest overlap between the locus and a transposable element takes up the transposable element |
+
 For annotation on GRCh38 using the *vamos* **efficient** motifs:
 ```
  curl "https://zenodo.org/records/11625069/files/vamos.motif.hg38.v2.1.e0.1.tsv.gz?download=1" > vamos.motif.hg38.v2.1.e0.1.tsv.gz; gunzip vamos.motif.hg38.v2.1.e0.1.tsv.gz
