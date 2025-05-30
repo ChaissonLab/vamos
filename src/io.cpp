@@ -123,7 +123,8 @@ int IO::readRegionAndMotifs (vector<VNTR*> &vntrs)
         string chrom;
         int start;
         int end;
-        ss >> chrom >> start >> end >> motifs;
+	string version, svtype;
+        ss >> chrom >> start >> end >> motifs >> version >> svtype;
 	if (end - start > maxLength) {
 	  cerr << "WARNING, locus " << chrom << ":" << start << "-" << end << " has length greater than " << maxLength << " and will be ignored." << endl;
 	  continue;
@@ -139,7 +140,7 @@ int IO::readRegionAndMotifs (vector<VNTR*> &vntrs)
 	prevChrom=chrom;
 	prevEnd = end;
 	lineNumber++;
-        VNTR * vntr = new VNTR(chrom, start, end, end-start);
+        VNTR * vntr = new VNTR(chrom, start, end, end-start,svtype);
         vntrs.push_back(vntr);
 	vntr->index = vntrs.size()-1;
         stringstream mm(motifs);
@@ -163,13 +164,15 @@ void IO::readVNTRFromBed (vector<VNTR*> &vntrs)
     vector<vector<string>> items;
     read_tsv(items);
     uint32_t start, end, len;
+    string svtype;
     for (auto &it : items)
     {
         start = stoi(it[1]);
         end = stoi(it[2]);
         len = start < end ? end - start : 0;
+	svtype=it[5];
 	if (len < maxLength) {
-	  VNTR * vntr = new VNTR(it[0], start, end, len);
+	  VNTR * vntr = new VNTR(it[0], start, end, len, svtype);
 	  vntrs.push_back(vntr);
 	}
 	else {
@@ -592,7 +595,6 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
 int IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> &vntrs,
 		  map<string, vector<int> > &vntrMap,
 		 Pileup &pileup, bool & readsArePhased) {
-   cerr << "Calling SNVs " << chrom << ":" << regionStart << "-" << regionEnd << endl;
    bam1_t * aln;
    hts_itr_t * itr;
 
@@ -714,6 +716,7 @@ void IO::initializeBam() {
     bamHdr = sam_hdr_read(fp_in); //read header
     idx = sam_index_load(fp_in, input_bam.c_str()); //samtools will implicitly search for the appropriate header if given the filename
     for (int i = 0; i < bamHdr->n_targets; ++i) {
+      cout << "Adding chrom " << i << " " << bamHdr->target_name[i] << endl;
       chromosomeNames.push_back(bamHdr->target_name[i]);
       chromosomeLengths.push_back(bamHdr->target_len[i]);      
     }

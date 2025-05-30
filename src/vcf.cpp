@@ -108,7 +108,7 @@ void writeSingleBody_locuswise(VNTR * it, ofstream &out)
 	out	<< "PASS\t";
 	out	<< "END=" + to_string(it->ref_end) + ";";
 	out	<< "RU=" + motif_list + ";";
-	out	<< "SVTYPE=VNTR;";
+	out	<< "SVTYPE=" << it->svtype << ";";
 	out	<< "ALTANNO_H1=" + motif_anno_h1 + ";";
 	out	<< "LEN_H1=" + to_string(it->len_h1) + ";";
 

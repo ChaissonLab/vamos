@@ -147,7 +147,8 @@ public:
     vector<bool> nullAnnos;
     int len_h1;                             // 
     int len_h2;                             // 
-    bool readsArePhased;                    // 
+    bool readsArePhased;                    //
+  string svtype;
   int index;
 
     /// @brief Construct a new VNTR object
@@ -170,7 +171,7 @@ public:
      * @param End VNTR reference end coordinate
      * @param Len VNTR reference length
      */
-    VNTR(string Chr, uint32_t Start, uint32_t End, uint32_t Len)
+  VNTR(string Chr, uint32_t Start, uint32_t End, uint32_t Len, string &svt)
     :chr(Chr), ref_start(Start), ref_end(End), len(Len) 
     {
         string s = ":" + to_string(ref_start);
@@ -183,6 +184,7 @@ public:
         len_h1 = 0;
         len_h2 = 0;
 	mappedContigLength = 0;
+	svtype=svt;
     };
 
 

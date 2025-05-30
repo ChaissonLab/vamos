@@ -275,7 +275,7 @@ void printUsage(IO &io, OPTION &opt)
     // printf("vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
     printf("vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
     printf("vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");
-    printf("vamos --somatic [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.bed] [-s sample_name] [-t threads] [-p phase_flank] \n");    
+    printf("vamos --somatic [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");    
     printf("vamos -m [verison of efficient motif set]\n");
     printf("\n");
     printf("   Input: \n");
@@ -301,7 +301,7 @@ void printUsage(IO &io, OPTION &opt)
     PrintDownloadMotifs();
     printf("   Others: \n");
     printf("       -L   INT          Maximum length locus to compute annotation for (%d)\n", opt.maxLocusLength);
-    
+    printf("       -p   INT          Phase flank- how many bases on each side of a VNTR to collect SNVs to phase (default=15000)\n");
     printf("       -t   INT          Number of threads, DEFAULT: 1. \n");
     printf("       --debug           Print out debug information. \n");
     printf("       -h                Print out help message. \n");
@@ -669,8 +669,6 @@ int main (int argc, char **argv)
       //
       // Need to read all reads, do parallel processing of contigs.
       //
-      io.initializeBam();	
-      
       int maxIOThread=opt.nproc;
       if (maxIOThread > 1) {
 	  pthread_t *tid = new pthread_t[maxIOThread];
