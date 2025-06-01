@@ -66,21 +66,21 @@ public:
 
 class Consensus {
 public:
-  vector<int> counts;
+  int counts[6];
   int operator[](int i) { return counts[i];}
   char a,b;
   bool isCluster;
   int pos;
   int cov;
   Consensus() {
-    counts.resize(6,0);
+    counts[0] = counts[1] =counts[2]=counts[3]=counts[4]=counts[5]=0;
     a=b='N';
     isCluster=false;
     cov=0;
   }
   int Inc(char c, char nucIndex[]) {
     cov++;
-    assert(counts.size() == 6);
+
     assert(c <= 255 && c >= 0);
     assert(nucIndex[c] < 6);
     counts[nucIndex[c]]++;
@@ -226,7 +226,14 @@ public:
 	HetSNV snv;
 	snv.pos = consensusStart;
 	snv.a = consensus[consensusStart].a;
-	snv.b = consensus[consensusStart].b;	
+	snv.b = consensus[consensusStart].b;
+	cerr << "Found het snv: " << snv.pos << "\t" << snv.a << "\t" << snv.b
+	     << "\t" << consensus[consensusStart].counts[0]
+	     << "\t" << consensus[consensusStart].counts[1]
+	     << "\t" << consensus[consensusStart].counts[2]
+	     << "\t" << consensus[consensusStart].counts[3]
+	     << "\t" << consensus[consensusStart].counts[4]
+	     << "\t" << consensus[consensusStart].counts[5] 	   << endl;
 	hetSNVs.push_back(snv);
       }
       consensus.erase(consensusStart);
@@ -357,7 +364,7 @@ public:
     int phaseFlank;
     IO() 
     {
-      version = "2.1.6";
+      version = "2.1.5";
         region_and_motifs = "";
         input_bam = "";
         reference = "";
