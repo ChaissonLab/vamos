@@ -247,11 +247,5 @@ void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<
     reverse(starts.begin(), starts.end());
     reverse(ends.begin(), ends.end());
     reverse(motifNMatches.begin(), motifNMatches.end());
-
-    // for (auto m=0; m < optMotifs.size(); m++)
-    // {
-    //     int qv=scoring(motifs, motifNMatches[m], optMotifs[m], 1-opt.accuracy, mismatchCI);
-    //     motifQV.push_back(qv);
-    // }
 }
 

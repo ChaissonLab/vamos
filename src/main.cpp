@@ -206,7 +206,7 @@ void *CallSNVs (void *procInfoValue) {
 			       (*(procInfo->bucketEndPos))[curChrom][curRegion+1],
 			       *(procInfo->vntrs),
 			       *(procInfo->vntrMap),
-			       pileup, readsArePhased);
+			       pileup, readsArePhased, *(procInfo->opt));
     }
 
 
@@ -284,19 +284,19 @@ void printUsage(IO &io, OPTION &opt)
     printf("                         The file format: columns `chrom,start,end,motifs` are tab-delimited. \n");
     printf("                         Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR. \n");
     printf("       -s   CHAR         Sample name. \n");
+    printf("   Input handling:\n");
+    printf("       -C   INT          Maximum coverage to call a tandem repeat.\n");
     printf("   Output: \n");
     printf("       -o   FILE         Output vcf file. \n");
     printf("       -S                Output assembly/read consensus sequence in each call.\n");
     printf("   Dynamic Programming: \n");
     printf("       -d   DOUBLE       Penalty of indel in dynamic programming (double) DEFAULT: 1.0. \n");
     printf("       -c   DOUBLE       Penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. \n");
-    printf("       -a   DOUBLE       Global accuracy of the reads. DEFAULT: 0.98. \n");    
     printf("       --naive           Specify the naive version of code to do the annotation, DEFAULT: faster implementation. \n");
-    // printf("   Aggregate Annotation: \n");
-    // printf("       -f   DOUBLE       Filter out noisy read annotations, DEFAULT: 0.0 (no filter). \n");
-    // printf("       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom. \n");
     printf("   Phase reads: \n");
     printf("       -p   INT            Range of flanking sequences which is used in the phasing step. DEFAULT: 15000 bps. \n");
+    printf("       -M   INT            Minimum total coverage to allow a SNV to be called (6). \n");
+    printf("       -a   INT            Minimum alt coverage to allow a SNV to be called (3). \n");        
     printf("   Downloading motifs:\n");
     PrintDownloadMotifs();
     printf("   Others: \n");
@@ -348,7 +348,9 @@ int main (int argc, char **argv)
         {"filterNoisy",     required_argument,       0, 'f'},
         {"penlaty_indel",   required_argument,       0, 'd'},
         {"max_length",      required_argument,       0, 'L'},
-        {"max_coverage",    required_argument,       0, 'C'},		
+        {"max_coverage",    required_argument,       0, 'C'},
+        {"min_snv_coverage",   required_argument,       0, 'M'},
+        {"min_alt_coverage",   required_argument,       0, 'a'},	
         {"penlaty_mismatch",required_argument,       0, 'c'},
         {"accuracy"        ,required_argument,       0, 'a'},
         {"phase_flank"     ,required_argument,       0, 'p'},
@@ -447,10 +449,15 @@ int main (int argc, char **argv)
                 break;
 
             case 'a':
-                opt.accuracy = stod(optarg);
-                fprintf (stderr, "option -accuracy with `%f'\n", opt.accuracy);
+                opt.minAltCoverage = atoi(optarg);
+                fprintf (stderr, "option -min_alt_coverage with `%d'\n", opt.minAltCoverage);
                 break;
                     
+            case 'M':
+                opt.minSNVCoverage = atoi(optarg);
+                fprintf (stderr, "option -min_snv_coverage with `%d'\n", opt.minSNVCoverage);
+                break;
+		
             case 'p':
                 opt.phaseFlank = atoi(optarg);
                 io.phaseFlank = opt.phaseFlank;
@@ -573,7 +580,7 @@ int main (int argc, char **argv)
     {
         io.readRegionAndMotifs(vntrs);
 	ChromToVNTRMap(vntrs, vntrMap);
-        CreateAccLookupTable(vntrs, opt.accuracy, mismatchCI, 0.999);      
+        CreateAccLookupTable(vntrs, 0.98, mismatchCI, 0.999);      
     }
     if (liftover_flag)
     {
@@ -725,7 +732,7 @@ int main (int argc, char **argv)
 	    int start = vntrs[vntrMap[io.chromosomeNames[i]][0]]->ref_start;
 	    int end   = vntrs[vntrMap[io.chromosomeNames[i]][vntrMap[io.chromosomeNames[i]].size()-1]]->ref_end;
 	    if (readsArePhased == false) {
-	      io.CallSNVs(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup, readsArePhased);
+	      io.CallSNVs(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup, readsArePhased, opt);
 	    }
 	    io.StoreReadsOnChrom(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup, 1, readsArePhased);
 

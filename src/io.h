@@ -89,15 +89,17 @@ public:
   void Dec() {
     cov--;
   }
-  int Calc(int minCov) {
-    int colSum=0;    
+  int Calc(int minSNVCov, int minAltCov ) {
+    int colSum=0;
+    int snvSum=0;
     for (auto i=0; i < 5; i++) {
 	colSum += counts[i];
     }
+    snvSum=colSum - counts[4];
     vector<float> frac(4,0);
-    vector<int> suffIdx;
+    vector<int> snvIdx;
     vector<char> snvNuc;
-    if (colSum < minCov) {
+    if (snvSum < minSNVCov) {
       a = 'N';
       b = 'N';
       return 0;
@@ -106,14 +108,22 @@ public:
     for (auto i=0; i < 4; i++) {
 	frac[i] = ((float)counts[i]/colSum);
 	if (frac[i] > 0.25) {
-	    suffIdx.push_back(i);
+	    snvIdx.push_back(i);
 	    snvNuc.push_back("ACGT"[i]);
 	}
     }
-    if (suffIdx.size() == 2) {
-      a=snvNuc[0];
-      b=snvNuc[1];
-      return 1;
+    
+    if (snvIdx.size() == 2) {
+      if (counts[snvIdx[0]] < minAltCov or counts[snvIdx[1]]< minAltCov) {
+	a='N';
+	b='N';
+	return 0;
+      }
+      else {
+	a=snvNuc[0];
+	b=snvNuc[1];
+	return 1;
+      }
     }
     return 0;
   }
@@ -219,10 +229,10 @@ public:
     reads.erase(it);
   }
   
-  void ProcessUntil(int pos) {
+  void ProcessUntil(int pos, OPTION &opts) {
     while (consensusStart < pos) {
       Consensus& cons=consensus[consensusStart];
-      if (consensus[consensusStart].Calc(3)) {
+      if (consensus[consensusStart].Calc(opts.minSNVCoverage, opts.minAltCoverage)) {
 	HetSNV snv;
 	snv.pos = consensusStart;
 	snv.a = consensus[consensusStart].a;
@@ -444,7 +454,7 @@ public:
 
   //  void StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrIndex, Pileup &pileup, int &refAlignPos, int &curVNTR);
 
-  int CallSNVs(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup, bool& readsArePhased);  
+  int CallSNVs(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup, bool& readsArePhased, OPTION &opts);  
   void StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup, int thread, bool readsArePhased);
 
   void StoreReadSeqAtRefCoord(bam1_t *aln, string &seq, string &toRef, vector<int> &map);

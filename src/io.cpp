@@ -586,15 +586,16 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
      assert(total >=0);
      
      while (it != end ) {
-       MaxCutPhase(vntrs[*it]);
+       MaxCutPhase(vntrs[*it], phaseFlank);
        ++it;
        ++nProc;
      }
    }   
 }
+
 int IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> &vntrs,
 		  map<string, vector<int> > &vntrMap,
-		 Pileup &pileup, bool & readsArePhased) {
+		 Pileup &pileup, bool & readsArePhased, OPTION &options) {
    bam1_t * aln;
    hts_itr_t * itr;
 
@@ -685,12 +686,12 @@ int IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> &
      }
      int before=pileup.consensus.size();
      if (readIsPhased == false) {
-       pileup.ProcessUntil(finishedCons);
+       pileup.ProcessUntil(finishedCons, options);
      }
      bam_destroy1(aln);
    }
    bam_itr_destroy(itr);
-   pileup.ProcessUntil(pileup.consensusEnd);
+   pileup.ProcessUntil(pileup.consensusEnd, options);
    return 1;
 }
 
@@ -716,7 +717,6 @@ void IO::initializeBam() {
     bamHdr = sam_hdr_read(fp_in); //read header
     idx = sam_index_load(fp_in, input_bam.c_str()); //samtools will implicitly search for the appropriate header if given the filename
     for (int i = 0; i < bamHdr->n_targets; ++i) {
-      cout << "Adding chrom " << i << " " << bamHdr->target_name[i] << endl;
       chromosomeNames.push_back(bamHdr->target_name[i]);
       chromosomeLengths.push_back(bamHdr->target_len[i]);      
     }

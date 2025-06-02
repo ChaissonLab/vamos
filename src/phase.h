@@ -5,7 +5,7 @@
 #include "vntr.h"
 #include <vector>
 
-void MaxCutPhase(VNTR *vntr);
+void MaxCutPhase(VNTR *vntr, int phaseFlank);
 int  CountDiff(READ* r1, READ* r2);
 
 #endif
