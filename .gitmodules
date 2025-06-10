@@ -4,3 +4,6 @@
 [submodule "abPOA"]
 	path = abPOA
 	url = https://github.com/yangao07/abPOA.git
+[submodule "src/parasail"]
+	path = src/parasail
+	url = https://github.com/jeffdaily/parasail

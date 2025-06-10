@@ -5,6 +5,7 @@
 #include <sstream>
 #include <assert.h>
 #include <string>
+#include <cctype>
 #include <algorithm>
 #include <tuple> 
 #include <vector>
@@ -22,7 +23,9 @@
 #include <zlib.h>  
 #include <queue>
 #include "htslib/kseq.h"  
-
+#include <parasail.h>
+#include <parasail/matrix_lookup.h>
+#include <parasail/io.h>
 extern int naive_flag;
 extern int debug_flag;
 extern int hclust_flag;
@@ -247,6 +250,13 @@ void IO::StoreReadSeqAtRefCoord(bam1_t *aln, string &readSeq, string &readSeqAtR
 
 
 int MappedStartPosInRead(vector<int> &refIndex, int refStart, int refPos) {
+  //
+  // For handling flank regions, the ref pos may have been set beyond the end of the read.
+  //
+  if (refPos < refStart) {
+    refPos = refStart;
+  }
+  
   assert(refPos - refStart < refIndex.size());
   int i=refPos-refStart;
   while (i+ 1 < refIndex.size() and refIndex[i] == refIndex[i+1]) {
@@ -266,6 +276,12 @@ int MappedStartPosInRead(vector<int> &refIndex, int refStart, int refPos) {
 }
 
 int MappedEndPosInRead(vector<int> &refIndex, int refStart, int refPos) {
+  //
+  // For handling flank regions, the ref pos may have been set beyond the end of the read.
+  //
+  if (refPos > refStart + refIndex.size()) {
+    refPos = refStart + refIndex.size() - 1;
+  }
   assert(refPos - refStart < refIndex.size());
   int i=refPos-refStart;
   while (i - 1 > 0 and refIndex[i-1] == refIndex[i]) {
@@ -284,6 +300,7 @@ int MappedEndPosInRead(vector<int> &refIndex, int refStart, int refPos) {
 
 void IO::StoreAllContigs(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap) {
   initializeBam();
+  initializeRefFasta();
   bam1_t * aln = bam_init1(); //initialize an alignment
   while (sam_read1(fp_in, bamHdr, aln) >= 0) {
     //    cerr << "Processing name: " << bam_get_qname(aln) << " " << aln->core.l_qseq << endl;
@@ -347,11 +364,8 @@ void IO::ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<
       string vntrSeq;
 
       vntrSeq = readSeq.substr(readStart, readEnd-readStart);
-      /*
-      cerr << "got vntr seq " << i << "/" << vntrMap[refName].size() << endl;
-      cerr << vntrSeq << endl;
-      */
 
+      
       READ *read = new READ;
       read->qname = refName; //new char[refName.size()+1];
       //      memcpy(read->qname, refName.c_str(), refName.size());
@@ -474,10 +488,22 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
 
    vector<int> &vntrIndex=vntrMap[chrom];
 
+   int match = 3;
+   int mismatch = -1;
+   int gap_open = 3;
+   int gap_extend = 3;
+   const parasail_matrix_t* matrix = parasail_matrix_create("ACGT", match, mismatch);
 
+   
    int nRead=0;
    CompPosWithSNV posSnvComp;
-
+   int chromLen = faidx_seq_len(fai, chrom.c_str());
+   stringstream regionStream;
+   regionStream << chrom << ":1-" << chromLen;
+   string chromRegion=regionStream.str();
+   int chromSeqLen=0;
+   char *chromSeq = fai_fetch(fai, chromRegion.c_str(), &chromSeqLen);
+   
    while (alignBuff.GetNext(aln) > 0) {
      string readSeq, readToRef;
      vector<int> readMap;
@@ -496,6 +522,11 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
      read.flag = aln->core.flag;
      int hap;
      bool readIsPhased = QueryAndSetPhase(aln, hap);
+
+     if (chrom == "chrX" or chrom=="X" and minChrY > 0 and nChrY > minChrY) {
+       readIsPhased = true;
+       hap = 0;
+     }
 
      int refAlnStart = aln->core.pos;
      int refAlnEnd = bam_endpos(aln);
@@ -539,10 +570,112 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
 	 continue;
        }
 
-       
+       int FLANK_REF_LEN=64;
+
+       int refFlankStart = max((int)(0), (int)(vntrs[*it]->ref_start-1 -FLANK_REF_LEN));
+       int refFlankEnd   = min((int)chromSeqLen, (int)( vntrs[*it]->ref_end-1 + FLANK_REF_LEN));
+
        int readStart = MappedStartPosInRead(readMap, refAlnStart, vntrs[*it]->ref_start-1);
        int readEnd   = MappedEndPosInRead(readMap, refAlnStart, vntrs[*it]->ref_end-1);
+
+       int readFlankStart = MappedStartPosInRead(readMap, refAlnStart, refFlankStart);
+       int readFlankEnd   = MappedEndPosInRead(readMap, refAlnStart, refFlankEnd);
+       
        string vntrSeq;
+
+
+       string refStartFlankSeq(chromSeq, refFlankStart, vntrs[*it]->ref_start-1 - refFlankStart);
+       string refEndFlankSeq(chromSeq, vntrs[*it]->ref_end-1, refFlankEnd - vntrs[*it]->ref_end-1);
+
+       for (auto ch=0; ch< refStartFlankSeq.size(); ch++) { refStartFlankSeq[ch] = toupper(refStartFlankSeq[ch]);}
+       for (auto ch=0; ch< refEndFlankSeq.size(); ch++) { refEndFlankSeq[ch] = toupper(refEndFlankSeq[ch]);}       
+       
+       string readStartFlankSeq = readSeq.substr(readFlankStart, readStart - readFlankStart);
+       string readEndFlankSeq   = readSeq.substr(readEnd, readFlankEnd - readEnd);
+
+       parasail_result_t* startResult = NULL;
+       parasail_cigar_t *startCigar = NULL;       
+       int refinedReadStart = readStart;
+       int refinedReadEnd = readEnd;
+       if (readStartFlankSeq.size() >0 and refStartFlankSeq.size() >0){ 
+	   startResult = parasail_sg_dx_trace_striped_sat( refStartFlankSeq.c_str(), refStartFlankSeq.length(),
+						      readStartFlankSeq.c_str(), readStartFlankSeq.length(),						      
+						      gap_open, gap_extend,
+						      matrix);
+	   startCigar = parasail_result_get_cigar(startResult, refStartFlankSeq.c_str(), refStartFlankSeq.length(),
+								    readStartFlankSeq.c_str(), readStartFlankSeq.length(), matrix);
+
+	   refinedReadStart=readFlankStart + startCigar->beg_ref;
+	   if (startCigar) {
+	     for (auto c=0; c < startCigar->len; c++) {
+	       int cl = parasail_cigar_decode_len(startCigar->seq[c]);
+	       char op = parasail_cigar_decode_op(startCigar->seq[c]);
+	       if (op == '=' or op == 'X' or op=='M' or op=='D') {
+		 refinedReadStart += cl;
+	       }
+	     }
+	   }
+       }
+       parasail_result_t* endResult=NULL;
+       parasail_cigar_t *endCigar = NULL;       
+       if (readEndFlankSeq.size() >0 and refEndFlankSeq.size() >0){        
+	 endResult = parasail_sg_dx_trace_striped_sat( refEndFlankSeq.c_str(), refEndFlankSeq.length(),
+								       readEndFlankSeq.c_str(), readEndFlankSeq.length(),
+								       gap_open, gap_extend,
+								       matrix);
+	 
+	 endCigar=  parasail_result_get_cigar(endResult, refEndFlankSeq.c_str(), refEndFlankSeq.length(),
+								readEndFlankSeq.c_str(), readEndFlankSeq.length(), matrix);
+	 
+	 refinedReadEnd = readEnd;
+	 if (endCigar) {
+	   for (auto c=0; c < endCigar->len; c++) {
+	     int cl = parasail_cigar_decode_len(endCigar->seq[c]);
+	     char op = parasail_cigar_decode_op(endCigar->seq[c]);
+	     if (op == 'M' or op == '=' or op == 'X' or op == 'I') {
+	       break;
+	     }
+	     if (op == 'D') {
+	       refinedReadEnd += cl;
+	       break;
+	     }
+	   }
+	 }
+       }
+
+
+       if (startResult and endResult) {
+	 readStart=refinedReadStart;
+	 readEnd = refinedReadEnd;
+	 if (readStart != refinedReadStart || readEnd !=refinedReadEnd) {
+
+	   /*
+	   cout << "Boundary alignments " << readStart - refinedReadStart<< ":" << readStart << "/" << refinedReadStart << "\t" << refinedReadEnd-readEnd << ":" << readEnd << "/" << refinedReadEnd << endl;
+	   
+	   cout << readStartFlankSeq << endl <<refStartFlankSeq << endl;
+	   string trSeq(chromSeq, vntrs[*it]->ref_start, vntrs[*it]->ref_end - vntrs[*it]->ref_start);
+	   cout << trSeq << endl;
+	   cout << readEndFlankSeq << endl <<refEndFlankSeq << endl;	   
+	   parasail_traceback_generic(refStartFlankSeq.c_str(), refStartFlankSeq.length(),
+				      readStartFlankSeq.c_str(), readStartFlankSeq.length(),
+				      "ref-start", "read-start", matrix,
+				      startResult, '|', '.', ' ',  80, 10, 1);
+	   
+	   
+	   parasail_traceback_generic(refEndFlankSeq.c_str(), refEndFlankSeq.length(),
+				      readEndFlankSeq.c_str(), readEndFlankSeq.length(),
+				      "ref-end", "read-end", matrix,
+				      endResult, '|', '.', ' ',  80, 10, 1);
+	   */
+	 }
+	 parasail_result_free(startResult);
+	 parasail_result_free(endResult);
+	 parasail_cigar_free(startCigar);
+	 parasail_cigar_free(endCigar);	 
+       }
+       else {
+
+       }
        vntrSeq = readSeq.substr(readStart, readEnd-readStart);
 
        READ *read = new READ;
@@ -590,7 +723,8 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
        ++it;
        ++nProc;
      }
-   }   
+   }
+   free(chromSeq);
 }
 
 int IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> &vntrs,
@@ -620,7 +754,7 @@ int IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> &
      return 0;
    }
    // For now process all reads on chrom
-
+   cerr << "Calling snvs: " << chrom << ":" << regionStart << "-" << regionEnd << endl;
    string region=MakeRegion(chrom, regionStart, regionEnd);
    itr = bam_itr_querys(idx, bamHdr, region.c_str());
    IOAlignBuff alignBuff(fp_in, itr, ioLock, 1000);
@@ -666,6 +800,17 @@ int IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> &
        cerr << "Reads are phased. Skipping SNV calling." << endl;
        return -1;
      }
+
+     //
+     // Short circuit phasing for chrX and passing y chrom limit.
+     //
+     if (chrom == "chrX" or chrom=="X" and minChrY > 0 and nChrY > minChrY) {
+       readIsPhased = true;
+       hap = 0;
+       read.phased = true;
+       read.hap = 0;
+       return -1;
+     }
      
      read.readName = bam_get_qname(aln);
      pileup.AddRead(read);
@@ -709,6 +854,16 @@ string &FlankSeq(READ* read, int side) {
     }
 }
 
+void IO::initializeRefFasta() {
+  if (reference =="") {
+    cerr << "ERROR. Vamos now requires a reference to be specified with -R ref.fasta ." << endl;
+  }
+  fai = fai_load(reference.c_str());
+  if (fai == NULL) {
+    cerr << "Could not load reference " << reference << endl;
+  }
+}
+
 void IO::initializeBam() {
     fp_in = hts_open(input_bam.c_str(), "r"); //open bam file
     if (!reference.empty()) {
@@ -720,7 +875,16 @@ void IO::initializeBam() {
       chromosomeNames.push_back(bamHdr->target_name[i]);
       chromosomeLengths.push_back(bamHdr->target_len[i]);      
     }
-    
+
+    if (minChrY > 0) {
+      for (int tid = 0; tid < bamHdr->n_targets; ++tid) {
+        if (strcmp(bamHdr->target_name[tid], "chrY") == 0) {
+	  uint64_t unmapped;
+	  hts_idx_get_stat(idx, tid, &nChrY, &unmapped);
+	  break;
+        }
+      }
+    }
 }
 
 void InitNucIndex(char nucIndex[]) {

@@ -268,13 +268,8 @@ void printUsage(IO &io, OPTION &opt)
     printf("Version: %s\n", io.version.c_str());
     printf("subcommand:\n");
     
-    // printf("vamos --liftover   [-i in.bam] [-v vntrs.bed] [-o output.fa] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
-    // printf("vamos --readwise   [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.bed] [-s sample_name] [-t threads] \n");    
-    // printf("vamos --locuswise_prephase  [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
-    // printf("vamos --locuswise [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank]\n");
-    // printf("vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
     printf("vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
-    printf("vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");
+    printf("vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-R reference_fasta ] [-t threads] [-p phase_flank] \n");
     printf("vamos --somatic [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");    
     printf("vamos -m [verison of efficient motif set]\n");
     printf("\n");
@@ -283,6 +278,7 @@ void printUsage(IO &io, OPTION &opt)
     printf("       -r   FILE         File containing region coordinate and motifs of each VNTR locus. \n");
     printf("                         The file format: columns `chrom,start,end,motifs` are tab-delimited. \n");
     printf("                         Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR. \n");
+    printf("       -R   FILE         Reference sequence where regions are on.\n");    
     printf("       -s   CHAR         Sample name. \n");
     printf("   Input handling:\n");
     printf("       -C   INT          Maximum coverage to call a tandem repeat.\n");
@@ -339,7 +335,7 @@ int main (int argc, char **argv)
 
         /* These options don’t set a flag. We distinguish them by their indices. */
         {"bam",             required_argument,       0, 'b'},
-        {"region",          required_argument,       0, 'r'},                        
+        {"region",          required_argument,       0, 'r'},
         {"vntr",            required_argument,       0, 'v'},
         {"output",          required_argument,       0, 'o'},
         {"out_fa",          required_argument,       0, 'x'},
@@ -356,6 +352,7 @@ int main (int argc, char **argv)
         {"phase_flank"     ,required_argument,       0, 'p'},
         {"download_db"     ,required_argument,       0, 'm'},
 	{"reference"       ,required_argument,       0, 'R'},
+	{"chry"            ,required_argument,       0, 'y'},	
         // {"input",           required_argument,       0, 'i'},
         // {"motif",           required_argument,       0, 'm'},
 
@@ -363,7 +360,7 @@ int main (int argc, char **argv)
     };
     /* getopt_long stores the option index here. */
     int option_index = 0;
-    while ((c = getopt_long (argc, argv, "Sb:r:a:o:C:s:t:f:d:c:x:v:m:R:p:hL:", long_options, &option_index)) != -1)
+    while ((c = getopt_long (argc, argv, "Sb:r:a:o:C:s:t:f:d:c:x:v:m:R:y:p:hL:", long_options, &option_index)) != -1)
     {
         switch (c)
         {
@@ -399,7 +396,6 @@ int main (int argc, char **argv)
                 fprintf (stderr, "option --vntr with `%s'\n", optarg);
                 io.vntr_bed = optarg;
                 break;
-
             case 'r':
                 fprintf (stderr, "option --region with `%s'\n", optarg);
                 io.region_and_motifs = optarg;
@@ -432,6 +428,11 @@ int main (int argc, char **argv)
                 opt.nproc = atoi(optarg);
                 break;
 
+            case 'y':
+                fprintf (stderr, "option --chry with `%s'\n", optarg);
+                opt.minChrY = atoi(optarg);
+		io.minChrY = opt.minChrY;
+                break;
             case 'd':
                 opt.penalty_indel = stod(optarg);
                 fprintf (stderr, "option --penlaty_indel with `%f'\n", opt.penalty_indel);
@@ -632,6 +633,7 @@ int main (int argc, char **argv)
 	  procInfo[i].io->bamHdr = io.bamHdr;
 	  procInfo[i].io->idx = io.idx;
 	  procInfo[i].io->numProcessed = &num_processed;
+	  procInfo[i].io->minChrY = io.minChrY;
 	  procInfo[i].mtx = &mtx;
 	  procInfo[i].mismatchCI = &mismatchCI;
 	  procInfo[i].out = &out;
@@ -700,10 +702,12 @@ int main (int argc, char **argv)
             procInfo[i].io->input_bam = io.input_bam;
 	    procInfo[i].io->reference = io.reference;
 	    procInfo[i].io->initializeBam();
+	    procInfo[i].io->initializeRefFasta();	    
 	    procInfo[i].io->chromosomeNames = io.chromosomeNames;
             procInfo[i].io->ioLock = &ioLock;
             procInfo[i].io->numProcessed = &num_processed;
 	    procInfo[i].io->thread = i;
+	    procInfo[i].io->minChrY = opt.minChrY;
             procInfo[i].mtx = &mtx;
             procInfo[i].mismatchCI = &mismatchCI;
             procInfo[i].out = &out;
@@ -725,6 +729,7 @@ int main (int argc, char **argv)
       }
       else {
         io.initializeBam();
+	io.initializeRefFasta();
 	bool readsArePhased = false;
 	for (int i=0; i < io.chromosomeNames.size(); i++ ) {
 	  Pileup pileup;

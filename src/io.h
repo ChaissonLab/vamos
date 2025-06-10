@@ -17,6 +17,7 @@
 #include <map>
 #include <list>
 #include <queue>
+#include <htslib/faidx.h>
 
 using namespace std;
 
@@ -237,6 +238,7 @@ public:
 	snv.pos = consensusStart;
 	snv.a = consensus[consensusStart].a;
 	snv.b = consensus[consensusStart].b;
+	/*
 	cerr << "Found het snv: " << snv.pos << "\t" << snv.a << "\t" << snv.b
 	     << "\t" << consensus[consensusStart].counts[0]
 	     << "\t" << consensus[consensusStart].counts[1]
@@ -244,6 +246,7 @@ public:
 	     << "\t" << consensus[consensusStart].counts[3]
 	     << "\t" << consensus[consensusStart].counts[4]
 	     << "\t" << consensus[consensusStart].counts[5] 	   << endl;
+	*/
 	hetSNVs.push_back(snv);
       }
       consensus.erase(consensusStart);
@@ -360,10 +363,13 @@ public:
     int *numProcessed;
     int thread;
     int minMapQV;
+  int minChrY;
+    uint64_t nChrY;
     string curChromosome;
     vector<string> chromosomeNames;
     vector<int> chromosomeLengths;
-  int maxLength;
+    faidx_t *fai;
+    int maxLength;
     std::map<string, vector<int> > *vntrMap;
 
     // Not the best place to put this, but since the IO is batched and we
@@ -388,6 +394,7 @@ public:
 	curChromosome="";
 	minMapQV=3;
 	maxLength=10000;
+	minChrY = nChrY = 0;
     };
 
   void clear() {
@@ -422,7 +429,7 @@ public:
     /* get the sequences from input_bam_file that overlapping with chr:start-end */
     //void readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int sz);
     void initializeBam();
-
+  void initializeRefFasta();
 
     void closeBam();
 

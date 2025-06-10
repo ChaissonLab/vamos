@@ -10,7 +10,7 @@ CC ?= gcc
 CXX ?= g++ -std=c++11
 
 
-CCFLAGS = -Wall -O3 -Wno-unused-function -Wno-misleading-indentation
+CCFLAGS = -Wall -g2 -Wno-unused-function -Wno-misleading-indentation
 
 DEBUG ?= "-g -std=c++11 "
 OPT   ?= ""
@@ -20,7 +20,7 @@ tsan  ?= ""
 ifeq ("$(DEBUG)", "TRUE")
 	  CFLAGS = -g -std=c++14 #-fsanitize=address  -static-libasan -gdwarf-4  #-Wall -Wextra
 else
-  CFLAGS = -O3 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
+  CFLAGS = -O2 -DNDEBUG #-W -Wall -pedantic -fopenmp -lpthread -lrt
 endif
 
 ifneq ($(asan), "")
@@ -47,6 +47,9 @@ ifneq ($(ZLIB_ROOT), "")
    ZLPATH=C_INCLUDE_PATH=$(ZLIB_ROOT)/include
 endif
 
+parasail-dir/lib/libparasail.so:
+	cd parasail && mkdir -p build && cd build && cmake .. -DPARASAIL_ENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=$PWD/../../parasail-dir/ && make -j4 && make install
+
 $(ABPOA_DIR)/lib/libabpoa.a:
 	echo $(CC)
 	echo "^^CC"
@@ -57,14 +60,14 @@ testmsa: TestMSA.cpp
 
 OBJS=main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o
 
-vamos:  $(OBJS) $(ABPOA_DIR)/lib/libabpoa.a
-	$(CXX) $(CFLAGS) -o $@ $(OBJS) -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa 
+vamos:  $(OBJS) $(ABPOA_DIR)/lib/libabpoa.a parasail-dir/lib/libparasail.so
+	$(CXX) $(CFLAGS) -o $@ $(OBJS) -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -Lparasail-dir/lib -lparasail -Wl,-rpath=$(PWD)/parasail-dir/lib 
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
-	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include
+	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -I parasail-dir/include 
 
 io.o: io.cpp io.h vcf.h vntr.h read.h phase.h
-	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -I $(ABPOA_DIR)/include -I $(CONDA_PREFIX)/include
+	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include  -I parasail-dir/include -I $(ABPOA_DIR)/include -I $(CONDA_PREFIX)/include
 
 phase.o: phase.cpp phase.h read.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include

@@ -16,11 +16,14 @@ public:
   double penalty_mismatch;
   int phaseFlank;
   string download;
+  string referenceFilename;
   int maxCoverage;
   int maxLocusLength;
   int minAltCoverage;
   int minSNVCoverage;
   InputType inputType;
+  bool hapChrX;
+  int minChrY;
   OPTION ()
   {
     nproc = 1;
@@ -35,6 +38,9 @@ public:
     maxLocusLength=10000;
     minSNVCoverage = 6;
     minAltCoverage = 3;
+    referenceFilename = "";
+    minChrY = 0;
+    hapChrX= false;
   };
 
   ~OPTION () {};
