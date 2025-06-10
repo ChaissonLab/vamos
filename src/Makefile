@@ -49,7 +49,7 @@ endif
 LIBPS=parasail-dir/lib/libparasail.so
 $(LIBPS):
 	tar zxvf v2.6.2.tar.gz 
-	cd parasail-2.6.2; mkdir -p build ; cd build ; cmake .. -DPARASAIL_ENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=$(PWD)/../../parasail-dir/ && make -j4 && make install
+	cd parasail-2.6.2; mkdir -p build ; cd build ; cmake .. -DPARASAIL_ENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=../../parasail-dir/ && make -j4 && make install
 
 $(ABPOA_DIR)/lib/libabpoa.a:
 	echo $(CC)
