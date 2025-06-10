@@ -46,8 +46,8 @@ ZLPATH=""
 ifneq ($(ZLIB_ROOT), "")
    ZLPATH=C_INCLUDE_PATH=$(ZLIB_ROOT)/include
 endif
-
-parasail-dir/lib/libparasail.so:
+LIBPS=parasail-dir/lib/libparasail.so
+$(LIBPS):
 	cd parasail && mkdir -p build && cd build && cmake .. -DPARASAIL_ENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=$PWD/../../parasail-dir/ && make -j4 && make install
 
 $(ABPOA_DIR)/lib/libabpoa.a:
@@ -63,10 +63,10 @@ OBJS=main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o
 vamos:  $(OBJS) $(ABPOA_DIR)/lib/libabpoa.a parasail-dir/lib/libparasail.so
 	$(CXX) $(CFLAGS) -o $@ $(OBJS) -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -Lparasail-dir/lib -lparasail -Wl,-rpath=$(PWD)/parasail-dir/lib 
 
-main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h
+main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h $(LIBPS)
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -I parasail-dir/include 
 
-io.o: io.cpp io.h vcf.h vntr.h read.h phase.h
+io.o: io.cpp io.h vcf.h vntr.h read.h phase.h $(LIBPS)
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include  -I parasail-dir/include -I $(ABPOA_DIR)/include -I $(CONDA_PREFIX)/include
 
 phase.o: phase.cpp phase.h read.h
