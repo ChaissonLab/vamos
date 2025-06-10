@@ -48,7 +48,7 @@ ifneq ($(ZLIB_ROOT), "")
 endif
 LIBPS=parasail-dir/lib/libparasail.so
 $(LIBPS):
-	cd parasail; mkdir -p build ; cd build ; cmake .. -DPARASAIL_ENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=$PWD/../../parasail-dir/ && make -j4 && make install
+	cd parasail; mkdir -p build ; cd build ; cmake .. -DPARASAIL_ENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=$(PWD)/../../parasail-dir/ && make -j4 && make install
 
 $(ABPOA_DIR)/lib/libabpoa.a:
 	echo $(CC)
