@@ -338,12 +338,12 @@ void IO::ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<
   if (vntrMap.find(refName) == vntrMap.end()) {
     return;
   }
-  UpperBoundSearchVNTRPos ubComp;
-  ubComp.vntrs=&vntrs;
+  LowerBoundSearchVNTRPos lbComp;
+  lbComp.vntrs=&vntrs;
   int refAlnStart = aln->core.pos;
   int refAlnEnd = bam_endpos(aln);
   vector<int> &vntrIndex=vntrMap[refName];
-  vector<int>::iterator it = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), refAlnStart, ubComp);
+  vector<int>::iterator it = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), refAlnStart, lbComp);
 
   //
   // Second check if any mapped by this contig.
@@ -435,8 +435,8 @@ void IO::StoreSeq(bam1_t *aln, string &readSeq) {
   }
 }
 
-void SetVNTRBounds(vector<VNTR*> &vntrs,
-		   map<string, vector<int> > &vntrMap, string chrom, int regionStart, int regionEnd,
+void GetItOfOverlappingVNTRs(vector<VNTR*> &vntrs,
+		   map<string, vector<int> > &vntrMap, string &chrom, int regionStart, int regionEnd,
 		   vector<int>::iterator &startIt,
 		   vector<int>::iterator &endIt) {
 
@@ -446,7 +446,7 @@ void SetVNTRBounds(vector<VNTR*> &vntrs,
   lbComp.vntrs = &vntrs;
   ubComp.vntrs = &vntrs;
   startIt = std::lower_bound(vntrIndex.begin(), vntrIndex.end(), regionStart, lbComp);
-  endIt   = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), regionEnd-1, ubComp);
+  endIt   = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), regionEnd, ubComp);
 }
 
 		   
@@ -503,6 +503,7 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
    string chromRegion=regionStream.str();
    int chromSeqLen=0;
    char *chromSeq = fai_fetch(fai, chromRegion.c_str(), &chromSeqLen);
+   string chromSeqStr(chromSeq);
    
    while (alignBuff.GetNext(aln) > 0) {
      string readSeq, readToRef;
@@ -550,7 +551,7 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
      // For each vntr that overlaps this read, add the read to the VNTR.
      //
      vector<int>::iterator it, endIt;
-     SetVNTRBounds(vntrs, vntrMap, chrom, refAlnStart, refAlnEnd, it, endIt);
+     GetItOfOverlappingVNTRs(vntrs, vntrMap, chrom, refAlnStart, refAlnEnd, it, endIt);
      
      while ( it != vntrIndex.end() and vntrs[*it]->ref_end <= refAlnEnd ) {
        //
@@ -584,8 +585,8 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
        string vntrSeq;
 
 
-       string refStartFlankSeq(chromSeq, refFlankStart, vntrs[*it]->ref_start-1 - refFlankStart);
-       string refEndFlankSeq(chromSeq, vntrs[*it]->ref_end-1, refFlankEnd - vntrs[*it]->ref_end-1);
+       string refStartFlankSeq= chromSeqStr.substr(refFlankStart, vntrs[*it]->ref_start-1 - refFlankStart);
+       string refEndFlankSeq= chromSeqStr.substr( vntrs[*it]->ref_end-1, refFlankEnd - vntrs[*it]->ref_end-1);
 
        for (auto ch=0; ch< refStartFlankSeq.size(); ch++) { refStartFlankSeq[ch] = toupper(refStartFlankSeq[ch]);}
        for (auto ch=0; ch< refEndFlankSeq.size(); ch++) { refEndFlankSeq[ch] = toupper(refEndFlankSeq[ch]);}       
@@ -701,12 +702,12 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
    if ( readsArePhased == false) {
      cerr << "Phasing reads in " << chrom << ":" << regionStart << "-" << regionEnd << endl;
      vector<int>::iterator it,end;
-     SetVNTRBounds(vntrs, vntrMap, chrom, regionStart, regionEnd, it, end);
+     GetItOfOverlappingVNTRs(vntrs, vntrMap, chrom, regionStart, regionEnd, it, end);
      
      int nProc=0;
      int total=end-it;
      int itPos = *it;
-     int endPos= *end;
+
      int sz = vntrIndex.size();
      if (total < 0 ){
        int endSearch=itPos;

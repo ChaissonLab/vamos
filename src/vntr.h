@@ -265,7 +265,7 @@ class UpperBoundSearchVNTRPos {
 public:
   vector<VNTR*>* vntrs;
   bool operator()(const int &a, const int &b) const {
-    return a < (*vntrs)[b]->ref_start;
+    return a < (*vntrs)[b]->ref_end;
   }
 };
 
@@ -273,7 +273,7 @@ class LowerBoundSearchVNTRPos {
 public:
   vector<VNTR*>* vntrs;
   bool operator()(const int &a, const int &b) const {
-    return  (*vntrs)[a]->ref_start < b;
+    return b < (*vntrs)[a]->ref_start;
   }
 };
 

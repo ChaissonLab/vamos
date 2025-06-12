@@ -21,8 +21,8 @@
 
 using namespace std;
 
-void SetVNTRBounds(vector<VNTR*> &vntrs,
-		   map<string, vector<int> > &vntrMap, string chrom, int regionStart, int regionEnd,
+void GetItOfOverlappingVNTRs(vector<VNTR*> &vntrs,
+		   map<string, vector<int> > &vntrMap, string &chrom, int regionStart, int regionEnd,
 		   vector<int>::iterator &startIt,
 		   vector<int>::iterator &endIt);
 
