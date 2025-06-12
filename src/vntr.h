@@ -273,7 +273,7 @@ class LowerBoundSearchVNTRPos {
 public:
   vector<VNTR*>* vntrs;
   bool operator()(const int &a, const int &b) const {
-    return b < (*vntrs)[a]->ref_start;
+    return  (*vntrs)[a]->ref_start < b;
   }
 };
 

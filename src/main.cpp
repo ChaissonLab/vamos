@@ -216,19 +216,20 @@ void *CallSNVs (void *procInfoValue) {
 				      *(procInfo->vntrs),
 				      *(procInfo->vntrMap),
 				      pileup, procInfo->thread, readsArePhased);
-     vector<int>::iterator it,end;
+    vector<int>::iterator start, it,end;
      int regionStart = (*(procInfo->bucketEndPos))[curChrom][curRegion];
      int regionEnd   = (*(procInfo->bucketEndPos))[curChrom][curRegion+1];
      GetItOfOverlappingVNTRs(*(procInfo->vntrs),
 			     (*(procInfo->vntrMap)), curChrom,
-			     regionStart, regionEnd, it, end);
+			     regionStart, regionEnd, start, end);
 
      SDTables sdTables;
-     while (it != end) {
+     it = start;
+     while (it != end and it != (*(procInfo->vntrMap))[curChrom].end()) {
        VNTR* vntr = (*procInfo->vntrs)[*it];
        ProcVNTR (vntr->index, vntr, *(procInfo->opt), sdTables, *(procInfo->mismatchCI));
        vntr->clearReads();
-       ++it;
+       it++;
      }
      cout << "Done processing " << curChrom << ":" << regionStart <<"-" << regionEnd << endl;
   }

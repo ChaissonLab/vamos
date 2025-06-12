@@ -279,7 +279,7 @@ int MappedEndPosInRead(vector<int> &refIndex, int refStart, int refPos) {
   //
   // For handling flank regions, the ref pos may have been set beyond the end of the read.
   //
-  if (refPos > refStart + refIndex.size()) {
+  if (refPos >= refStart + refIndex.size()) {
     refPos = refStart + refIndex.size() - 1;
   }
   assert(refPos - refStart < refIndex.size());
