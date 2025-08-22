@@ -76,6 +76,9 @@ def writeFeature(vcf, feature, byDip, outFile, skipLoci, demographics):
                 else:
                     if feature == 'annoLen':
                         alleles[s] = str(len(a))
+                    elif feature == 'annoLenNT':
+                        motifsDict = {v:k for k,v in tr.motifsUsed.items()}
+                        alleles[s] = str(sum([ len(motifsDict[int(i)]) for i in a ]))
                     elif feature == 'annoStr':
                         alleles[s] = '-'.join(a)
                     elif feature == 'topCount':
