@@ -357,7 +357,7 @@ public:
     int phaseFlank;
     IO() 
     {
-      version = "2.1.7";
+      version = "2.1.8";
         region_and_motifs = "";
         input_bam = "";
         reference = "";

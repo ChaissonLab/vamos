@@ -742,7 +742,7 @@ int main (int argc, char **argv)
     
       /* Create threads */
 
-    io.clear();
+    //    io.clear();
         // output vcf or bed or fasta
     if (readwise_anno_flag or somatic_flag) 
       io.writeBEDBody_readwise(out, vntrs, -1, 1);
