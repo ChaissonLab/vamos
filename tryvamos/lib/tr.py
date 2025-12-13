@@ -70,7 +70,8 @@ class TR:
 
         fields = line.strip().split('\t')
         self.chr,self.start,_,_,_,_,_,info,_ = fields[:9]
-        end,ru,_,annos = info.split(';')
+        try:
+            end,ru,_,annos = info.split(';')
         self.end = end.split('=')[1]
         ru = ru.split('=')[1].split(',')
         # encode the list of motifs used for annotation with numbering

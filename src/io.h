@@ -423,9 +423,6 @@ public:
     int read_tsv(vector<vector<string>> &items);
 
 
-    void readVNTRFromBed (vector<VNTR *> &vntrs);
-
-
     /* get the sequences from input_bam_file that overlapping with chr:start-end */
     //void readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int sz);
     void initializeBam();

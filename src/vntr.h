@@ -269,6 +269,7 @@ public:
   }
 };
 
+
 class LowerBoundSearchVNTRPos {
 public:
   vector<VNTR*>* vntrs;

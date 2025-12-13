@@ -270,7 +270,7 @@ void printUsage(IO &io, OPTION &opt)
     printf("subcommand:\n");
     
     printf("vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
-    printf("vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-R reference_fasta ] [-t threads] [-p phase_flank] \n");
+    printf("vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");
     printf("vamos --somatic [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");    
     printf("vamos -m [verison of efficient motif set]\n");
     printf("\n");
@@ -279,7 +279,7 @@ void printUsage(IO &io, OPTION &opt)
     printf("       -r   FILE         File containing region coordinate and motifs of each VNTR locus. \n");
     printf("                         The file format: columns `chrom,start,end,motifs` are tab-delimited. \n");
     printf("                         Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR. \n");
-    printf("       -R   FILE         Reference sequence where regions are on.\n");    
+    //    printf("       -R   FILE         Reference sequence where regions are on.\n");    
     printf("       -s   CHAR         Sample name. \n");
     printf("   Input handling:\n");
     printf("       -C   INT          Maximum coverage to call a tandem repeat.\n");
@@ -352,7 +352,7 @@ int main (int argc, char **argv)
         {"accuracy"        ,required_argument,       0, 'a'},
         {"phase_flank"     ,required_argument,       0, 'p'},
         {"download_db"     ,required_argument,       0, 'm'},
-	{"reference"       ,required_argument,       0, 'R'},
+	//	{"reference"       ,required_argument,       0, 'R'},
 	{"chry"            ,required_argument,       0, 'y'},	
         // {"input",           required_argument,       0, 'i'},
         // {"motif",           required_argument,       0, 'm'},
@@ -389,10 +389,11 @@ int main (int argc, char **argv)
                 fprintf (stderr, "option --bam with `%s'\n", optarg);
 		io.input_bam = optarg;
                 break;
-	    case 'R':
+		/*	    case 'R':
                 fprintf (stderr, "option --reference with `%s'\n", optarg);
                 io.reference = optarg;
                 break;
+		*/
             case 'v':
                 fprintf (stderr, "option --vntr with `%s'\n", optarg);
                 io.vntr_bed = optarg;
@@ -525,7 +526,7 @@ int main (int argc, char **argv)
         fprintf(stderr, "ERROR: -b must be specified!\n");
         missingArg = true;
     }
-    if (!liftover_flag and io.region_and_motifs == "")
+    if (io.region_and_motifs == "")
     {
         fprintf(stderr, "ERROR:-r must be specified!\n");
         missingArg = true;
@@ -557,7 +558,6 @@ int main (int argc, char **argv)
     // if (hclust_flag) fprintf(stderr, "hclust_flag is set. \n");
     // if (seqan_flag) fprintf(stderr, "seqan_flag is set\n");
     if (output_read_anno_flag) fprintf(stderr, "output_read_anno_flag is set. \n");
-    if (liftover_flag) fprintf(stderr, "liftover_flag is set\n");
     if (single_seq_flag) fprintf(stderr, "single_seq_flag is set\n");
     if (readwise_anno_flag) fprintf(stderr, "readwise_anno_flag is set. \n");
     if (locuswise_prephase_flag) fprintf(stderr, "locuswise_prephase_flag is set. \n");
@@ -583,10 +583,6 @@ int main (int argc, char **argv)
         io.readRegionAndMotifs(vntrs);
 	ChromToVNTRMap(vntrs, vntrMap);
         CreateAccLookupTable(vntrs, 0.98, mismatchCI, 0.999);      
-    }
-    if (liftover_flag)
-    {
-        io.readVNTRFromBed(vntrs);
     }
     cerr << "Read " << vntrs.size() << " target loci" << endl;
 
@@ -701,7 +697,7 @@ int main (int argc, char **argv)
             procInfo[i].opt = &opt;
             procInfo[i].io = new IO;
             procInfo[i].io->input_bam = io.input_bam;
-	    procInfo[i].io->reference = io.reference;
+	    //	    procInfo[i].io->reference = io.reference;
 	    procInfo[i].io->initializeBam();
 	    procInfo[i].io->initializeRefFasta();	    
 	    procInfo[i].io->chromosomeNames = io.chromosomeNames;
@@ -761,8 +757,6 @@ int main (int argc, char **argv)
       io.writeBEDBody_readwise(out, vntrs, -1, 1);
     else if (locuswise_prephase_flag or locuswise_flag or single_seq_flag) 
       io.writeVCFBody_locuswise(out, vntrs, -1, 1);
-    else if (liftover_flag)
-      io.writeFa(out, vntrs);
     
     out.close();
 

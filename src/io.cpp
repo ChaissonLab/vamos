@@ -143,7 +143,7 @@ int IO::readRegionAndMotifs (vector<VNTR*> &vntrs)
 	prevChrom=chrom;
 	prevEnd = end;
 	lineNumber++;
-        VNTR * vntr = new VNTR(chrom, start, end, end-start,svtype);
+        VNTR * vntr = new VNTR(chrom, start-1, end, end-start,svtype);
         vntrs.push_back(vntr);
 	vntr->index = vntrs.size()-1;
         stringstream mm(motifs);
@@ -161,30 +161,6 @@ int IO::readRegionAndMotifs (vector<VNTR*> &vntrs)
 
 
 
-/* read vntrs coordinates from file `vntr_bed`*/
-void IO::readVNTRFromBed (vector<VNTR*> &vntrs)
-{
-    vector<vector<string>> items;
-    read_tsv(items);
-    uint32_t start, end, len;
-    string svtype;
-    for (auto &it : items)
-    {
-        start = stoi(it[1]);
-        end = stoi(it[2]);
-        len = start < end ? end - start : 0;
-	svtype=it[5];
-	if (len < maxLength) {
-	  VNTR * vntr = new VNTR(it[0], start, end, len, svtype);
-	  vntrs.push_back(vntr);
-	}
-	else {
-	  cerr << "WARNING, locus " << it[0] << ":" << it[1] << "-" << it[2] << " has length greater than " << maxLength << " and will be ignored." << endl;
-	}
-    }
-    return;
-}
-
 int FRONT=0;
 int BACK=1;
 
@@ -197,14 +173,15 @@ void IO::StoreReadSeqAtRefCoord(bam1_t *aln, string &readSeq, string &readSeqAtR
     //
     // Check for unmapped sequence.
     //
-    if (refPos < 0) {
+    uint32_t readLen = aln->core.l_qseq;    
+    if (refPos < 0 or readLen == 0) {
       return;
     }
     refToReadMap.resize(refEnd-refStart);
     
     int op, type, len;
     uint8_t *read;
-    uint32_t readLen = aln->core.l_qseq;
+
     // If there is a prefix gap, add those.
     read=bam_get_seq(aln);
     char *name = bam_get_qname(aln);
@@ -327,6 +304,9 @@ void IO::ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<
   string readSeq, readToRef;
   StoreSeq(aln, readSeq);
   StoreReadSeqAtRefCoord(aln, readSeq, readToRef, readMap);
+  if (readSeq.size() == 0) {
+    return;
+  }
   int tid=aln->core.tid;
   if (tid == -1) {
     return;
@@ -343,7 +323,7 @@ void IO::ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<
   int refAlnStart = aln->core.pos;
   int refAlnEnd = bam_endpos(aln);
   vector<int> &vntrIndex=vntrMap[refName];
-  vector<int>::iterator it = std::upper_bound(vntrIndex.begin(), vntrIndex.end(), refAlnStart, lbComp);
+  vector<int>::iterator it = std::lower_bound(vntrIndex.begin(), vntrIndex.end(), refAlnStart, lbComp);
 
   //
   // Second check if any mapped by this contig.
@@ -352,7 +332,11 @@ void IO::ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<
     return;
   }
   int i=it-vntrMap[refName].begin();
-
+  //
+  while (i > 0 and vntrs[vntrMap[refName][i-1]]->ref_start == refAlnStart) {
+    i--;
+  }
+  
   while (i < vntrMap[refName].size() and
 	 vntrs[vntrMap[refName][i]]->ref_start >= refAlnStart and
 	 vntrs[vntrMap[refName][i]]->ref_end < refAlnEnd) {
@@ -856,6 +840,7 @@ string &FlankSeq(READ* read, int side) {
 }
 
 void IO::initializeRefFasta() {
+  return;
   if (reference =="") {
     cerr << "ERROR. Vamos now requires a reference to be specified with -R ref.fasta ." << endl;
   }
