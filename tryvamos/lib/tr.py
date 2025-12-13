@@ -113,7 +113,8 @@ class TR:
                 self.annosByFull[sample+'_h2'] = temp
 
         # calculate the max annotation length among all alleles
-        self.maxLen = max([ len(a) for s,a in self.annosByUsed.items() ])
+        if [ len(a) for s,a in self.annosByUsed.items() ]:
+            self.maxLen = max([ len(a) for s,a in self.annosByUsed.items() ])
 
 
     def getEditDistance(self):
@@ -172,6 +173,7 @@ class TR:
         """
 
         samples = list(self.annosByUsed.keys())
+        #samples = list(self.annosByUsed.keys())[1::2] # for plotting combined haploid vcf
         # remove uncovered samples
         samples = [ s for s in samples if '.' not in self.annosByUsed[s] ]
         annos = np.array([ [int(m) for m in self.annosByUsed[s]] for s in samples ])
@@ -189,32 +191,35 @@ class TR:
         out.close()
 
         # set up plotting area
-        if not width: width = maxLen / 5
+        if not width: width = maxLen / 2.5
         if not height: height = len(samples) / 10
-        plt.figure(figsize=(width,height)) #plt.figure(figsize=(15,12))
+        plt.figure(figsize=(width,height)) #plt.figure(figsize=(20,20))
         sns.set(font_scale=2)
 
         # plot
         if ylabel == 'empty':
-            wf = sns.heatmap(annos, cmap=cmap, cbar=False, linewidth=0.2, yticklabels=False)
+            #wf = sns.heatmap(annos, cmap=cmap, cbar=False, yticklabels=False)
+            wf = sns.heatmap(annos, cmap=cmap, cbar=False, linewidth=0.01, yticklabels=False)
         else:
-            wf = sns.heatmap(annos, cmap=cmap, cbar=False, linewidth=0.2)
+            #wf = sns.heatmap(annos, cmap=cmap, cbar=False)
+            wf = sns.heatmap(annos, cmap=cmap, cbar=False, linewidth=0.01)
 
         # set up x axis
         xticks = np.linspace(0, maxLen, 10, dtype=int)
         xlabels = np.linspace(0, maxLen, 10, dtype=int)
-        plt.xticks(xticks, xlabels, rotation=0, fontsize=15)
+        plt.xticks(xticks, xlabels, rotation=0, fontsize=width)
         # set up y axis
         if ylabel == 'id':
             yticks = np.linspace(0, len(samples) - 1, len(samples), dtype=int)
             ylabels = samples
-            plt.yticks(yticks+0.5, ylabels, rotation=0, fontsize=5)
+            #ylabels = [ s[:-3] for s in samples ]
+            plt.yticks(yticks+0.5, ylabels, rotation=0, fontsize=width)
         elif ylabel == 'index':
             #yticks = np.arrange(1, len(samples), )
             yticks = np.linspace(1, len(samples), 10, dtype=int)
             ylabels = np.linspace(1, len(samples), 10, dtype=int)
             ylabels = [ f'genome {y}' for y in ylabels ]
-            plt.yticks(yticks+0.5, ylabels, rotation=0, fontsize=15)
+            plt.yticks(yticks+0.5, ylabels, rotation=0, fontsize=width)
 
         plt.savefig(outPlot, bbox_inches='tight', dpi=300, format='png')
         plt.close()

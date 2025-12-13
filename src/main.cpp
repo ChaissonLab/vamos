@@ -51,13 +51,13 @@ void PrintDownloadMotifs() {
   
     cout << "Motif sets from Ren, Gu, and Chaisson, Genome Biology, 2023 (for backwards compatibility):" << endl
        << "Original (no filtering) " <<endl
-       << "   curl \"https://zenodo.org/record/8357361/files/original_motifs.set148.bed.gz?download=1\" > original_motifs.set148.bed.gz; gunzip original_motifs.set148.bed.gz" << endl
+       << "   curl \"https://zenodo.org/records/13263615/files/vamos.oriMotifs.GRCh38.tsv.gz?download=1\" > vamos.oriMotifs.GRCh38.tsv.gz; gunzip vamos.oriMotifs.GRCh38.tsv.gz" << endl
        << "q10:" << endl
-       << "   curl \"https://zenodo.org/record/8357361/files/q-0.1_motifs.set148.bed.gz?download=1\"  > q-0.1_motifs.set148.bed.gz; gunzip q-0.1_motifs.set148.bed.gz" << endl
+       << "   curl \"https://zenodo.org/records/13263615/files/vamos.effMotifs-0.1.GRCh38.tsv.gz?download=1\" > vamos.effMotifs-0.1.GRCh38.tsv.gz; gunzip vamos.effMotifs-0.1.GRCh38.tsv.gz" << endl
        << "q20:" << endl
-       << "   curl \"https://zenodo.org/record/8357361/files/q-0.2_motifs.set148.bed.gz?download=1\"  > q-0.2_motifs.set148.bed.gz; gunzip q-0.2_motifs.set148.bed.gz" << endl
+       << "   curl \"https://zenodo.org/records/13263615/files/vamos.effMotifs-0.2.GRCh38.tsv.gz?download=1\" > vamos.effMotifs-0.2.GRCh38.tsv.gz; gunzip vamos.effMotifs-0.2.GRCh38.tsv.gz" << endl
        << "q30:" << endl
-       << "   curl \"https://zenodo.org/record/8357361/files/q-0.3_motifs.set148.bed.gz?download=1\"  > q-0.3_motifs.set148.bed.gz; gunzip q-0.3_motifs.set148.bed.gz" << endl << endl;
+       << "   curl \"https://zenodo.org/records/13263615/files/vamos.effMotifs-0.3.GRCh38.tsv.gz?download=1\" > vamos.effMotifs-0.3.GRCh38.tsv.gz; gunzip vamos.effMotifs-0.3.GRCh38.tsv.gz" << endl << endl;
 }
 
 void process_mem_usage(double &vm_usage, double &resident_set)
@@ -751,7 +751,7 @@ int main (int argc, char **argv)
     
       /* Create threads */
 
-    io.clear();
+    //    io.clear();
         // output vcf or bed or fasta
     if (readwise_anno_flag or somatic_flag) 
       io.writeBEDBody_readwise(out, vntrs, -1, 1);

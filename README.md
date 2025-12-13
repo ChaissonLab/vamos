@@ -51,22 +51,22 @@ Explanation of the motif catalog columns:
 
 For annotation on GRCh38 using the *vamos* **efficient** motifs:
 ```
- curl "https://zenodo.org/records/11625069/files/vamos.motif.hg38.v2.1.e0.1.tsv.gz?download=1" > vamos.motif.hg38.v2.1.e0.1.tsv.gz; gunzip vamos.motif.hg38.v2.1.e0.1.tsv.gz
+curl "https://zenodo.org/records/13263615/files/vamos.effMotifs-0.1.GRCh38.tsv.gz?download=1" > vamos.effMotifs-0.1.GRCh38.tsv.gz; gunzip vamos.effMotifs-0.1.GRCh38.tsv.gz;
  ```
 For annotation on CHM13 using the *vamos* **efficient** motifs
 ```
- curl "https://zenodo.org/records/11625069/files/vamos.motif.CHM13.v2.1.e0.1.tsv.gz?download=1" > vamos.motif.CHM13.v2.1.e0.1.tsv.gz; gunzip vamos.motif.CHM13.v2.1.e0.1.tsv.gz
+curl "https://zenodo.org/records/13263615/files/vamos.effMotifs-0.1.T2T-CHM13.tsv.gz?download=1" > vamos.effMotifs-0.1.T2T-CHM13.tsv.gz; gunzip vamos.effMotifs-0.1.T2T-CHM13.tsv.gz
 ```
 
 ## Running *vamos*
 For running *vamos* on a haplotype-resolved assembly:
 ```
-vamos --contig -b assembly.hap1.mapped_to_grch38.bam -r vamos.motif.hg38.v2.1.e0.1.tsv -s sample_name -o assembly.hap1.vcf -t 8
-vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r vamos.motif.hg38.v2.1.e0.1.tsv -s sample_name -o assembly.hap2.vcf -t 8
+vamos --contig -b assembly.hap1.mapped_to_grch38.bam -r vamos.effMotifs-0.1.GRCh38.tsv -s sample_name -o assembly.hap1.vcf -t 8
+vamos --contig -b assembly.hap2.mapped_to_grch38.bam -r vamos.effMotifs-0.1.GRCh38.tsv -s sample_name -o assembly.hap2.vcf -t 8
 ```
 For running *vamos* on aligned reads:
 ```
-vamos --read -b ../example/demo.aln.bam -r vamos.motif.hg38.v2.1.e0.1.tsv -s NA24385_CCS_h1 -o reads.vcf -t 8
+vamos --read -b ../example/demo.aln.bam -r vamos.effMotifs-0.1.GRCh38.tsv -s NA24385_CCS_h1 -o reads.vcf -t 8
 ```
 If the reads are pre-phased using HapCut or WhatsHap, and contain the HA SAM tag, this phasing will be used to call variants from each haplotype. If the reads are unphased, a max-cut heuristic will be used to prephase reads before calling variants.
 

@@ -19,7 +19,7 @@ parserDict = {}
 usage = ' <mode> <options> \n'
 version = 'Version: 1.2.0.0'
 description = '''\nDescription:
-The tryvamos program provides a tool set for various downstream analysis using TR annotation output from the Vamos
+The tryvamos program provides a tool set for various downstream analysis using TR annotation output from the Vamos 
 software.
 '''
 
@@ -34,7 +34,7 @@ subparsers = parser.add_subparsers(dest='command')
 parser_combineVCF = subparsers.add_parser('combineVCF', description=
 '''combineVCF:
 This command generates diploid multi-sample vcf from given haploid or diploid single sample vcfs.
-Each line of the input csv file can be a single diploid vcf as "dip.vcf" or two comma delimited haploid vcfs as
+Each line of the input csv file can be a single diploid vcf as "dip.vcf" or two comma delimited haploid vcfs as 
 "hap1.vcf,hap2.vcf".
 The best chromosome orders in the combined vcf are determined from the chromosome orders of all input vcf (as ordered
 in the vcf headers).
@@ -61,6 +61,7 @@ parser_quickFeature = subparsers.add_parser('quickFeature', description=
 This command generates feature matrix for each haplotype/sample and alleles from the input vamos diploid vcf.
 Currently 4 feature types are supported:
     annoLen:    allele length in motif unit
+    annoLenNT:  allele length in nucleotide as inferred from the annotated motif string
     annoStr:    allele by motif string
     topCount:   allele by count of the most frequent motif (i.e., motif "0" in
                 the annotation string)
@@ -77,7 +78,7 @@ parser_quickFeature.add_argument(quickFeaturePosList[1], type=str,
 # optional arguments
 parser_quickFeature.add_argument('-f', '--'+quickFeatureOptList[0],
     type=str, metavar='{annoLen,annoStr,topCount,nt}', default='annoLen',
-    choices=['annoLen','annoStr','topCount','nt'],
+    choices=['annoLen','annoLenNT','annoStr','topCount','nt'],
     help='feature type, default annoLen')
 parser_quickFeature.add_argument('-D', '--'+quickFeatureOptList[1],
     action='store_true',
@@ -104,7 +105,7 @@ parser_waterfallPlot.add_argument(waterfallPlotPosList[0], type=str,
 parser_waterfallPlot.add_argument(waterfallPlotPosList[1], type=str,
     help='string\toutput directory,  e.g. /out/Dir')
 # optional arguments
-parser_waterfallPlot.add_argument('-l', '--'+waterfallPlotOptList[0],
+parser_waterfallPlot.add_argument('-l', '--'+waterfallPlotOptList[0], 
     type=str, metavar='string', default=None,
     help='input bed of loci for plotting, default None')
 parser_waterfallPlot.add_argument('-W', '--'+waterfallPlotOptList[1],
@@ -181,7 +182,7 @@ argsDict = vars(parser.parse_args())
 if argsDict['command'] is None:
     parser.print_help()
     sys.exit(0)
-
+    
 posList, optList = parserDict[argsDict['command']]
 logging.info('Parsing Input Arguements...')
 logging.info(f'Required Argument - mode: {argsDict["command"]}')
