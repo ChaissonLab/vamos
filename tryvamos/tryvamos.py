@@ -77,7 +77,7 @@ parser_quickFeature.add_argument(quickFeaturePosList[1], type=str,
     help='string\toutput tsv file,  e.g. /out/File.tsv')
 # optional arguments
 parser_quickFeature.add_argument('-f', '--'+quickFeatureOptList[0],
-    type=str, metavar='{annoLen,annoStr,topCount,nt}', default='annoLen',
+    type=str, metavar='{annoLen,annoLenNT,annoStr,topCount,nt}', default='annoLen',
     choices=['annoLen','annoLenNT','annoStr','topCount','nt'],
     help='feature type, default annoLen')
 parser_quickFeature.add_argument('-D', '--'+quickFeatureOptList[1],

@@ -100,7 +100,7 @@ void writeSingleBody_locuswise(VNTR * it, ofstream &out)
     else GT = "1/2";
 
 	out << it->chr << "\t";
-	out	<< to_string(it->ref_start) << "\t";
+	out	<< to_string(it->ref_start+1) << "\t";
 	out	<< ".\t";
 	out	<< "N\t";
 	out	<< "<VNTR>\t";
