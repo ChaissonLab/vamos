@@ -143,7 +143,7 @@ int IO::readRegionAndMotifs (vector<VNTR*> &vntrs)
 	prevChrom=chrom;
 	prevEnd = end;
 	lineNumber++;
-        VNTR * vntr = new VNTR(chrom, start-1, end, end-start,svtype);
+        VNTR * vntr = new VNTR(chrom, start, end, end-start,svtype);
         vntrs.push_back(vntr);
 	vntr->index = vntrs.size()-1;
         stringstream mm(motifs);
@@ -280,21 +280,11 @@ void IO::StoreAllContigs(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMa
   initializeRefFasta();
   bam1_t * aln = bam_init1(); //initialize an alignment
   while (sam_read1(fp_in, bamHdr, aln) >= 0) {
-    //    cerr << "Processing name: " << bam_get_qname(aln) << " " << aln->core.l_qseq << endl;
     ProcessOneContig(aln, vntrs, vntrMap);
     bam_destroy1(aln);
     aln=bam_init1();    
   }
   bam_destroy1(aln);
-  /*
-  for (auto vntrIndex : vntrMap) {
-    for (int i=0; i< vntrIndex.second.size(); i++) {
-      if (vntrs[vntrIndex.second[i]]->reads.size() > 0) {
-	cerr << ">" << vntrs[vntrIndex.second[i]]->region << endl;
-	cerr << vntrs[vntrIndex.second[i]]->reads[0]->seq << endl;
-      }
-    }
-    } */ 
 }
 
 
@@ -346,9 +336,19 @@ void IO::ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<
       int readStart = MappedStartPosInRead(readMap, refAlnStart, vntrs[idx]->ref_start-1);
       int readEnd   = MappedEndPosInRead(readMap, refAlnStart, vntrs[idx]->ref_end-1);
       string vntrSeq;
-
-      vntrSeq = readSeq.substr(readStart, readEnd-readStart);
-
+      /*
+      int preadStart   = MappedStartPosInRead(readMap, refAlnStart, vntrs[idx]->ref_start-12);
+      int preadEnd = MappedEndPosInRead(readMap, refAlnStart, vntrs[idx]->ref_start-2);
+      int sreadStart = MappedEndPosInRead(readMap, refAlnStart, vntrs[idx]->ref_end);
+      int sreadEnd   = MappedStartPosInRead(readMap, refAlnStart, vntrs[idx]->ref_end+10);
+      */
+      vntrSeq = readSeq.substr(readStart, readEnd-readStart+1);
+      /*
+      string pSeq, sSeq;
+      pSeq=readSeq.substr(preadStart, preadEnd-preadStart);
+      sSeq=readSeq.substr(sreadStart, sreadEnd - sreadStart);
+      cout << refName << "\t" << vntrs[idx]->ref_start-1 << "\t" << vntrs[idx]->ref_end-1 << "\t" << pSeq << "\t" << vntrSeq << "\t" << sSeq << endl;
+      */
       
       READ *read = new READ;
       read->qname = refName; //new char[refName.size()+1];
@@ -632,27 +632,6 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
        if (startResult and endResult) {
 	 readStart=refinedReadStart;
 	 readEnd = refinedReadEnd;
-	 if (readStart != refinedReadStart || readEnd !=refinedReadEnd) {
-
-	   /*
-	   cout << "Boundary alignments " << readStart - refinedReadStart<< ":" << readStart << "/" << refinedReadStart << "\t" << refinedReadEnd-readEnd << ":" << readEnd << "/" << refinedReadEnd << endl;
-	   
-	   cout << readStartFlankSeq << endl <<refStartFlankSeq << endl;
-	   string trSeq(chromSeq, vntrs[*it]->ref_start, vntrs[*it]->ref_end - vntrs[*it]->ref_start);
-	   cout << trSeq << endl;
-	   cout << readEndFlankSeq << endl <<refEndFlankSeq << endl;	   
-	   parasail_traceback_generic(refStartFlankSeq.c_str(), refStartFlankSeq.length(),
-				      readStartFlankSeq.c_str(), readStartFlankSeq.length(),
-				      "ref-start", "read-start", matrix,
-				      startResult, '|', '.', ' ',  80, 10, 1);
-	   
-	   
-	   parasail_traceback_generic(refEndFlankSeq.c_str(), refEndFlankSeq.length(),
-				      readEndFlankSeq.c_str(), readEndFlankSeq.length(),
-				      "ref-end", "read-end", matrix,
-				      endResult, '|', '.', ' ',  80, 10, 1);
-	   */
-	 }
 	 parasail_result_free(startResult);
 	 parasail_result_free(endResult);
 	 parasail_cigar_free(startCigar);
