@@ -342,7 +342,12 @@ void IO::ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<
       int sreadStart = MappedEndPosInRead(readMap, refAlnStart, vntrs[idx]->ref_end);
       int sreadEnd   = MappedStartPosInRead(readMap, refAlnStart, vntrs[idx]->ref_end+10);
       */
-      vntrSeq = readSeq.substr(readStart, readEnd-readStart+1);
+      if (readEnd == readStart) {
+        vntrSeq = readSeq.substr(readStart, readEnd-readStart);
+      }
+      else {
+        vntrSeq = readSeq.substr(readStart, readEnd-readStart+1);
+      }
       /*
       string pSeq, sSeq;
       pSeq=readSeq.substr(preadStart, preadEnd-preadStart);
