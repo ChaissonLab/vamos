@@ -17,11 +17,12 @@
 #include <map>
 #include <list>
 #include <queue>
+#include <htslib/faidx.h>
 
 using namespace std;
 
-void SetVNTRBounds(vector<VNTR*> &vntrs,
-		   map<string, vector<int> > &vntrMap, string chrom, int regionStart, int regionEnd,
+void GetItOfOverlappingVNTRs(vector<VNTR*> &vntrs,
+		   map<string, vector<int> > &vntrMap, string &chrom, int regionStart, int regionEnd,
 		   vector<int>::iterator &startIt,
 		   vector<int>::iterator &endIt);
 
@@ -66,21 +67,21 @@ public:
 
 class Consensus {
 public:
-  vector<int> counts;
+  int counts[6];
   int operator[](int i) { return counts[i];}
   char a,b;
   bool isCluster;
   int pos;
   int cov;
   Consensus() {
-    counts.resize(6,0);
+    counts[0] = counts[1] =counts[2]=counts[3]=counts[4]=counts[5]=0;
     a=b='N';
     isCluster=false;
     cov=0;
   }
   int Inc(char c, char nucIndex[]) {
     cov++;
-    assert(counts.size() == 6);
+
     assert(c <= 255 && c >= 0);
     assert(nucIndex[c] < 6);
     counts[nucIndex[c]]++;
@@ -89,15 +90,17 @@ public:
   void Dec() {
     cov--;
   }
-  int Calc(int minCov) {
-    int colSum=0;    
+  int Calc(int minSNVCov, int minAltCov ) {
+    int colSum=0;
+    int snvSum=0;
     for (auto i=0; i < 5; i++) {
 	colSum += counts[i];
     }
+    snvSum=colSum - counts[4];
     vector<float> frac(4,0);
-    vector<int> suffIdx;
+    vector<int> snvIdx;
     vector<char> snvNuc;
-    if (colSum < minCov) {
+    if (snvSum < minSNVCov) {
       a = 'N';
       b = 'N';
       return 0;
@@ -106,14 +109,22 @@ public:
     for (auto i=0; i < 4; i++) {
 	frac[i] = ((float)counts[i]/colSum);
 	if (frac[i] > 0.25) {
-	    suffIdx.push_back(i);
+	    snvIdx.push_back(i);
 	    snvNuc.push_back("ACGT"[i]);
 	}
     }
-    if (suffIdx.size() == 2) {
-      a=snvNuc[0];
-      b=snvNuc[1];
-      return 1;
+    
+    if (snvIdx.size() == 2) {
+      if (counts[snvIdx[0]] < minAltCov or counts[snvIdx[1]]< minAltCov) {
+	a='N';
+	b='N';
+	return 0;
+      }
+      else {
+	a=snvNuc[0];
+	b=snvNuc[1];
+	return 1;
+      }
     }
     return 0;
   }
@@ -219,14 +230,23 @@ public:
     reads.erase(it);
   }
   
-  void ProcessUntil(int pos) {
+  void ProcessUntil(int pos, OPTION &opts) {
     while (consensusStart < pos) {
       Consensus& cons=consensus[consensusStart];
-      if (consensus[consensusStart].Calc(3)) {
+      if (consensus[consensusStart].Calc(opts.minSNVCoverage, opts.minAltCoverage)) {
 	HetSNV snv;
 	snv.pos = consensusStart;
 	snv.a = consensus[consensusStart].a;
-	snv.b = consensus[consensusStart].b;	
+	snv.b = consensus[consensusStart].b;
+	/*
+	cerr << "Found het snv: " << snv.pos << "\t" << snv.a << "\t" << snv.b
+	     << "\t" << consensus[consensusStart].counts[0]
+	     << "\t" << consensus[consensusStart].counts[1]
+	     << "\t" << consensus[consensusStart].counts[2]
+	     << "\t" << consensus[consensusStart].counts[3]
+	     << "\t" << consensus[consensusStart].counts[4]
+	     << "\t" << consensus[consensusStart].counts[5] 	   << endl;
+	*/
 	hetSNVs.push_back(snv);
       }
       consensus.erase(consensusStart);
@@ -343,10 +363,13 @@ public:
     int *numProcessed;
     int thread;
     int minMapQV;
+  int minChrY;
+    uint64_t nChrY;
     string curChromosome;
     vector<string> chromosomeNames;
     vector<int> chromosomeLengths;
-  int maxLength;
+    faidx_t *fai;
+    int maxLength;
     std::map<string, vector<int> > *vntrMap;
 
     // Not the best place to put this, but since the IO is batched and we
@@ -357,7 +380,7 @@ public:
     int phaseFlank;
     IO() 
     {
-      version = "2.1.8";
+      version = "2.2.0";
         region_and_motifs = "";
         input_bam = "";
         reference = "";
@@ -371,6 +394,7 @@ public:
 	curChromosome="";
 	minMapQV=3;
 	maxLength=10000;
+	minChrY = nChrY = 0;
     };
 
   void clear() {
@@ -399,13 +423,10 @@ public:
     int read_tsv(vector<vector<string>> &items);
 
 
-    void readVNTRFromBed (vector<VNTR *> &vntrs);
-
-
     /* get the sequences from input_bam_file that overlapping with chr:start-end */
     //void readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int sz);
     void initializeBam();
-
+  void initializeRefFasta();
 
     void closeBam();
 
@@ -437,7 +458,7 @@ public:
 
   //  void StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrIndex, Pileup &pileup, int &refAlignPos, int &curVNTR);
 
-  int CallSNVs(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup, bool& readsArePhased);  
+  int CallSNVs(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup, bool& readsArePhased, OPTION &opts);  
   void StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup, int thread, bool readsArePhased);
 
   void StoreReadSeqAtRefCoord(bam1_t *aln, string &seq, string &toRef, vector<int> &map);

@@ -7,7 +7,7 @@
 extern int debug_flag;
 
 
-int  CountDiff(READ* r1, READ* r2) {
+int  CountDiff(READ* r1, READ* r2, int phaseFlank, int start, int end) {
   int r1i=0, r2i=0;
   int nDiff=0;
   while (r1i < r1->snvs.size() and r2i < r2->snvs.size()) {
@@ -20,7 +20,9 @@ int  CountDiff(READ* r1, READ* r2) {
 	r2i+=1;
       }
       if (r1i < r1->snvs.size() and r2i < r2->snvs.size()) {
-	if (r1->snvs[r1i].pos == r2->snvs[r2i].pos) {
+	if (r1->snvs[r1i].pos == r2->snvs[r2i].pos and
+	    ((r1->snvs[r1i].pos < start and start - r1->snvs[r1i].pos < phaseFlank) or
+	     (r1->snvs[r1i].pos > end and r1->snvs[r1i].pos - end < phaseFlank))) {
 	  if (r1->snvs[r1i].nuc != r2->snvs[r2i].nuc) { nDiff++;}
 	}
 	r1i++;
@@ -30,7 +32,7 @@ int  CountDiff(READ* r1, READ* r2) {
   return nDiff;
 }
 
-void MaxCutPhase(VNTR *vntr) {
+void MaxCutPhase(VNTR *vntr, int phaseFlank) {
   if (vntr->reads.size() == 0) {
     return;
   }
@@ -61,7 +63,7 @@ void MaxCutPhase(VNTR *vntr) {
     for (auto j=i+1; j< nReads; j++ ) {
       assert(i < nReads);
       assert(j < nReads);			  
-      diffs[i][j] = CountDiff(reads[i], reads[j]);
+      diffs[i][j] = CountDiff(reads[i], reads[j], phaseFlank, vntr->ref_start, vntr->ref_end);
       totDiffs[i] += diffs[i][j];
       totDiffs[j] += diffs[i][j];
       diffs[j][i] = diffs[i][j];

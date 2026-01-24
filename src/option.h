@@ -14,12 +14,16 @@ public:
   double filterStrength;
   double penalty_indel;
   double penalty_mismatch;
-  double accuracy;
   int phaseFlank;
   string download;
+  string referenceFilename;
   int maxCoverage;
   int maxLocusLength;
+  int minAltCoverage;
+  int minSNVCoverage;
   InputType inputType;
+  bool hapChrX;
+  int minChrY;
   OPTION ()
   {
     nproc = 1;
@@ -27,12 +31,16 @@ public:
     filterStrength = 0.0;
     penalty_indel = 1.0;
     penalty_mismatch = 1.0;
-    accuracy=0.98;
     phaseFlank=15000;
     download="";
     inputType=by_read;
     maxCoverage=200;
     maxLocusLength=10000;
+    minSNVCoverage = 6;
+    minAltCoverage = 3;
+    referenceFilename = "";
+    minChrY = 0;
+    hapChrX= false;
   };
 
   ~OPTION () {};

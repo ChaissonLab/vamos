@@ -206,7 +206,7 @@ void *CallSNVs (void *procInfoValue) {
 			       (*(procInfo->bucketEndPos))[curChrom][curRegion+1],
 			       *(procInfo->vntrs),
 			       *(procInfo->vntrMap),
-			       pileup, readsArePhased);
+			       pileup, readsArePhased, *(procInfo->opt));
     }
 
 
@@ -216,19 +216,20 @@ void *CallSNVs (void *procInfoValue) {
 				      *(procInfo->vntrs),
 				      *(procInfo->vntrMap),
 				      pileup, procInfo->thread, readsArePhased);
-     vector<int>::iterator it,end;
+    vector<int>::iterator start, it,end;
      int regionStart = (*(procInfo->bucketEndPos))[curChrom][curRegion];
      int regionEnd   = (*(procInfo->bucketEndPos))[curChrom][curRegion+1];
-     SetVNTRBounds(*(procInfo->vntrs),
-		   (*(procInfo->vntrMap)), curChrom,
-		   regionStart, regionEnd, it, end);
+     GetItOfOverlappingVNTRs(*(procInfo->vntrs),
+			     (*(procInfo->vntrMap)), curChrom,
+			     regionStart, regionEnd, start, end);
 
      SDTables sdTables;
-     while (it != end) {
+     it = start;
+     while (it != end and it != (*(procInfo->vntrMap))[curChrom].end()) {
        VNTR* vntr = (*procInfo->vntrs)[*it];
        ProcVNTR (vntr->index, vntr, *(procInfo->opt), sdTables, *(procInfo->mismatchCI));
        vntr->clearReads();
-       ++it;
+       it++;
      }
      cout << "Done processing " << curChrom << ":" << regionStart <<"-" << regionEnd << endl;
   }
@@ -268,11 +269,6 @@ void printUsage(IO &io, OPTION &opt)
     printf("Version: %s\n", io.version.c_str());
     printf("subcommand:\n");
     
-    // printf("vamos --liftover   [-i in.bam] [-v vntrs.bed] [-o output.fa] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
-    // printf("vamos --readwise   [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.bed] [-s sample_name] [-t threads] \n");    
-    // printf("vamos --locuswise_prephase  [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
-    // printf("vamos --locuswise [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank]\n");
-    // printf("vamos --single_seq [-b in.fa]  [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] (ONLY FOR SINGLE LOCUS!!) \n");
     printf("vamos --contig [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] \n");
     printf("vamos --read [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");
     printf("vamos --somatic [-b in.bam] [-r vntrs_region_motifs.bed] [-o output.vcf] [-s sample_name] [-t threads] [-p phase_flank] \n");    
@@ -283,20 +279,21 @@ void printUsage(IO &io, OPTION &opt)
     printf("       -r   FILE         File containing region coordinate and motifs of each VNTR locus. \n");
     printf("                         The file format: columns `chrom,start,end,motifs` are tab-delimited. \n");
     printf("                         Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR. \n");
+    //    printf("       -R   FILE         Reference sequence where regions are on.\n");    
     printf("       -s   CHAR         Sample name. \n");
+    printf("   Input handling:\n");
+    printf("       -C   INT          Maximum coverage to call a tandem repeat.\n");
     printf("   Output: \n");
     printf("       -o   FILE         Output vcf file. \n");
     printf("       -S                Output assembly/read consensus sequence in each call.\n");
     printf("   Dynamic Programming: \n");
     printf("       -d   DOUBLE       Penalty of indel in dynamic programming (double) DEFAULT: 1.0. \n");
     printf("       -c   DOUBLE       Penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. \n");
-    printf("       -a   DOUBLE       Global accuracy of the reads. DEFAULT: 0.98. \n");    
     printf("       --naive           Specify the naive version of code to do the annotation, DEFAULT: faster implementation. \n");
-    // printf("   Aggregate Annotation: \n");
-    // printf("       -f   DOUBLE       Filter out noisy read annotations, DEFAULT: 0.0 (no filter). \n");
-    // printf("       --clust           use hierarchical clustering to judge if a VNTR locus is het or hom. \n");
     printf("   Phase reads: \n");
     printf("       -p   INT            Range of flanking sequences which is used in the phasing step. DEFAULT: 15000 bps. \n");
+    printf("       -M   INT            Minimum total coverage to allow a SNV to be called (6). \n");
+    printf("       -a   INT            Minimum alt coverage to allow a SNV to be called (3). \n");        
     printf("   Downloading motifs:\n");
     PrintDownloadMotifs();
     printf("   Others: \n");
@@ -339,7 +336,7 @@ int main (int argc, char **argv)
 
         /* These options don’t set a flag. We distinguish them by their indices. */
         {"bam",             required_argument,       0, 'b'},
-        {"region",          required_argument,       0, 'r'},                        
+        {"region",          required_argument,       0, 'r'},
         {"vntr",            required_argument,       0, 'v'},
         {"output",          required_argument,       0, 'o'},
         {"out_fa",          required_argument,       0, 'x'},
@@ -348,12 +345,15 @@ int main (int argc, char **argv)
         {"filterNoisy",     required_argument,       0, 'f'},
         {"penlaty_indel",   required_argument,       0, 'd'},
         {"max_length",      required_argument,       0, 'L'},
-        {"max_coverage",    required_argument,       0, 'C'},		
+        {"max_coverage",    required_argument,       0, 'C'},
+        {"min_snv_coverage",   required_argument,       0, 'M'},
+        {"min_alt_coverage",   required_argument,       0, 'a'},	
         {"penlaty_mismatch",required_argument,       0, 'c'},
         {"accuracy"        ,required_argument,       0, 'a'},
         {"phase_flank"     ,required_argument,       0, 'p'},
         {"download_db"     ,required_argument,       0, 'm'},
-	{"reference"       ,required_argument,       0, 'R'},
+	//	{"reference"       ,required_argument,       0, 'R'},
+	{"chry"            ,required_argument,       0, 'y'},	
         // {"input",           required_argument,       0, 'i'},
         // {"motif",           required_argument,       0, 'm'},
 
@@ -361,7 +361,7 @@ int main (int argc, char **argv)
     };
     /* getopt_long stores the option index here. */
     int option_index = 0;
-    while ((c = getopt_long (argc, argv, "Sb:r:a:o:C:s:t:f:d:c:x:v:m:R:p:hL:", long_options, &option_index)) != -1)
+    while ((c = getopt_long (argc, argv, "Sb:r:a:o:C:s:t:f:d:c:x:v:m:R:y:p:hL:", long_options, &option_index)) != -1)
     {
         switch (c)
         {
@@ -389,15 +389,15 @@ int main (int argc, char **argv)
                 fprintf (stderr, "option --bam with `%s'\n", optarg);
 		io.input_bam = optarg;
                 break;
-	    case 'R':
+		/*	    case 'R':
                 fprintf (stderr, "option --reference with `%s'\n", optarg);
                 io.reference = optarg;
                 break;
+		*/
             case 'v':
                 fprintf (stderr, "option --vntr with `%s'\n", optarg);
                 io.vntr_bed = optarg;
                 break;
-
             case 'r':
                 fprintf (stderr, "option --region with `%s'\n", optarg);
                 io.region_and_motifs = optarg;
@@ -430,6 +430,11 @@ int main (int argc, char **argv)
                 opt.nproc = atoi(optarg);
                 break;
 
+            case 'y':
+                fprintf (stderr, "option --chry with `%s'\n", optarg);
+                opt.minChrY = atoi(optarg);
+		io.minChrY = opt.minChrY;
+                break;
             case 'd':
                 opt.penalty_indel = stod(optarg);
                 fprintf (stderr, "option --penlaty_indel with `%f'\n", opt.penalty_indel);
@@ -447,10 +452,15 @@ int main (int argc, char **argv)
                 break;
 
             case 'a':
-                opt.accuracy = stod(optarg);
-                fprintf (stderr, "option -accuracy with `%f'\n", opt.accuracy);
+                opt.minAltCoverage = atoi(optarg);
+                fprintf (stderr, "option -min_alt_coverage with `%d'\n", opt.minAltCoverage);
                 break;
                     
+            case 'M':
+                opt.minSNVCoverage = atoi(optarg);
+                fprintf (stderr, "option -min_snv_coverage with `%d'\n", opt.minSNVCoverage);
+                break;
+		
             case 'p':
                 opt.phaseFlank = atoi(optarg);
                 io.phaseFlank = opt.phaseFlank;
@@ -516,7 +526,7 @@ int main (int argc, char **argv)
         fprintf(stderr, "ERROR: -b must be specified!\n");
         missingArg = true;
     }
-    if (!liftover_flag and io.region_and_motifs == "")
+    if (io.region_and_motifs == "")
     {
         fprintf(stderr, "ERROR:-r must be specified!\n");
         missingArg = true;
@@ -548,7 +558,6 @@ int main (int argc, char **argv)
     // if (hclust_flag) fprintf(stderr, "hclust_flag is set. \n");
     // if (seqan_flag) fprintf(stderr, "seqan_flag is set\n");
     if (output_read_anno_flag) fprintf(stderr, "output_read_anno_flag is set. \n");
-    if (liftover_flag) fprintf(stderr, "liftover_flag is set\n");
     if (single_seq_flag) fprintf(stderr, "single_seq_flag is set\n");
     if (readwise_anno_flag) fprintf(stderr, "readwise_anno_flag is set. \n");
     if (locuswise_prephase_flag) fprintf(stderr, "locuswise_prephase_flag is set. \n");
@@ -573,11 +582,7 @@ int main (int argc, char **argv)
     {
         io.readRegionAndMotifs(vntrs);
 	ChromToVNTRMap(vntrs, vntrMap);
-        CreateAccLookupTable(vntrs, opt.accuracy, mismatchCI, 0.999);      
-    }
-    if (liftover_flag)
-    {
-        io.readVNTRFromBed(vntrs);
+        CreateAccLookupTable(vntrs, 0.98, mismatchCI, 0.999);      
     }
     cerr << "Read " << vntrs.size() << " target loci" << endl;
 
@@ -625,6 +630,7 @@ int main (int argc, char **argv)
 	  procInfo[i].io->bamHdr = io.bamHdr;
 	  procInfo[i].io->idx = io.idx;
 	  procInfo[i].io->numProcessed = &num_processed;
+	  procInfo[i].io->minChrY = io.minChrY;
 	  procInfo[i].mtx = &mtx;
 	  procInfo[i].mismatchCI = &mismatchCI;
 	  procInfo[i].out = &out;
@@ -691,12 +697,14 @@ int main (int argc, char **argv)
             procInfo[i].opt = &opt;
             procInfo[i].io = new IO;
             procInfo[i].io->input_bam = io.input_bam;
-	    procInfo[i].io->reference = io.reference;
+	    //	    procInfo[i].io->reference = io.reference;
 	    procInfo[i].io->initializeBam();
+	    procInfo[i].io->initializeRefFasta();	    
 	    procInfo[i].io->chromosomeNames = io.chromosomeNames;
             procInfo[i].io->ioLock = &ioLock;
             procInfo[i].io->numProcessed = &num_processed;
 	    procInfo[i].io->thread = i;
+	    procInfo[i].io->minChrY = opt.minChrY;
             procInfo[i].mtx = &mtx;
             procInfo[i].mismatchCI = &mismatchCI;
             procInfo[i].out = &out;
@@ -718,6 +726,7 @@ int main (int argc, char **argv)
       }
       else {
         io.initializeBam();
+	io.initializeRefFasta();
 	bool readsArePhased = false;
 	for (int i=0; i < io.chromosomeNames.size(); i++ ) {
 	  Pileup pileup;
@@ -725,7 +734,7 @@ int main (int argc, char **argv)
 	    int start = vntrs[vntrMap[io.chromosomeNames[i]][0]]->ref_start;
 	    int end   = vntrs[vntrMap[io.chromosomeNames[i]][vntrMap[io.chromosomeNames[i]].size()-1]]->ref_end;
 	    if (readsArePhased == false) {
-	      io.CallSNVs(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup, readsArePhased);
+	      io.CallSNVs(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup, readsArePhased, opt);
 	    }
 	    io.StoreReadsOnChrom(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup, 1, readsArePhased);
 
@@ -748,8 +757,6 @@ int main (int argc, char **argv)
       io.writeBEDBody_readwise(out, vntrs, -1, 1);
     else if (locuswise_prephase_flag or locuswise_flag or single_seq_flag) 
       io.writeVCFBody_locuswise(out, vntrs, -1, 1);
-    else if (liftover_flag)
-      io.writeFa(out, vntrs);
     
     out.close();
 

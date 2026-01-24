@@ -99,6 +99,7 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 	    // msa to get the consensus
 	    MSA msa_1(h1_reads, reads);
 	    msa_1.MSA_seq_group(h1_reads, reads, Hap_seqs[0]);
+	    cerr << "Hap 1 msa size " << Hap_seqs[0]->seq.size() << endl;
         }
 	else {
 	  if (het) {
@@ -123,6 +124,7 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
             MSA msa_2(h2_reads, reads);
 	    //            assert(1 < Hap_seqs.size());
             msa_2.MSA_seq_group(h2_reads, reads, Hap_seqs[Hap_seqs.size()-1]);
+	    cerr << "Hap 2 msa size " << Hap_seqs[1]->seq.size() << endl;	    	    
         }
 	else {
 	  if (het) {
