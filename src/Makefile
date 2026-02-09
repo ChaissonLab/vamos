@@ -54,7 +54,7 @@ $(LIBPS): CXXFLAGS += -Wno-error=incompatible-pointer-types
 
 $(LIBPS):
 	tar zxvf v2.6.2.tar.gz 
-	cd parasail-2.6.2; mkdir -p build ; cd build ; cmake .. -DPARASAIL_ENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=../../parasail-dir/ && make -j4 && make install
+	cd parasail-2.6.2; mkdir -p build ; cd build ; cmake .. -DPARASAIL_ENABLE_TESTS=OFF -DBUILD_SHARED_LIBS=OFF  -DPARASAIL_SHARED=OFF  -DPARASAIL_STATIC=ON -DCMAKE_INSTALL_PREFIX=../../parasail-dir/ && make -j4 && make install
 
 $(ABPOA_DIR)/lib/libabpoa.a:
 	cd $(ABPOA_DIR) && make sse2=true PREFIX=. CC="$(CC)" $(ZLPATH) lib/libabpoa.a
@@ -69,7 +69,7 @@ testmsa: TestMSA.cpp
 OBJS=main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o io_unrefined.o
 
 vamos:  $(OBJS) $(ABPOA_DIR)/lib/libabpoa.a $(SPOA_DIR)/build/lib/libspoa.a parasail-dir/lib/libparasail.so
-	$(CXX) $(CFLAGS) -o $@ $(OBJS) -L$(SPOA_DIR)/build/lib -lspoa -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -Lparasail-dir/lib -lparasail -Wl,-rpath=$(PWD)/parasail-dir/lib 
+	$(CXX) $(CFLAGS) -o $@ $(OBJS) -L$(SPOA_DIR)/build/lib -lspoa -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -Lparasail-dir/lib -lparasail
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h $(LIBPS)
 	$(CXX) $(CFLAGS) -c $< -I $(SPOA_DIR)/include -L $(CONDA_PREFIX)/lib -I $(CONDA_PREFIX)/include -I parasail-dir/include 
