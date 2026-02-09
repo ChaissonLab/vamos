@@ -1,0 +1,66 @@
+name: spoa CI
+
+on:
+  push:
+  pull_request:
+    branches:
+      - master
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        compiler:
+          - g++
+          - clang++
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - if: ${{ contains(matrix.compiler, '-') }}
+        name: Get compiler version
+        id: get-compiler-version
+        run: |
+          version=$(echo ${{ matrix.compiler }} | cut -d- -f2)
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - if: ${{ startsWith(matrix.compiler, 'g++-') }}
+        name: Setup GCC
+        uses: egor-tensin/setup-gcc@v1
+        with:
+          version: "${{ steps.get-compiler-version.outputs.version }}"
+          platform: x64
+
+      - if: ${{ startsWith(matrix.compiler, 'clang++-') }}
+        name: Setup Clang
+        uses: egor-tensin/setup-clang@v1
+        with:
+          version: "${{ steps.get-compiler-version.outputs.version }}"
+          platform: x64
+
+      - name: Configure CMake
+        run: |
+          cmake -B ${{ github.workspace }}/build_cmake -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+          cmake --build ${{ github.workspace }}/build_cmake
+        env:
+          CXX: ${{ matrix.compiler }}
+
+      - name: Configure Meson
+        uses: BSFishy/meson-build@v1.0.3
+        with:
+          action: build
+          directory: build_meson
+          meson-version: 0.60.0
+
+      - name: Test
+        working-directory: ${{ github.workspace }}
+        run: |
+          build_cmake/bin/spoa --version
+          build_cmake/bin/spoa_test
+          build_meson/src/spoa --version
+          build_meson/test/spoa_test

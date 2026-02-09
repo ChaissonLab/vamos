@@ -40,6 +40,7 @@ endif
 PROF = $(CONDA_PREFIX)/lib
 
 ABPOA_DIR = ../abPOA-1.4.1
+SPOA_DIR  = ../spoa-4.1.5
 
 all: $(PROG)
 ZLPATH=""
@@ -56,16 +57,18 @@ $(ABPOA_DIR)/lib/libabpoa.a:
 	echo "^^CC"
 	cd $(ABPOA_DIR) && make sse2=true PREFIX=. CC="$(CC)" $(ZLPATH) lib/libabpoa.a
 
+
+
 testmsa: TestMSA.cpp
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -I $(ABPOA_DIR)/include -L $(ABPOA_DIR)/lib -labpoa -lrt -L$(mchaisso)/software/lib
 
 OBJS=main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o io_unrefined.o
 
-vamos:  $(OBJS) $(ABPOA_DIR)/lib/libabpoa.a parasail-dir/lib/libparasail.so
-	$(CXX) $(CFLAGS) -o $@ $(OBJS) -L $(CONDA_PREFIX)/lib -lspoa $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -Lparasail-dir/lib -lparasail -Wl,-rpath=$(PWD)/parasail-dir/lib 
+vamos:  $(OBJS) $(ABPOA_DIR)/lib/libabpoa.a $(SPOA_DIR)/build/lib/libspoa.a parasail-dir/lib/libparasail.so
+	$(CXX) $(CFLAGS) -o $@ $(OBJS) -L$(SPOA_DIR)/build/lib -lspoa -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -Lparasail-dir/lib -lparasail -Wl,-rpath=$(PWD)/parasail-dir/lib 
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h $(LIBPS)
-	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include -I parasail-dir/include 
+	$(CXX) $(CFLAGS) -c $< -I $(SPOA_DIR)/include -L $(CONDA_PREFIX)/lib -I $(CONDA_PREFIX)/include -I parasail-dir/include 
 
 io_unrefined.o: io_unrefined.cpp io.h vcf.h vntr.h read.h phase.h $(LIBPS)
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include  -I parasail-dir/include -I $(ABPOA_DIR)/include -I $(CONDA_PREFIX)/include
@@ -83,7 +86,7 @@ vntr.o: vntr.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h msa.h
 	$(CXX) $(CFLAGS) -c $< -I $(ABPOA_DIR)/include -I ../alglib/src -I ../edlib/include -I $(CONDA_PREFIX)/include
 
 msa.o: msa.cpp msa.h read.h option.h
-	$(CXX) $(CFLAGS) -I $(CONDA_PREFIX)/include -c $< -I $(ABPOA_DIR)/include
+	$(CXX) $(CFLAGS) -I $(SPOA_DIR)/include  -I $(CONDA_PREFIX)/include -c $< -I $(ABPOA_DIR)/include
 
 acc_lookup_table.o: acc_lookup_table.cpp acc_lookup_table.h vntr.cpp vntr.h
 	$(CXX) $(CFLAGS) -c $< -I ../alglib/src -I ../edlib/include -I $(ABPOA_DIR)/include  -I $(CONDA_PREFIX)/include
