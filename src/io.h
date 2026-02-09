@@ -379,7 +379,7 @@ public:
     int phaseFlank;
     IO() 
     {
-      version = "3.0.0";
+      version = "3.0.2";
         region_and_motifs = "";
         input_bam = "";
         vntr_bed = "";
