@@ -48,6 +48,7 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
     het = false;
     assert(h1_reads.size() == 0);
     assert(h2_reads.size() == 0);
+      
     for (int i = 0; i < reads.size(); ++i) 
     {
       if (reads[i]->haplotype != 0) het = true;
@@ -72,6 +73,10 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 	//        strcpy(read->qname, qname_1);
         Hap_seqs.push_back(read);
         // msa to get the consensus
+	int totalReadSize=0;
+	for (int rit =0; rit <reads.size(); rit++) {
+	  totalReadSize+=reads[rit]->seq.size();
+	}
 
 	MSA msa(h1_reads, reads);
 	msa.MSA_seq_group(h1_reads, reads, Hap_seqs[0]);
@@ -84,7 +89,6 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
     else
     {
         int motifs_size = motifs.size();
-
         if (h1_reads.size() > 0)
         {
 	    int nLoop= 0;
@@ -99,7 +103,11 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 	    // msa to get the consensus
 	    MSA msa_1(h1_reads, reads);
 	    msa_1.MSA_seq_group(h1_reads, reads, Hap_seqs[0]);
-	    cerr << "Hap 1 msa size " << Hap_seqs[0]->seq.size() << endl;
+
+	    int totalReadSize=0;
+	    for (int rit =0; rit <h1_reads.size(); rit++) {
+	      totalReadSize+=reads[h1_reads[rit]]->seq.size();
+	    }
         }
 	else {
 	  if (het) {
@@ -119,12 +127,15 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 	    //            strcpy(read_h2->qname, qname_2);
 	    //            read_h2->qname[2] = '\0';
             Hap_seqs.push_back(read_h2);
+	    int totalReadSize=0;
+	    for (int rit =0; rit <h2_reads.size(); rit++) {
+	      totalReadSize+=reads[h2_reads[rit]]->seq.size();
+	    }
 
             // msa to get the consensus
             MSA msa_2(h2_reads, reads);
 	    //            assert(1 < Hap_seqs.size());
             msa_2.MSA_seq_group(h2_reads, reads, Hap_seqs[Hap_seqs.size()-1]);
-	    cerr << "Hap 2 msa size " << Hap_seqs[1]->seq.size() << endl;	    	    
         }
 	else {
 	  if (het) {
@@ -149,25 +160,13 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 }
 
 
-void VNTR::consensusMotifAnnoForOneVNTRByABpoa(const OPTION &opt)
-{
-    if (skip) return;
-    int n_seqs = annos.size();
-    int motifs_size = motifs.size();
-    if (n_seqs == 0) return;
 
-    consensus.resize(1);
-    if (n_seqs == 1)
-    {
-        consensus[0] = annos[0];
-        return;
-    }
-
-    MSA msa(annos, motifs_size);
-    msa.MSA_anno_group(motifs.size(), annos, consensus[0]);
-    assert(consensus[0].size() > 0);
-
-    return;
+void VNTR::ReconstructTRSequence(vector<uint8_t> &optMotifs, vector<int> &optMotifStarts, vector<int> &optMotifEnds, string &reconstructedSeq) {
+  int v=0;
+  reconstructedSeq="";
+  for (v=0; v < optMotifs.size(); v++) {
+    reconstructedSeq+=motifs[optMotifs[v]].seq.substr(optMotifStarts[v], optMotifEnds[v]-optMotifStarts[v]);
+  }
 }
 
 
@@ -200,10 +199,14 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
             else
             {
                 vector<int> starts, ends, sdAnnos, sdQV;
+		vector<int> motifStarts, motifEnds;
                 vector<vector<int > > motifNMatch;
 		if (Hap_seqs[i]->seq.size() > 0) {
-		  string_decomposer(consensus[i], sdQV, starts, ends, motifNMatch,
+		  string_decomposer(consensus[i], motifStarts, motifEnds, sdQV, starts, ends, motifNMatch,
 				    motifs, Hap_seqs[i]->seq.c_str(), Hap_seqs[i]->len, opt, sdTables, mismatchCI);
+		  string reconstructedSeq;
+		  ReconstructTRSequence(consensus[i], motifStarts, motifEnds, reconstructedSeq);
+		  reconstructedTRSeqs.push_back(reconstructedSeq);
 		}
             }
             if (consensus[i].size() == 0) 
@@ -230,6 +233,7 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
         // annotate for consensus read
         annos.resize(reads.size());
 	haps.resize(reads.size(), 0);
+	reconstructedTRSeqs.resize(reads.size());
         nullAnnos.resize(reads.size(), false);
         if (reads.size() > opt.maxCoverage)
         {
@@ -246,7 +250,6 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
             if (reads[i]->len > opt.maxLocusLength)
             {
                 skip = true;
-                cerr << "skip the vntr (length > " << reads[i]->len << ")" << endl;
                 return;
             }     
 
@@ -259,9 +262,12 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
             {
                 vector<int> starts, ends, sdAnnos, sdQV;
                 vector<vector<int> > motifNMatch;
-                string_decomposer(annos[i], sdQV, starts, ends, motifNMatch,
+		vector<int> motifStarts, motifEnds;		
+                string_decomposer(annos[i],  motifStarts, motifEnds, sdQV, starts, ends, motifNMatch,
 				  motifs, reads[i]->seq.c_str(),  reads[i]->len, opt, sdTables, mismatchCI);
-
+		string reconstructedSeq;
+		ReconstructTRSequence(annos[i], motifStarts, motifEnds, reconstructedSeq);
+		reconstructedTRSeqs[i]=reconstructedSeq;
             }
             
             if (annos[i].size() == 0) 
@@ -284,7 +290,6 @@ void VNTR::motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int
         }
     }
 
-    if (skip) cerr << "skip the vntr" << endl;
     return;
 }
 

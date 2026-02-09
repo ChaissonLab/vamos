@@ -31,6 +31,9 @@ int contig_flag = false;
 int num_processed = 0;
 int download_motifs=false;
 int output_read_seq_flag=false;
+int output_reconstructed_seq_flag=false;
+int zero_based_flag=false;
+int force_phase_flag=false;
 // int seqan_flag = false;
 // int output_read_flag = false;
 
@@ -79,10 +82,15 @@ void process_mem_usage(double &vm_usage, double &resident_set)
     resident_set = (rss * page_size_kb) / (1024.0 * 1024.0);
 }
 
+#include <mutex>
+std::mutex cerr_mutex;
 
-void ProcVNTR(int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector<int> &mismatchCI) 
+void ProcVNTR(int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector<int> &mismatchCI, int thread) 
 {
-
+  if (it->processed == true) {
+    cerr << "Already processed tr " << it->region << endl;
+    assert(0);
+  }
   if (it->reads.size() == 0)
     {
         it->skip = true;
@@ -103,11 +111,15 @@ void ProcVNTR(int s, VNTR * it, const OPTION &opt, SDTables &sdTables, vector<in
         it->motifAnnoForOneVNTR(opt, sdTables, mismatchCI);
 	it->clearReads();
     }
-    
+    it->processed=true;
     return;
 }
 
-void SetEndPos(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, map<string, vector<int> > &endPos, int bufferNLoc) {
+void SetEndPos(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, 
+	       map<string, vector<int> > &endPos, 
+	       map<string, vector<int> > &startIndex, 
+	       map<string, vector<int> > &endIndex, 
+	       int bufferNLoc) {
   for (auto mapIt : vntrMap) {
     string chrom=mapIt.first;
     //
@@ -130,10 +142,23 @@ void SetEndPos(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, map<str
     endPos[chrom][0] = start;
     int cur = 0;
     while (cur < mapIt.second.size()) {
-      int next = min(((int) mapIt.second.size())-1, cur+bufferNLoc);
-      int nextEndPos = vntrs[mapIt.second[next]]->ref_end;
+      int nextIt=0;
+      while (nextIt + cur + 1 < mapIt.second.size() and 
+	     nextIt != bufferNLoc) {
+	//
+	// If the gap between the current end and the next is too large, split the region on that.
+	if (cur+nextIt + 1 < mapIt.second.size() and vntrs[mapIt.second[nextIt+cur+1]]->ref_start - vntrs[mapIt.second[cur+nextIt]]->ref_end > 100000) {
+	  cerr << "Splitting gap on " << vntrs[mapIt.second[cur+nextIt]]->ref_end << "\t" << vntrs[mapIt.second[nextIt+cur+1]]->ref_start << endl;
+	  break;
+	}
+	++nextIt;
+      }
+      int nextEndPos = vntrs[mapIt.second[cur+nextIt]]->ref_end;
       endPos[chrom].push_back(nextEndPos);
-      cur+=bufferNLoc;
+      startIndex[chrom].push_back(mapIt.second[cur]);
+      endIndex[chrom].push_back(mapIt.second[cur+nextIt]);
+      // Advance position to the next variant
+      cur+=nextIt+1;
     }
   }
 }
@@ -199,35 +224,58 @@ void *CallSNVs (void *procInfoValue) {
     }
     Pileup pileup;
     (procInfo->io)->curChromosome = curChrom;
-    if (readsArePhased == false) {
+    if (procInfo->forcePhase or readsArePhased == false) {
     
       (procInfo->io)->CallSNVs(curChrom,
-			       (*(procInfo->bucketEndPos))[curChrom][curRegion],
-			       (*(procInfo->bucketEndPos))[curChrom][curRegion+1],
+			       (*(procInfo->bucketStartIndex))[curChrom][curRegion],
+			       (*(procInfo->bucketEndIndex))[curChrom][curRegion],
 			       *(procInfo->vntrs),
 			       *(procInfo->vntrMap),
 			       pileup, readsArePhased, *(procInfo->opt));
     }
 
-
-    (procInfo->io)->StoreReadsOnChrom(curChrom,				      
-				      (*(procInfo->bucketEndPos))[curChrom][curRegion],
-				      (*(procInfo->bucketEndPos))[curChrom][curRegion+1],
-				      *(procInfo->vntrs),
-				      *(procInfo->vntrMap),
-				      pileup, procInfo->thread, readsArePhased);
+    if (procInfo->refine) {
+      (procInfo->io)->RefinedStoreReadsOnChrom(curChrom,				      
+					       (*(procInfo->bucketStartIndex))[curChrom][curRegion],
+					       (*(procInfo->bucketEndIndex))[curChrom][curRegion],
+					       *(procInfo->vntrs),
+					       *(procInfo->vntrMap),
+					       pileup, procInfo->thread, readsArePhased, procInfo->oneOffset);
+    }
+    else {
+      (procInfo->io)->UnrefinedStoreReadsOnChrom(curChrom,				      
+						 (*(procInfo->bucketStartIndex))[curChrom][curRegion],
+						 (*(procInfo->bucketEndIndex))[curChrom][curRegion],
+						 *(procInfo->vntrs),
+						 *(procInfo->vntrMap),
+						 pileup, procInfo->thread, readsArePhased, procInfo->oneOffset);
+    }
+    
     vector<int>::iterator start, it,end;
+     int startIndex = (*(procInfo->bucketStartIndex))[curChrom][curRegion];
+     int endIndex = (*(procInfo->bucketEndIndex))[curChrom][curRegion];
+/*
      int regionStart = (*(procInfo->bucketEndPos))[curChrom][curRegion];
      int regionEnd   = (*(procInfo->bucketEndPos))[curChrom][curRegion+1];
+*/
+     int regionStart = (*procInfo->vntrs)[startIndex]->ref_start;
+     int regionEnd = (*procInfo->vntrs)[startIndex]->ref_end;
+     /*
      GetItOfOverlappingVNTRs(*(procInfo->vntrs),
 			     (*(procInfo->vntrMap)), curChrom,
 			     regionStart, regionEnd, start, end);
-
+     */
      SDTables sdTables;
-     it = start;
-     while (it != end and it != (*(procInfo->vntrMap))[curChrom].end()) {
-       VNTR* vntr = (*procInfo->vntrs)[*it];
-       ProcVNTR (vntr->index, vntr, *(procInfo->opt), sdTables, *(procInfo->mismatchCI));
+     for (int vit = startIndex; vit <= endIndex; vit++) {
+       VNTR* vntr = (*procInfo->vntrs)[vit];
+
+       //       if (true) {
+       //	 std::lock_guard<std::mutex> guard(cerr_mutex); 
+       //	 cerr << "PROC_VNTR:\t" << vit << "\t" << procInfo->thread << endl;
+	 //       }
+
+       
+	 ProcVNTR (vntr->index, vntr, *(procInfo->opt), sdTables, *(procInfo->mismatchCI), procInfo->thread);
        vntr->clearReads();
        it++;
      }
@@ -253,7 +301,7 @@ void *ProcVNTRs (void *procInfoValue)
     for (i = procInfo->thread, s = 0; i < sz; i += (procInfo->opt)->nproc, s += 1)
     {
         if (debug_flag) cerr << "processing vntr: " << i << endl;
-        ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt), sdTables, *(procInfo->mismatchCI));
+        ProcVNTR (s, (*(procInfo->vntrs))[i], *(procInfo->opt), sdTables, *(procInfo->mismatchCI), procInfo->thread);
         (*procInfo->vntrs)[i]->clearReads();        
     }        
     
@@ -279,18 +327,21 @@ void printUsage(IO &io, OPTION &opt)
     printf("       -r   FILE         File containing region coordinate and motifs of each VNTR locus. \n");
     printf("                         The file format: columns `chrom,start,end,motifs` are tab-delimited. \n");
     printf("                         Column `motifs` is a comma-separated (no spaces) list of motifs for this VNTR. \n");
-    //    printf("       -R   FILE         Reference sequence where regions are on.\n");    
+    printf("       -R   FILE         Refine start and end pos by realigning to reference FILE (same as mapped reference).\n");    
     printf("       -s   CHAR         Sample name. \n");
+    printf("       -Z                Treat input regions as zero based (e.g. TRExplorer catalog and standard BED files). \n");    
     printf("   Input handling:\n");
     printf("       -C   INT          Maximum coverage to call a tandem repeat.\n");
     printf("   Output: \n");
     printf("       -o   FILE         Output vcf file. \n");
     printf("       -S                Output assembly/read consensus sequence in each call.\n");
+    printf("       -E                Output reconstructed TR sequence from decomposition in each call.\n");
     printf("   Dynamic Programming: \n");
     printf("       -d   DOUBLE       Penalty of indel in dynamic programming (double) DEFAULT: 1.0. \n");
     printf("       -c   DOUBLE       Penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. \n");
     printf("       --naive           Specify the naive version of code to do the annotation, DEFAULT: faster implementation. \n");
     printf("   Phase reads: \n");
+    printf("       -P                Force phasing of reads even if a HP tag is present.\n");
     printf("       -p   INT            Range of flanking sequences which is used in the phasing step. DEFAULT: 15000 bps. \n");
     printf("       -M   INT            Minimum total coverage to allow a SNV to be called (6). \n");
     printf("       -a   INT            Minimum alt coverage to allow a SNV to be called (3). \n");        
@@ -330,6 +381,9 @@ int main (int argc, char **argv)
         {"readwise",            no_argument,        &readwise_anno_flag,            1},
         {"liftover",            no_argument,        &liftover_flag,                 1},
         {"output_seq",          no_argument,        &output_read_seq_flag,          1},	
+        {"output_recon",          no_argument,      &output_reconstructed_seq_flag,          1},
+        {"zero_based",          no_argument,      &zero_based_flag,          1},
+	{"force_phase",         no_argument,      &force_phase_flag, 1},
         // {"clust",               no_argument,        &hclust_flag,                   1},
         // {"seqan",               no_argument,        &seqan_flag,                    1},
         // {"output_read",         no_argument,        &output_read_flag,              1},
@@ -352,7 +406,7 @@ int main (int argc, char **argv)
         {"accuracy"        ,required_argument,       0, 'a'},
         {"phase_flank"     ,required_argument,       0, 'p'},
         {"download_db"     ,required_argument,       0, 'm'},
-	//	{"reference"       ,required_argument,       0, 'R'},
+	{"reference"       ,required_argument,       0, 'R'},
 	{"chry"            ,required_argument,       0, 'y'},	
         // {"input",           required_argument,       0, 'i'},
         // {"motif",           required_argument,       0, 'm'},
@@ -361,7 +415,7 @@ int main (int argc, char **argv)
     };
     /* getopt_long stores the option index here. */
     int option_index = 0;
-    while ((c = getopt_long (argc, argv, "Sb:r:a:o:C:s:t:f:d:c:x:v:m:R:y:p:hL:", long_options, &option_index)) != -1)
+    while ((c = getopt_long (argc, argv, "PZlESb:r:a:o:C:s:t:f:d:c:x:v:m:R:y:p:hL:", long_options, &option_index)) != -1)
     {
         switch (c)
         {
@@ -385,15 +439,33 @@ int main (int argc, char **argv)
 	        fprintf (stderr, "option --output_seq '\n", optarg);
 	        output_read_seq_flag = true;
 		break;
+            case 'l':
+	        fprintf (stderr, "option --local '\n", optarg);
+	        opt.local = true;
+		break;
+            case 'Z':
+	        fprintf (stderr, "option --zero_based '\n", optarg);
+	        opt.oneOffset=0;
+		break;
+            case 'P':
+	        fprintf (stderr, "option --force_phase '\n", optarg);
+	        opt.forcePhase=true;
+		break;
+            case 'E':
+	        fprintf (stderr, "option --output_reconstructed_seq '\n", optarg);
+	        output_reconstructed_seq_flag = true;
+		break;
             case 'b':
                 fprintf (stderr, "option --bam with `%s'\n", optarg);
 		io.input_bam = optarg;
                 break;
-		/*	    case 'R':
-                fprintf (stderr, "option --reference with `%s'\n", optarg);
-                io.reference = optarg;
+	    case 'R':
+	        fprintf (stderr, "option --reference with `%s'\n", optarg);
+		cout << "The reference option is currently not supported." << endl;
+		exit(0);
+                opt.reference = optarg;
+		opt.refine=true;
                 break;
-		*/
             case 'v':
                 fprintf (stderr, "option --vntr with `%s'\n", optarg);
                 io.vntr_bed = optarg;
@@ -435,13 +507,13 @@ int main (int argc, char **argv)
                 opt.minChrY = atoi(optarg);
 		io.minChrY = opt.minChrY;
                 break;
+		
             case 'd':
-                opt.penalty_indel = stod(optarg);
+                opt.penalty_indel = stoi(optarg);
                 fprintf (stderr, "option --penlaty_indel with `%f'\n", opt.penalty_indel);
                 break;
-
             case 'c':
-                opt.penalty_mismatch = stod(optarg);
+                opt.penalty_mismatch = stoi(optarg);
                 fprintf (stderr, "option --penlaty_mismatch with `%f'\n", opt.penalty_mismatch);
                 break;
 
@@ -512,7 +584,7 @@ int main (int argc, char **argv)
         opt.inputType=by_contig;
     }
 
-    if (locuswise_flag) io.phaseFlank = opt.phaseFlank;
+    io.phaseFlank = opt.phaseFlank;
 
     if (download_motifs) {
         PrintDownloadMotifs();
@@ -609,7 +681,9 @@ int main (int argc, char **argv)
     // Read input.
     //
     if (contig_flag) {
-      io.StoreAllContigs(vntrs, vntrMap);
+      io.initializeBam(opt.reference);
+      io.initializeRefFasta(opt.reference);
+      io.StoreAllContigs(vntrs, vntrMap, opt.oneOffset);
       int i;
       if (opt.nproc > 1)    {
         pthread_t *tid = new pthread_t[opt.nproc];
@@ -629,11 +703,15 @@ int main (int argc, char **argv)
 	  procInfo[i].io->fp_in = io.fp_in;
 	  procInfo[i].io->bamHdr = io.bamHdr;
 	  procInfo[i].io->idx = io.idx;
+	  procInfo[i].io->initializeRefFasta(opt.reference);
 	  procInfo[i].io->numProcessed = &num_processed;
 	  procInfo[i].io->minChrY = io.minChrY;
 	  procInfo[i].mtx = &mtx;
 	  procInfo[i].mismatchCI = &mismatchCI;
 	  procInfo[i].out = &out;
+          procInfo[i].refine = opt.refine;
+	  procInfo[i].io->phaseFlank = opt.phaseFlank;
+	  procInfo[i].oneOffset = opt.oneOffset;
 	  // procInfo[i].out_nullAnno = &out_nullAnno;
 
 	  if (pthread_create(&tid[i], NULL, ProcVNTRs, (void *) &procInfo[i]) )
@@ -654,6 +732,9 @@ int main (int argc, char **argv)
 	  threads_elapsed_time += procInfo[i].elapsed_time.tv_sec + procInfo[i].elapsed_time.tv_usec/1000000.0;
       }
       else {
+
+	//
+	// Process just 
 	gettimeofday(&single_start_time, NULL);
 	
 	// read input bam/fasta
@@ -663,7 +744,7 @@ int main (int argc, char **argv)
 	int s = 0;
 	SDTables sdTables;
 	for (auto i=0; i < vntrs.size(); i++)  { 
-	  ProcVNTR (s, vntrs[i], opt, sdTables, mismatchCI);
+	  ProcVNTR (s, vntrs[i], opt, sdTables, mismatchCI, 0);
 	    vntrs[i]->clearReads();	    
 	}
           
@@ -682,10 +763,10 @@ int main (int argc, char **argv)
 	  vector<bool> procChrom(io.chromosomeNames.size(), false);
 	  vector<Pileup> pileups(io.chromosomeNames.size());
 
-	  map<string, vector<int> > bucketEndPos;
+	  map<string, vector<int> > bucketEndPos, bucketStartIndex, bucketEndIndex;
 	  map<string, vector<char> > processed;
 	  
-	  SetEndPos(vntrs, vntrMap, bucketEndPos, 1000);
+	  SetEndPos(vntrs, vntrMap, bucketEndPos, bucketStartIndex, bucketEndIndex, 1000);
 	  InitProcessed(bucketEndPos, processed);
 	  
 	  mutex ioLock, mtx;
@@ -697,19 +778,24 @@ int main (int argc, char **argv)
             procInfo[i].opt = &opt;
             procInfo[i].io = new IO;
             procInfo[i].io->input_bam = io.input_bam;
-	    //	    procInfo[i].io->reference = io.reference;
-	    procInfo[i].io->initializeBam();
-	    procInfo[i].io->initializeRefFasta();	    
+	    procInfo[i].io->initializeRefFasta(opt.reference);
+	    procInfo[i].io->initializeBam(opt.reference);
 	    procInfo[i].io->chromosomeNames = io.chromosomeNames;
             procInfo[i].io->ioLock = &ioLock;
             procInfo[i].io->numProcessed = &num_processed;
 	    procInfo[i].io->thread = i;
+	    procInfo[i].io->phaseFlank = opt.phaseFlank;
 	    procInfo[i].io->minChrY = opt.minChrY;
             procInfo[i].mtx = &mtx;
             procInfo[i].mismatchCI = &mismatchCI;
             procInfo[i].out = &out;
 	    procInfo[i].processed = &processed;
 	    procInfo[i].bucketEndPos = &bucketEndPos;	    
+	    procInfo[i].bucketStartIndex = &bucketStartIndex;	    
+	    procInfo[i].bucketEndIndex = &bucketEndIndex;	    
+	    procInfo[i].refine = opt.refine;
+	    procInfo[i].oneOffset = opt.oneOffset;
+	    procInfo[i].forcePhase = opt.forcePhase;
             // procInfo[i].out_nullAnno = &out_nullAnno;
             if (pthread_create(&tid[i], NULL, CallSNVs, (void *) &procInfo[i]) )
             {
@@ -725,23 +811,28 @@ int main (int argc, char **argv)
 	    }	  
       }
       else {
-        io.initializeBam();
-	io.initializeRefFasta();
+        io.initializeBam(opt.reference);
+	io.initializeRefFasta(opt.reference);
 	bool readsArePhased = false;
 	for (int i=0; i < io.chromosomeNames.size(); i++ ) {
 	  Pileup pileup;
 	  if ( vntrMap.find(io.chromosomeNames[i] ) != vntrMap.end() ) {
-	    int start = vntrs[vntrMap[io.chromosomeNames[i]][0]]->ref_start;
-	    int end   = vntrs[vntrMap[io.chromosomeNames[i]][vntrMap[io.chromosomeNames[i]].size()-1]]->ref_end;
+	    int start = vntrMap[io.chromosomeNames[i]][0];
+	    int end   = vntrMap[io.chromosomeNames[i]][vntrMap[io.chromosomeNames[i]].size()-1];
 	    if (readsArePhased == false) {
 	      io.CallSNVs(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup, readsArePhased, opt);
 	    }
-	    io.StoreReadsOnChrom(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup, 1, readsArePhased);
+	    if (opt.refine) {
+	      io.RefinedStoreReadsOnChrom(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup, 1, readsArePhased, opt.oneOffset);
+	    }
+	    else {
+	      io.UnrefinedStoreReadsOnChrom(io.chromosomeNames[i], start, end, vntrs, vntrMap, pileup, 1, readsArePhased, opt.oneOffset );
+	    }
 
 	    SDTables sdTables;
 	    for (int j=0; j < vntrMap[io.chromosomeNames[i]].size(); j++) {
 	      int v=vntrMap[io.chromosomeNames[i]][j];
-	      ProcVNTR (vntrs[v]->index, vntrs[v], opt, sdTables, mismatchCI);
+	      ProcVNTR (vntrs[v]->index, vntrs[v], opt, sdTables, mismatchCI, 0);
 	      vntrs[v]->clearReads();
 	    }	    
 	}

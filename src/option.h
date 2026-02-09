@@ -12,8 +12,9 @@ public:
   int nproc;
   bool filterNoisy;
   double filterStrength;
-  double penalty_indel;
-  double penalty_mismatch;
+  int penalty_indel;
+  int penalty_mismatch;
+  int match;
   int phaseFlank;
   string download;
   string referenceFilename;
@@ -24,13 +25,19 @@ public:
   InputType inputType;
   bool hapChrX;
   int minChrY;
+  bool refine;
+  bool local;
+  string reference;
+  int oneOffset;
+  int forcePhase;
   OPTION ()
   {
     nproc = 1;
     filterNoisy = false;
     filterStrength = 0.0;
-    penalty_indel = 1.0;
-    penalty_mismatch = 1.0;
+    match=2;
+    penalty_indel = 1;
+    penalty_mismatch = 1;
     phaseFlank=15000;
     download="";
     inputType=by_read;
@@ -40,7 +47,12 @@ public:
     minAltCoverage = 3;
     referenceFilename = "";
     minChrY = 0;
+    reference="";
     hapChrX= false;
+    refine=false;
+    local=false;
+    oneOffset=1;
+    forcePhase=false;
   };
 
   ~OPTION () {};

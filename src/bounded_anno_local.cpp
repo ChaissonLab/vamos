@@ -10,44 +10,11 @@
 using namespace std;
 
 
-/* deprecated
-static int scoring(vector<MOTIF> &motifs, vector<int> &matches, int top, double globalError, vector<int> &mismatchCI)
-{
 
-    if (matches[top] == 0) return 0;
-
-    int M = motifs.size(), M1 = motifs[top].len;
-    int mismatches[M];
-    double p = 0, numer = 0, denom = 0, score = 0;
-
-    for (auto m=0; m<M; m++)
-    {
-        mismatches[m] = motifs[m].len - matches[m];
-    }
-
-    if (mismatches[top] > mismatchCI[motifs[top].len])
-        return 0.5;
-
-    p = matches[top] / double(M1);
-    if (p > 1 - globalError)
-        p = 1 - globalError;
-
-    numer = pow(p, matches[top]) * pow((1-p), (mismatches[top]));
-
-    for (int m=0; m<M; m++)
-    {
-        denom += pow(p, matches[m]) * pow((1-p), (mismatches[m]));
-    }
-    score = numer / denom;
-
-    return -10*log10(1-score);
-}
-*/
-
-
-void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<int> &starts, vector<int> &ends,
-    vector<vector<int> > &motifNMatches, vector<MOTIF> &motifs, const char *vntr, int N, const OPTION &opt,
-    SDTables &sdTables, vector<int > &mismatchCI)
+void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &optMotifStarts, vector<int> &optMotifEnds,
+		       vector<int> &motifQV, vector<int> &starts, vector<int> &ends,
+		       vector<vector<int> > &motifNMatches, vector<MOTIF> &motifs, const char *vntr, int N, const OPTION &opt,
+		       SDTables &sdTables, vector<int > &mismatchCI)
 {
 
     string vntrS(vntr, N);
@@ -55,6 +22,8 @@ void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<
     int left=0;
     int down=1;
     int diag=2;
+    int diagMis=3;    
+    int endPath=4;
     int nInf=-99999999;
 
     // First column is a gap. First row is handled by a separate vector
@@ -69,7 +38,10 @@ void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<
         }
     }
 
-
+    int globMaxScore=nInf;
+    int globMaxScoreRow=-1;
+    int globMaxScoreCol=-1;
+    int globMaxScoreMatrix=-1;
     for (auto s=0; s < N; s++)
     {
         for (auto m=0; m < motifs.size(); m++)
@@ -80,28 +52,34 @@ void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<
             for (auto mi=0; mi < motifs[m].len; mi++)
             {
                 int diagScore, insScore;
+		bool match=true;
                 if (mi == 0)
                 {
                     int ms=0;
-                    if (motifs[m].seq[0] == vntr[s]) { ms=0;} else { ms =-opt.penalty_mismatch;}
+                    if (motifs[m].seq[0] == vntr[s]) { ms=opt.match;}
+		    else { ms =-opt.penalty_mismatch; match=false;}
                     diagScore= sdTables.scoreRow0[s] + ms;
                     insScore = sdTables.scoreRow0[s] - opt.penalty_indel;
                 }
                 else
                 {
                     int ms=0;
-                    if (motifs[m].seq[mi] == vntr[s]) { ms=0;} else { ms =-opt.penalty_mismatch;}    
+                    if (motifs[m].seq[mi] == vntr[s]) { ms=opt.match;}
+		    else { ms =-opt.penalty_mismatch; match=false;}    
                     diagScore= sdTables.scoreMat[m][s][mi-1] + ms;
                     insScore = sdTables.scoreMat[m][s+1][mi-1] - opt.penalty_indel;
                 }
 
-                int delScore = sdTables.scoreMat[m][s][mi] - opt.penalty_indel; //prev index =s, cur=s+1;
+                int delScore = sdTables.scoreMat[m][s][mi] - opt.penalty_indel; 
                 int optScore=0;
                 int optPath=0;
                 if (diagScore >= insScore and diagScore >= delScore)
                 {
                     optScore=diagScore;
-                    optPath=diag;
+		    if (match) 
+		      optPath=diag;
+		    else
+		      optPath=diagMis;
                 }
                 else if (insScore >= diagScore and insScore >= delScore)
                 {
@@ -113,37 +91,22 @@ void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<
                     optScore=delScore;
                     optPath=left;
                 }
-
+		if (optScore > globMaxScore) {
+		  globMaxScore = optScore;
+		  globMaxScoreMatrix=m;
+		  globMaxScoreRow=s+1;
+		  globMaxScoreCol=mi;
+		}
+		if (optScore < 0 and opt.local) {
+		  optScore = 0;
+		  optPath=endPath;
+		}
+		
                 sdTables.scoreMat[m][s+1][mi] = optScore;
                 sdTables.pathMat[m][s+1][mi]  = optPath;
-
-                if (optScore == diagScore and motifs[m].seq[mi] == vntr[s] )
-                {
-                    if (mi > 0) {
-                        sdTables.nMatchMat[m][s+1][mi] = sdTables.nMatchMat[m][s][mi-1] + 1;
-                    }
-                    else {
-                        sdTables.nMatchMat[m][s+1][mi] = 1;
-                    }
-                    sdTables.nDelMat[m][s+1][mi] = sdTables.nDelMat[m][s][mi];
-                    // cout << "nm " << m << " " << s+1<< " " << mi << " " <<  sdTables.nMatchMat[m][s+1][mi] << endl;
-                }
-                else if (optScore == insScore)
-                {
-                    if (mi > 0)
-                    {
-                        sdTables.nMatchMat[m][s+1][mi] = sdTables.nMatchMat[m][s+1][mi-1];
-                        sdTables.nDelMat[m][s+1][mi] = sdTables.nDelMat[m][s+1][mi-1];
-                    }
-                }
-                else
-                {
-                    sdTables.nMatchMat[m][s+1][mi] = sdTables.nMatchMat[m][s][mi];
-                    sdTables.nDelMat[m][s+1][mi] = sdTables.nDelMat[m][s][mi]+1;
-                }
             }
         }
-
+    
         // score loop back.
 
         int maxScore = sdTables.scoreMat[0][s+1][motifs[0].len-1];
@@ -156,12 +119,22 @@ void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<
                 maxIndex = m;
             }
         }
+
         sdTables.scoreRow0[s+1] = maxScore;
         sdTables.pathRow0[s+1]  = maxIndex;
+	//
+	// For local alignment, if the maximum score among all entries is zero
+	// the alignment should terminate at this motif.
+	//
+	if (opt.local and maxScore == 0) {
+	  sdTables.pathRow0[s+1]  = -1;
+	}
+	    
+
     }
 
     // Trace back;
-    int maxScore;
+    int maxScore=-9999999;
     int maxIndex;
     for (auto m=0; m < motifs.size(); m++)
     {
@@ -171,27 +144,39 @@ void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<
             maxIndex = m;
         }
     }
-
+    if (opt.local and globMaxScore == 0) {
+      return;
+    }
     int cm, cs, cmi;
-    cmi=motifs[maxIndex].len-1;
-    cs=N;
-    cm=maxIndex;
+    if (opt.local == false) {
+      cmi=motifs[maxIndex].len-1;
+      cs=N;
+      cm=maxIndex;
+    }
+    else {
+      cm = globMaxScoreMatrix;
+      cs = globMaxScoreRow;
+      cmi= globMaxScoreCol;
+    }
     ends.push_back(cs);
     optMotifs.push_back((uint8_t)cm);
-
-    /* remove scoring
-    motifNMatches.push_back(vector<int>());
-    for (auto tm=0; tm < motifs.size(); tm++)
-    {
-        motifNMatches[motifNMatches.size()-1].push_back(
-            max(0, sdTables.nMatchMat[tm][cs][motifs[tm].len-1] - sdTables.nDelMat[tm][cs][motifs[tm].len-1]));
-    }*/
-
-    while (cs > 0)
+    optMotifEnds.push_back(cmi+1);
+    bool endTrace=false;
+    int motifNMat=0;
+    int motifNIndel=0;
+    int motifNMismat=0;
+    string motifStr="";
+    string refStr="";
+    
+    string arrows[] = {"gmotif", "gref", "match", "mis", "pathend"};
+    while (cs > 0 and cm >= 0 and endTrace == false)
     {
         assert(optMotifs.size() < 100000);
+	assert(cmi >= 0);
+	assert(cm >= 0);
+	assert(cs >= 0);
         int arrow=sdTables.pathMat[cm][cs][cmi];
-
+	//	cout << cm << " " << cs << " " << cmi << "\t" << arrows[arrow] << " " << motifs[cm].seq[cmi] << " " << vntr[cs-1] << endl;
         // At the beginning of a motif, may need to wrap around
         if (cmi == 0)
         {
@@ -203,47 +188,70 @@ void string_decomposer(vector<uint8_t> &optMotifs, vector<int> &motifQV, vector<
             else
             {
                 cm = sdTables.pathRow0[cs-1];
-                cmi= motifs[cm].len-1;
-                if (cs > 1)
+		cmi=0;
+                if (cs > 1 and cm >= 0)
                 {
-                    optMotifs.push_back((uint8_t)cm);    
-                    ends.push_back(cs-1);
-                    starts.push_back(cs-1);
+                cmi= motifs[cm].len-1;		  
+		  if (motifNMat+motifNIndel+motifNMismat > 0) {
+		    //		    cerr << "Motif score: " << motifNMat << " " <<  motifNIndel << " " << motifNMismat << " " << ((float)motifNMat ) / (motifNMat+motifNIndel+motifNMismat) << endl;
+		  }
+		  motifStr.push_back('+');
+		  refStr.push_back('+');
+		  
+		  motifNMat = motifNIndel=motifNMismat=0;
 
-                    /* remove scoring
-                    motifNMatches.push_back(vector<int>());
-                    for (auto tm=0; tm < motifs.size(); tm++)
-                    {
-                        motifNMatches[motifNMatches.size()-1].push_back(max(0, 
-                            sdTables.nMatchMat[tm][cs][motifs[tm].len-1] - sdTables.nDelMat[tm][cs][motifs[tm].len-1]));
-                    }*/
+		  optMotifStarts.push_back(0);
+		  optMotifs.push_back((uint8_t)cm);
+		  optMotifEnds.push_back(cmi+1);
+		  ends.push_back(cs-1);
+		  starts.push_back(cs-1);
                 }
                 cs--;
             }
         }
         else
         {
-            if (arrow == diag)
+            if (arrow == diag or arrow== diagMis)
             {
+	      motifStr.push_back(motifs[cm].seq[cmi]);
+	      refStr.push_back(vntr[cs-1]);
                 cs--;
                 cmi--;
+		if (arrow== diag) motifNMat++;
+		if (arrow == diagMis) motifNMismat++;
             }
             else if (arrow == down)
             {
+	      motifStr.push_back(motifs[cm].seq[cmi]);
+	      refStr.push_back('-');
                 cmi--;
+		motifNIndel++;
             }
-            else
+            else if (arrow == left)
             {
+	      motifStr.push_back('-');
+	      refStr.push_back(vntr[cs-1]);
                 cs--;
+		motifNIndel++;		
             }
+	    else if (arrow == endPath) {
+	      //
+	      endTrace = true;
+	    }
         }
         assert(cmi >= 0);
-        assert(cm >=0);
+        assert(cm >=-1);
     }
-
+    optMotifStarts.push_back(cmi); 
     starts.push_back(cs);
+    //
+    // Change for local alignment
+    reverse(refStr.begin(), refStr.end());
+    reverse(motifStr.begin(), motifStr.end());
     assert(starts.size() == ends.size());
     reverse(optMotifs.begin(), optMotifs.end());
+    reverse(optMotifStarts.begin(), optMotifStarts.end());
+    reverse(optMotifEnds.begin(), optMotifEnds.end());    
     reverse(starts.begin(), starts.end());
     reverse(ends.begin(), ends.end());
     reverse(motifNMatches.begin(), motifNMatches.end());

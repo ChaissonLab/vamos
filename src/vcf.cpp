@@ -17,7 +17,7 @@ extern int output_read_anno_flag;
 extern int output_read_seq_flag;
 extern int readwise_anno_flag;
 extern int single_seq_flag;
-
+extern int output_reconstructed_seq_flag;
 void OutWriter::init (string input_bam_file, string Version, string SampleName)
 {
 	version = Version;
@@ -65,6 +65,11 @@ void OutWriter::writeHeader_locuswise(ofstream &out)
 		<< "##FILTER=<ID=PASS,Description=\"All filters passed\">" << "\n"
 		<< "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" << "\n"
 		<< "##ALT=<ID=VNTR,Description=\"Allele comprised of VNTR repeat units\">" << "\n";
+	if (output_reconstructed_seq_flag)
+		out << "##FORMAT=<ID=RE,Number=1,Type=String,Description=\"Reconstructed TR sequence based on decomposition.\">" << "\n";
+	if (output_read_anno_flag)
+		out << "##FORMAT=<ID=RS,Number=1,Type=String,Description=\"Read/consensus sequce that was annotated.\">" << "\n";
+	
 
     out << "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" << sampleName << "\n";
     return;
@@ -96,8 +101,8 @@ void writeSingleBody_locuswise(VNTR * it, ofstream &out)
 		}
     }
 
-    if (motif_anno_h1 == motif_anno_h2) GT = "1/1";
-    else GT = "1/2";
+    if (motif_anno_h1 == motif_anno_h2) GT = "1/1"; 
+   else GT = "1/2";
 
 	out << it->chr << "\t";
 	out	<< to_string(it->ref_start) << "\t";
@@ -128,15 +133,40 @@ void writeSingleBody_locuswise(VNTR * it, ofstream &out)
 
 
 	out	<< "\t";
-	out	<< "GT\t";
+	out	<< "GT";
+	if (output_read_seq_flag and it->Hap_seqs.size() > 0) {
+	  bool doPrint=false;
+	  for (auto s: it->Hap_seqs) { if (s->seq.size() > 0) { doPrint=true;}}
+	  if (doPrint)
+	    out << ":RS";
+	}
+	if (output_reconstructed_seq_flag and it->reconstructedTRSeqs.size() > 0) {
+	  bool doPrint=false;
+	  for (auto s: it->reconstructedTRSeqs) { if (s.size() > 0) { doPrint=true;}}
+	  if (doPrint)
+	    out << ":RE";
+	}
+	out << "\t";
 	out << GT;
+
+	
 	if (output_read_seq_flag) {
-	  if (GT == "1/2") {
-	    assert(it->Hap_seqs.size() == 2);
-	    out << ":" << it->Hap_seqs[0]->seq << ":" << it->Hap_seqs[1]->seq;
+	  out << ":";
+	  for (int hsit=0; hsit < it->Hap_seqs.size(); hsit++) {
+	    out << it->Hap_seqs[hsit]->seq;
+	    if (hsit + 1 < it->Hap_seqs.size()) {
+	      out << ",";
+	    }
 	  }
-	  else {
-	    out << ":" << it->Hap_seqs[0]->seq ;
+	}
+	if (output_reconstructed_seq_flag) {
+	  out << ":";
+	  for (int rsit=0; rsit < it->reconstructedTRSeqs.size(); rsit++) {
+	    out << it->reconstructedTRSeqs[rsit];
+	    if (rsit + 1 < it->reconstructedTRSeqs.size()) {
+	      out << ",";
+	    }
+	    
 	  }
 	}
 	out << endl;       

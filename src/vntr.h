@@ -137,7 +137,7 @@ public:
     vector<uint8_t> haps;
     vector<vector<uint8_t> > annos;         // the motif annotations for each read
     vector<vector<uint8_t> > consensus;     // the final consensus annotation
-
+    vector<string> reconstructedTRSeqs;
     vector<int> h1_reads;                   // index of all haplotype1 reads (manipulated in consensusReadForHapByABpoa)
     vector<int> h2_reads;                   // index of all haplotype2 reads (manipulated in consensusReadForHapByABpoa)
     vector<READ *> Hap_seqs;
@@ -150,7 +150,7 @@ public:
     bool readsArePhased;                    //
   string svtype;
   int index;
-
+  bool processed;
     /// @brief Construct a new VNTR object
     VNTR()
     {
@@ -161,6 +161,7 @@ public:
         nullAnno = false;
         readsArePhased = false;
 	mappedContigLength = 0;
+	processed=false;
     };
 
 
@@ -185,11 +186,14 @@ public:
         len_h2 = 0;
 	mappedContigLength = 0;
 	svtype=svt;
+	processed = false;
     };
 
 
     /// @brief Destroy the VNTR object
-    ~VNTR() {};
+    ~VNTR() {
+      Hap_seqs.clear();
+    };
 
 
     /**
@@ -205,8 +209,6 @@ public:
 
         if (!het and nreads == 1) return;
 
-	Hap_seqs.clear();
-
         return;
     }
 
@@ -219,19 +221,12 @@ public:
      */
     void motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int> &mismatchCI);
 
-
+    void ReconstructTRSequence(vector<uint8_t> &optMotifs, vector<int> &optMotifStarts, vector<int> &optMotifEnds, string &reconstructedSeq);
     /**
      * @brief Get the reads consensus (nt sequence) of one/two haplotypes by abpoa msa
      * @param opt general options
      */
     void consensusReadForHapByABpoa (const OPTION &opt);
-
-
-    /**
-     * @brief Get the consensus of all annotated strings by abpoa msa
-     * @param opt general options
-     */
-    void consensusMotifAnnoForOneVNTRByABpoa (const OPTION &opt);
 
 
     /**
@@ -265,7 +260,7 @@ class UpperBoundSearchVNTRPos {
 public:
   vector<VNTR*>* vntrs;
   bool operator()(const int &a, const int &b) const {
-    return a < (*vntrs)[b]->ref_end;
+    return a <= (*vntrs)[b]->ref_end;
   }
 };
 

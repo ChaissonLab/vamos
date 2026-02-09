@@ -20,6 +20,8 @@ public:
         vector<bool> *procChrom;
         map<string, vector<char > > *processed;
         map<string, vector<int > > *bucketEndPos;
+        map<string, vector<int > > *bucketStartIndex;
+        map<string, vector<int > > *bucketEndIndex;  
 	int thread;
 	OPTION * opt;
 	IO * io;
@@ -30,6 +32,9 @@ public:
 	struct timeval start_time, stop_time, elapsed_time;
         vector< int > *mismatchCI;
         vector<Pileup > *pileups;
+        bool refine;
+        int oneOffset;
+        int forcePhase;
 	ProcInfo () {};
 	~ProcInfo () {};
 };

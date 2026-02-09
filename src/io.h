@@ -348,7 +348,6 @@ public:
     string region_and_motifs;
     string input_fasta;
     string input_bam;
-    string reference;
     string vntr_bed;
     string motif_csv;
     string out_vcf;
@@ -380,10 +379,9 @@ public:
     int phaseFlank;
     IO() 
     {
-      version = "2.2.0";
+      version = "3.0.0";
         region_and_motifs = "";
         input_bam = "";
-        reference = "";
         vntr_bed = "";
         motif_csv = "";
         out_vcf = "";
@@ -395,6 +393,7 @@ public:
 	minMapQV=3;
 	maxLength=10000;
 	minChrY = nChrY = 0;
+	fai=NULL;
     };
 
   void clear() {
@@ -423,10 +422,14 @@ public:
     int read_tsv(vector<vector<string>> &items);
 
 
+    int QueryAndSetPhase(bam1_t* aln, int &setHap);
+    int MappedEndPosInRead(vector<int> &refIndex, int refStart, int refPos);
+    int MappedStartPosInRead(vector<int> &refIndex, int refStart, int refPos);
+
     /* get the sequences from input_bam_file that overlapping with chr:start-end */
     //void readSeqFromBam (vector<VNTR *> &vntrs, int nproc, int cur_thread, int sz);
-    void initializeBam();
-  void initializeRefFasta();
+    void initializeBam(string ref);
+  void initializeRefFasta(string ref);
 
     void closeBam();
 
@@ -459,11 +462,12 @@ public:
   //  void StoreVNTRLoci(vector<VNTR*> &vntrs, vector<int> &vntrIndex, Pileup &pileup, int &refAlignPos, int &curVNTR);
 
   int CallSNVs(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup, bool& readsArePhased, OPTION &opts);  
-  void StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup, int thread, bool readsArePhased);
+  void RefinedStoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup, int thread, bool readsArePhased, int oneOffset);
+  void UnrefinedStoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, Pileup &pileup, int thread, bool readsArePhased, int oneOffset);  
 
   void StoreReadSeqAtRefCoord(bam1_t *aln, string &seq, string &toRef, vector<int> &map);
-  void ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrIndex);
-  void StoreAllContigs(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrIndex);
+  void ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrIndex, int oneOffset);
+  void StoreAllContigs(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrIndex, int oneOffset);
   void StoreSeq(bam1_t *aln, string &seq);
   string MakeRegion(string chrom, int start, int end) {
     stringstream sstrm;

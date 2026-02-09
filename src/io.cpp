@@ -128,6 +128,7 @@ int IO::readRegionAndMotifs (vector<VNTR*> &vntrs)
         int end;
 	string version, svtype;
         ss >> chrom >> start >> end >> motifs >> version >> svtype;
+	if (svtype=="") { svtype="TR";}
 	if (end - start > maxLength) {
 	  cerr << "WARNING, locus " << chrom << ":" << start << "-" << end << " has length greater than " << maxLength << " and will be ignored." << endl;
 	  continue;
@@ -226,7 +227,7 @@ void IO::StoreReadSeqAtRefCoord(bam1_t *aln, string &readSeq, string &readSeqAtR
 }
 
 
-int MappedStartPosInRead(vector<int> &refIndex, int refStart, int refPos) {
+int IO::MappedStartPosInRead(vector<int> &refIndex, int refStart, int refPos) {
   //
   // For handling flank regions, the ref pos may have been set beyond the end of the read.
   //
@@ -252,12 +253,13 @@ int MappedStartPosInRead(vector<int> &refIndex, int refStart, int refPos) {
   }
 }
 
-int MappedEndPosInRead(vector<int> &refIndex, int refStart, int refPos) {
+int IO::MappedEndPosInRead(vector<int> &refIndex, int refStart, int refPos) {
   //
   // For handling flank regions, the ref pos may have been set beyond the end of the read.
   //
   if (refPos >= refStart + refIndex.size()) {
-    refPos = refStart + refIndex.size() - 1;
+    return -1;
+    //    refPos = refStart + refIndex.size() - 1;
   }
   assert(refPos - refStart < refIndex.size());
   int i=refPos-refStart;
@@ -265,22 +267,13 @@ int MappedEndPosInRead(vector<int> &refIndex, int refStart, int refPos) {
     //    cerr << "skipping a gap character at end " << i << endl;    
     i--;
   }
-  //
-  // Check for an inserted sequence at the end of the match
-  if (i + 1 < refIndex.size() and refIndex[i] + 1 < refIndex[i+1]) {
-    return refIndex[i+1]-1;
-  }
-  else {
-    return(refIndex[i]);
-  }
+  return(refIndex[i]);
 }
 
-void IO::StoreAllContigs(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap) {
-  initializeBam();
-  initializeRefFasta();
+void IO::StoreAllContigs(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, int oneOffset) {
   bam1_t * aln = bam_init1(); //initialize an alignment
   while (sam_read1(fp_in, bamHdr, aln) >= 0) {
-    ProcessOneContig(aln, vntrs, vntrMap);
+    ProcessOneContig(aln, vntrs, vntrMap, oneOffset);
     bam_destroy1(aln);
     aln=bam_init1();    
   }
@@ -288,7 +281,7 @@ void IO::StoreAllContigs(vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMa
 }
 
 
-void IO::ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap) {
+void IO::ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<int> > &vntrMap, int oneOffset) {
 
   vector<int> readMap;
   string readSeq, readToRef;
@@ -333,32 +326,18 @@ void IO::ProcessOneContig(bam1_t *aln, vector<VNTR*> &vntrs, map<string, vector<
 
     int idx= vntrMap[refName][i];
     if (vntrs[idx]->mappedContigLength < refAlnEnd - refAlnStart) {
-      int readStart = MappedStartPosInRead(readMap, refAlnStart, vntrs[idx]->ref_start-1);
+      int readStart = MappedStartPosInRead(readMap, refAlnStart, vntrs[idx]->ref_start - oneOffset);
       int readEnd   = MappedEndPosInRead(readMap, refAlnStart, vntrs[idx]->ref_end-1);
       string vntrSeq;
-      /*
-      int preadStart   = MappedStartPosInRead(readMap, refAlnStart, vntrs[idx]->ref_start-12);
-      int preadEnd = MappedEndPosInRead(readMap, refAlnStart, vntrs[idx]->ref_start-2);
-      int sreadStart = MappedEndPosInRead(readMap, refAlnStart, vntrs[idx]->ref_end);
-      int sreadEnd   = MappedStartPosInRead(readMap, refAlnStart, vntrs[idx]->ref_end+10);
-      */
       if (readEnd == readStart) {
-        vntrSeq = readSeq.substr(readStart, readEnd-readStart);
+        vntrSeq = readSeq.substr(readStart, readEnd-readStart+1);
       }
       else {
         vntrSeq = readSeq.substr(readStart, readEnd-readStart+1);
       }
-      /*
-      string pSeq, sSeq;
-      pSeq=readSeq.substr(preadStart, preadEnd-preadStart);
-      sSeq=readSeq.substr(sreadStart, sreadEnd - sreadStart);
-      cout << refName << "\t" << vntrs[idx]->ref_start-1 << "\t" << vntrs[idx]->ref_end-1 << "\t" << pSeq << "\t" << vntrSeq << "\t" << sSeq << endl;
-      */
       
       READ *read = new READ;
-      read->qname = refName; //new char[refName.size()+1];
-      //      memcpy(read->qname, refName.c_str(), refName.size());
-      //      read->qname[refName.size()]='\0';
+      read->qname = refName;
       read->l_qname = read->qname.size();
       read->seq = vntrSeq;
       read->len = vntrSeq.size();
@@ -395,7 +374,7 @@ int GetHap(char *s, int l) {
     return -1;
 }
 
-int QueryAndSetPhase(bam1_t* aln, int &setHap) {
+int IO::QueryAndSetPhase(bam1_t* aln, int &setHap) {
   //    kstring_t auxStr = { 0, 0, NULL };
   char *auxStr;
     uint8_t* auxRes= bam_aux_get(aln, "HP");
@@ -403,9 +382,6 @@ int QueryAndSetPhase(bam1_t* aln, int &setHap) {
     if (auxRes != NULL) {
       int hap = bam_aux2i(auxRes);
       setHap=-1;    
-      bool isPhased = false;
-      int si=0, nc=0;
-
       setHap=hap;
       foundAux = true;	
 
@@ -440,9 +416,11 @@ void GetItOfOverlappingVNTRs(vector<VNTR*> &vntrs,
 
 		   
 
-void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector<VNTR*> &vntrs,
-			   map<string, vector<int> > &vntrMap,
-			   Pileup &pileup, int thread, bool readsArePhased) {
+
+
+void IO::RefinedStoreReadsOnChrom(string &chrom, int regionStartIndex, int regionEndIndex, vector<VNTR*> &vntrs,
+				  map<string, vector<int> > &vntrMap,
+				  Pileup &pileup, int thread, bool readsArePhased, int oneOffset) {
 
    bam1_t * aln;
    hts_itr_t * itr;
@@ -463,12 +441,14 @@ void IO::StoreReadsOnChrom(string &chrom, int regionStart, int regionEnd, vector
    int i;
    VNTR * vntr = NULL;
    uint32_t origPhaseFlank = phaseFlank;
+   int regionStart =    vntrs[regionStart]->ref_start;
+   int regionEnd   =vntrs[regionEnd]->ref_end;
    cerr << "Storing TR sequences on " << chrom << ":" << regionStart << "-" << regionEnd << endl;
+   
    if (vntrMap.find(chrom) == vntrMap.end()) {
      return;
    }
    // For now process all reads on chrom
-
    string region=MakeRegion(chrom, regionStart, regionEnd);
    itr = bam_itr_querys(idx, bamHdr, region.c_str());
    
@@ -723,8 +703,12 @@ int IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> &
      return 0;
    }
    // For now process all reads on chrom
-   cerr << "Calling snvs: " << chrom << ":" << regionStart << "-" << regionEnd << endl;
-   string region=MakeRegion(chrom, regionStart, regionEnd);
+   int regionStartPos = vntrs[regionStart]->ref_start;
+   int regionEndPos = vntrs[regionEnd]->ref_end;
+   cerr << "Calling snvs: " << chrom << ":" << regionStartPos << "-" << regionEndPos << endl;
+   
+   //   string region=MakeRegion(chrom, regionStart, regionEnd);
+   string region=MakeRegion(chrom, regionStartPos, regionEndPos);   
    itr = bam_itr_querys(idx, bamHdr, region.c_str());
    IOAlignBuff alignBuff(fp_in, itr, ioLock, 1000);
    int curVNTR=0;
@@ -763,7 +747,7 @@ int IO::CallSNVs(string &chrom, int regionStart, int regionEnd,  vector<VNTR*> &
      bool readIsPhased = QueryAndSetPhase(aln, hap);
      read.phased = readIsPhased;
      read.hap = hap;
-     if (readIsPhased) {
+     if (readIsPhased and options.forcePhase == false) {
        readsArePhased= true;
        alignBuff.Free();
        cerr << "Reads are phased. Skipping SNV calling." << endl;
@@ -823,18 +807,17 @@ string &FlankSeq(READ* read, int side) {
     }
 }
 
-void IO::initializeRefFasta() {
-  return;
+void IO::initializeRefFasta(string reference) {
   if (reference =="") {
-    cerr << "ERROR. Vamos now requires a reference to be specified with -R ref.fasta ." << endl;
+    return;
   }
   fai = fai_load(reference.c_str());
   if (fai == NULL) {
-    cerr << "Could not load reference " << reference << endl;
+    return;
   }
 }
 
-void IO::initializeBam() {
+void IO::initializeBam(string reference) {
     fp_in = hts_open(input_bam.c_str(), "r"); //open bam file
     if (!reference.empty()) {
         hts_set_opt(fp_in, CRAM_OPT_REFERENCE, reference.c_str());
