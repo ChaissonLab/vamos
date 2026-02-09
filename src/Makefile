@@ -83,7 +83,7 @@ vcf.o: vcf.cpp vcf.h
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include
 
 vntr.o: vntr.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h msa.h
-	$(CXX) $(CFLAGS) -c $< -I $(SPOA_DIR)/include -I $(ABPOA_DIR)/include -I ../alglib/src -I ../edlib/include -I $(CONDA_PREFIX)/include
+	$(CXX) $(CFLAGS) -c $< -I $(SPOA_DIR)/include -I $(ABPOA_DIR)/include -I ../alglib/src -I ../edlib/include -I $(CONDA_PREFIX)/include 
 
 msa.o: msa.cpp msa.h read.h option.h
 	$(CXX) $(CFLAGS) -I $(SPOA_DIR)/include  -I $(CONDA_PREFIX)/include -c $< -I $(ABPOA_DIR)/include
