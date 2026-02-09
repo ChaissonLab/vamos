@@ -39,8 +39,8 @@ endif
 
 PROF = $(CONDA_PREFIX)/lib
 
-ABPOA_DIR = ../abPOA-1.4.1
-SPOA_DIR  = ../spoa-4.1.5
+ABPOA_DIR=../abPOA-1.4.1
+SPOA_DIR=../spoa-4.1.5
 
 all: $(PROG)
 ZLPATH=""
@@ -53,11 +53,11 @@ $(LIBPS):
 	cd parasail-2.6.2; mkdir -p build ; cd build ; cmake .. -DPARASAIL_ENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=../../parasail-dir/ && make -j4 && make install
 
 $(ABPOA_DIR)/lib/libabpoa.a:
-	echo $(CC)
-	echo "^^CC"
 	cd $(ABPOA_DIR) && make sse2=true PREFIX=. CC="$(CC)" $(ZLPATH) lib/libabpoa.a
 
 
+$(SPOA_DIR)/build/lib/libspoa.a:
+	cd $(SPOA_DIR) && mkdir -p build && cd build && cmake .. -DBUILD_TESTING=OFF -DINSTALL_GTEST=OFF -DSPOA_BUILD_TESTS=OFF -DCMAKE_CXX_FLAGS="-w" && make -k -j4
 
 testmsa: TestMSA.cpp
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -I $(ABPOA_DIR)/include -L $(ABPOA_DIR)/lib -labpoa -lrt -L$(mchaisso)/software/lib
