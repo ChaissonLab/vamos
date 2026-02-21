@@ -49,7 +49,7 @@ void OutWriter::writeHeader_locuswise(ofstream &out)
     out << "##source=vamos_" << version << '\n';
 	for (int32_t i = 0; i < ncontigs; ++i) 
 	{
-		out << "##contig=<ID=" << target_names[i] << ",length=" << to_string(contigLengths[i]) << ">" << "\n";
+		out << "##contig=<ID=" << target_names[i] << ",length=" << contigLengths[i] << ">" << "\n";
 	}
 	out	<< "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position of the variant\">" << "\n"
 		<< "##INFO=<ID=RU,Number=1,Type=String,Description=\"Comma separated motif sequences list in the reference orientation\">" << "\n"
@@ -75,7 +75,7 @@ void OutWriter::writeHeader_locuswise(ofstream &out)
     return;
 }
 
-void writeSingleBody_locuswise(VNTR * it, ofstream &out)
+void writeSingleBody_locuswise(VNTR * it, ofstream &out, int oneOffset)
 {
   if (it->skip) return;
 	
@@ -95,95 +95,102 @@ void writeSingleBody_locuswise(VNTR * it, ofstream &out)
 		for (int i = 0; i < it->nreads; ++i)
 		{
 			for (auto &s : (it->annos)[i]) {
-				readAnnos[i] += to_string(s) + ","; 
+			  readAnnos[i] += s + ","; 
 			}
 			if (!readAnnos[i].empty()) readAnnos[i].pop_back();
 		}
     }
 
     if (motif_anno_h1 == motif_anno_h2) GT = "1/1"; 
-   else GT = "1/2";
+    else GT = "1/2";
+    out << it->chr << "\t";
+    out << it->ref_start + 1 - oneOffset << "\t";
+    out << ".\t";
+    out << "N\t";
+    out << "<VNTR>\t";
+    out << ".\t";
+    out << "PASS\t";
+    out << "END=" << it->ref_end << ";";
+    out << "RU=" << motif_list << ";";
+    out << "SVTYPE=" << it->svtype << ";";
+    out << "ALTANNO_H1=" << motif_anno_h1 << ";";
+    out << "LEN_H1=" << it->len_h1 << ";";
 
-	out << it->chr << "\t";
-	out	<< to_string(it->ref_start) << "\t";
-	out	<< ".\t";
-	out	<< "N\t";
-	out	<< "<VNTR>\t";
-	out	<< ".\t";
-	out	<< "PASS\t";
-	out	<< "END=" + to_string(it->ref_end) + ";";
-	out	<< "RU=" + motif_list + ";";
-	out	<< "SVTYPE=" << it->svtype << ";";
-	out	<< "ALTANNO_H1=" + motif_anno_h1 + ";";
-	out	<< "LEN_H1=" + to_string(it->len_h1) + ";";
-
-	if (GT == "1/2") {
-		out << "ALTANNO_H2=" + motif_anno_h2 + ";";
-		out	<< "LEN_H2=" + to_string(it->len_h2) + ";";
-	}
-	if (output_read_anno_flag)
-	{
-		for (int i = 0; i < it->nreads; ++i) 
-		{
-			out << "READANNO_";
-			out << it->reads[i]->qname;
-			out << "=" + readAnnos[i] + ";";
-		}
-	}
+    if (GT == "1/2") {
+      out << "ALTANNO_H2=" << motif_anno_h2 << ";";
+      out	<< "LEN_H2=" << it->len_h2 << ";";
+    }
+    if (output_read_anno_flag)
+      {
+	for (int i = 0; i < it->nreads; ++i) 
+	  {
+	    out << "READANNO_";
+	    out << it->reads[i]->qname;
+	    out << "=" + readAnnos[i] + ";";
+	  }
+      }
 
 
-	out	<< "\t";
-	out	<< "GT";
-	if (output_read_seq_flag and it->Hap_seqs.size() > 0) {
-	  bool doPrint=false;
-	  for (auto s: it->Hap_seqs) { if (s->seq.size() > 0) { doPrint=true;}}
-	  if (doPrint)
-	    out << ":RS";
-	}
-	if (output_reconstructed_seq_flag and it->reconstructedTRSeqs.size() > 0) {
-	  bool doPrint=false;
-	  for (auto s: it->reconstructedTRSeqs) { if (s.size() > 0) { doPrint=true;}}
-	  if (doPrint)
-	    out << ":RE";
-	}
-	out << "\t";
-	out << GT;
+    out	<< "\t";
+    out	<< "GT";
+    if (output_read_seq_flag and it->Hap_seqs.size() > 0) {
+      bool doPrint=false;
+      for (auto s: it->Hap_seqs) { if (s->seq.size() > 0) { doPrint=true;}}
+      if (doPrint)
+	out << ":RS";
+    }
+    if (output_reconstructed_seq_flag and it->reconstructedTRSeqs.size() > 0) {
+      bool doPrint=false;
+      for (auto s: it->reconstructedTRSeqs) { if (s.size() > 0) { doPrint=true;}}
+      if (doPrint)
+	out << ":RE";
+    }
+    out << "\t";
+    out << GT;
 
 	
-	if (output_read_seq_flag) {
-	  out << ":";
-	  for (int hsit=0; hsit < it->Hap_seqs.size(); hsit++) {
-	    out << it->Hap_seqs[hsit]->seq;
-	    if (hsit + 1 < it->Hap_seqs.size()) {
-	      out << ",";
-	    }
-	  }
+    if (output_read_seq_flag) {
+      out << ":";
+      for (int hsit=0; hsit < it->Hap_seqs.size(); hsit++) {
+	out << it->Hap_seqs[hsit]->seq;
+	if (hsit + 1 < it->Hap_seqs.size()) {
+	  out << ",";
 	}
-	if (output_reconstructed_seq_flag) {
-	  out << ":";
-	  for (int rsit=0; rsit < it->reconstructedTRSeqs.size(); rsit++) {
-	    out << it->reconstructedTRSeqs[rsit];
-	    if (rsit + 1 < it->reconstructedTRSeqs.size()) {
-	      out << ",";
-	    }
-	    
-	  }
-	}
-	out << endl;       
-	return;
+      }
+      //
+      // Fix output for homozygous calls.
+      //
+      if (it->ploidy == 2 && it->Hap_seqs.size() == 1) {
+	out << "," << it->Hap_seqs[0]->seq;
+      }
+    }
+    if (output_reconstructed_seq_flag) {
+      out << ":";
+      for (int rsit=0; rsit < it->reconstructedTRSeqs.size(); rsit++) {
+	out << it->reconstructedTRSeqs[rsit];
+	if (rsit + 1 < it->reconstructedTRSeqs.size()) {
+	  out << ",";
+	}	    
+      }
+      if (it->ploidy == 2 && it->reconstructedTRSeqs.size() == 1) {
+	out << "," << it->reconstructedTRSeqs[0];
+      }
+    }
+    out << endl;       
+    return;
 }
 
-void OutWriter::writeBody_locuswise(vector<VNTR *> &vntrs, ofstream& out, int tid, int nproc)
+void OutWriter::writeBody_locuswise(vector<VNTR *> &vntrs, ofstream& out, int tid, int nproc, int oneOffset)
 {
 	if (nproc > 1)
 	{
 		for (size_t i = tid; i < vntrs.size(); i += nproc)
-			writeSingleBody_locuswise(vntrs[i], out);
+		  writeSingleBody_locuswise(vntrs[i], out, oneOffset);
 	}
 	else
 	{
 		for (auto &it : vntrs) 
-			writeSingleBody_locuswise(it, out);
+		  writeSingleBody_locuswise(it, out, oneOffset);
 	}
 
 	return;
@@ -200,13 +207,13 @@ void OutWriter::writeHeader_readwise(ofstream &out)
     return;
 }
 
-void writeSingleBody_readwise(VNTR * it, ofstream &out)
+void writeSingleBody_readwise(VNTR * it, ofstream &out, int oneOffset)
 {
 	if (it->skip) return;
 
 	// output region
 	out << it->chr << "\t"
-	    << it->ref_start << "\t" 
+	    << it->ref_start + 1 - oneOffset << "\t" 
 	    << it->ref_end << "\t";
 
 	// output motifs
@@ -236,17 +243,17 @@ void writeSingleBody_readwise(VNTR * it, ofstream &out)
 	return;
 }
 
-void OutWriter::writeBody_readwise(vector<VNTR *> &vntrs, ofstream& out, int tid, int nproc)
+void OutWriter::writeBody_readwise(vector<VNTR *> &vntrs, ofstream& out, int tid, int nproc, int oneOffset)
 {
 	if (nproc > 1)
 	{
 		for (size_t i = tid; i < vntrs.size(); i += nproc)
-			writeSingleBody_readwise(vntrs[i], out);
+		  writeSingleBody_readwise(vntrs[i], out, oneOffset);
 	}
 	else
 	{
 		for (auto &it : vntrs) 
-			writeSingleBody_readwise(it, out);
+		  writeSingleBody_readwise(it, out, oneOffset);
 	}
 
 	return;

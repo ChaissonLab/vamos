@@ -40,11 +40,11 @@ public:
 
     void writeHeader_locuswise(ofstream &out);
 
-    void writeBody_locuswise(vector<VNTR *> &vntrs, ofstream &out, int tid, int nproc);
+  void writeBody_locuswise(vector<VNTR *> &vntrs, ofstream &out, int tid, int nproc, int offset);
 
     void writeHeader_readwise(ofstream &out);
 
-    void writeBody_readwise(vector<VNTR *> &vntrs, ofstream &out, int tid, int nproc);
+  void writeBody_readwise(vector<VNTR *> &vntrs, ofstream &out, int tid, int nproc, int oneOffset);
 
 	void writeNullAnno(vector<VNTR *> &vntrs, ofstream &out_nullAnno, int tid, int nproc);
 };

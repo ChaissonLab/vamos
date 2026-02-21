@@ -362,13 +362,14 @@ public:
     int *numProcessed;
     int thread;
     int minMapQV;
-  int minChrY;
+    int minChrY;
     uint64_t nChrY;
     string curChromosome;
     vector<string> chromosomeNames;
     vector<int> chromosomeLengths;
     faidx_t *fai;
     int maxLength;
+    int oneBasedInput;
     std::map<string, vector<int> > *vntrMap;
 
     // Not the best place to put this, but since the IO is batched and we
@@ -379,7 +380,7 @@ public:
     int phaseFlank;
     IO() 
     {
-      version = "3.0.4";
+      version = "3.0.6";
         region_and_motifs = "";
         input_bam = "";
         vntr_bed = "";
@@ -394,6 +395,7 @@ public:
 	maxLength=10000;
 	minChrY = nChrY = 0;
 	fai=NULL;
+	oneBasedInput=1;
     };
 
   void clear() {
@@ -445,13 +447,13 @@ public:
     int writeVCFHeader_locuswise(ofstream& out);
 
 
-    int writeVCFBody_locuswise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc);
+  int writeVCFBody_locuswise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc, int oneOffset);
 
 
     int writeBEDHeader_readwise(ofstream& out);
 
 
-    int writeBEDBody_readwise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc);
+  int writeBEDBody_readwise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc, int oneOffset);
 
 
     void writeFa(ofstream& out, vector<VNTR *> &vntrs);

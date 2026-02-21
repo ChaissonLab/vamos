@@ -148,6 +148,7 @@ public:
     int len_h1;                             // 
     int len_h2;                             // 
     bool readsArePhased;                    //
+    int ploidy;
   string svtype;
   int index;
   bool processed;
@@ -162,6 +163,7 @@ public:
         readsArePhased = false;
 	mappedContigLength = 0;
 	processed=false;
+	ploidy=2;
     };
 
 
@@ -245,7 +247,7 @@ public:
  * @param consensus 
  */
 void outputConsensus (vector<uint8_t> &consensus);
-
+void SetPloidy(vector<VNTR*> &vntrs, int minChrY, int nChrY);
 
 class CompareVNTRPos {
 public:

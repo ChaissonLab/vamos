@@ -632,6 +632,8 @@ int main (int argc, char **argv)
     vector< int> mismatchCI;
     std::map<string, vector<int> > vntrMap;
     io.vntrMap = &vntrMap;
+    io.oneBasedInput=opt.oneOffset;
+				     
     if (io.region_and_motifs != "")
     {
         io.readRegionAndMotifs(vntrs);
@@ -658,12 +660,12 @@ int main (int argc, char **argv)
     timersub(&pre_stop_time, &pre_start_time, &pre_elapsed_time); 
     long threads_elapsed_time = 0; 
 
-
+    io.initializeBam(opt.reference);
+    SetPloidy(vntrs, io.minChrY, io.nChrY);
     //
     // Read input.
     //
     if (contig_flag) {
-      io.initializeBam(opt.reference);
       io.initializeRefFasta(opt.reference);
       io.StoreAllContigs(vntrs, vntrMap, opt.oneOffset);
       int i;
@@ -793,7 +795,6 @@ int main (int argc, char **argv)
 	    }	  
       }
       else {
-        io.initializeBam(opt.reference);
 	io.initializeRefFasta(opt.reference);
 	bool readsArePhased = false;
 	for (int i=0; i < io.chromosomeNames.size(); i++ ) {
@@ -827,9 +828,9 @@ int main (int argc, char **argv)
     //    io.clear();
         // output vcf or bed or fasta
     if (readwise_anno_flag or somatic_flag) 
-      io.writeBEDBody_readwise(out, vntrs, -1, 1);
+      io.writeBEDBody_readwise(out, vntrs, -1, 1, opt.oneOffset);
     else if (locuswise_prephase_flag or locuswise_flag or single_seq_flag) 
-      io.writeVCFBody_locuswise(out, vntrs, -1, 1);
+      io.writeVCFBody_locuswise(out, vntrs, -1, 1, opt.oneOffset);
     
     out.close();
 

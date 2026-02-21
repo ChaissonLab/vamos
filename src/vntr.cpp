@@ -40,6 +40,20 @@ void outputConsensus(vector<uint8_t> &consensus, const OPTION &opt)
     return;
 }
 
+void SetPloidy(vector<VNTR*> &vntrs, int minChrY, int nChrY) {
+  bool isXY = false;
+  if (nChrY > minChrY) {
+    isXY = true;
+  }
+  for (auto &v: vntrs) {
+    if (isXY == true and (v->chr == "chrX" || v->chr == "X" || v->chr == "chrY" || v->chr == "Y")) {
+      v->ploidy=1;
+    }
+    else {
+      v->ploidy=2;
+    }
+  }
+}
 
 void VNTR::consensusReadForHapByABpoa(const OPTION &opt) 
 {
@@ -80,10 +94,6 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 
 	MSA msa(h1_reads, reads);
 	msa.MSA_seq_group(h1_reads, reads, Hap_seqs[0]);
-
-	//	cerr << ">h1" << endl;
-	//	cerr << read->seq <<endl;
-
     }
     // heterozygous, get the two consensuses
     else
@@ -97,8 +107,6 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 	    READ * read_h1 = new READ();
 	    char qname_1[] = "h1";      
 	    read_h1->qname = "h1"; //(char *) malloc(2 + 1);
-	    //            strcpy(read_h1->qname, qname_1);
-	    //            read_h1->qname[2] = '\0';
 	    Hap_seqs.push_back(read_h1);
 	    // msa to get the consensus
 	    MSA msa_1(h1_reads, reads);

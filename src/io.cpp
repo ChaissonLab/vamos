@@ -492,8 +492,8 @@ void IO::RefinedStoreReadsOnChrom(string &chrom, int regionStartIndex, int regio
      read.flag = aln->core.flag;
      int hap;
      bool readIsPhased = QueryAndSetPhase(aln, hap);
-
-     if (chrom == "chrX" or chrom=="X" and minChrY > 0 and nChrY > minChrY) {
+     int ploidy=2;
+     if ((chrom == "chrX" or chrom=="X" or chrom=="chrY" or chrom == "Y") and minChrY > 0 and nChrY > minChrY) {
        readIsPhased = true;
        hap = 0;
      }
@@ -903,9 +903,9 @@ int IO::writeVCFHeader_locuswise(ofstream &out)
     return 0;
 }
 
-int IO::writeVCFBody_locuswise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc)
+int IO::writeVCFBody_locuswise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc, int offset)
 {
-    outWriter.writeBody_locuswise(vntrs, out, tid, nproc);
+  outWriter.writeBody_locuswise(vntrs, out, tid, nproc, offset);
     return 0;
 }
 
@@ -917,9 +917,9 @@ int IO::writeBEDHeader_readwise(ofstream &out)
     return 0;
 }
 
-int IO::writeBEDBody_readwise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc)
+int IO::writeBEDBody_readwise(ofstream& out, vector<VNTR *> &vntrs, int tid, int nproc, int oneOffset)
 {
-    outWriter.writeBody_readwise(vntrs, out, tid, nproc);
+  outWriter.writeBody_readwise(vntrs, out, tid, nproc, oneOffset);
     return 0;
 }
 

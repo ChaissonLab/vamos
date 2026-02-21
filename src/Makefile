@@ -47,7 +47,7 @@ ZLPATH=""
 ifneq ($(ZLIB_ROOT), "")
    ZLPATH=C_INCLUDE_PATH=$(ZLIB_ROOT)/include
 endif
-LIBPS=parasail-dir/lib/libparasail.so
+LIBPS=parasail-dir/lib/libparasail.a
 
 $(LIBPS): CFLAGS += -Wno-error=incompatible-pointer-types
 $(LIBPS): CXXFLAGS += -Wno-error=incompatible-pointer-types
@@ -68,7 +68,7 @@ testmsa: TestMSA.cpp
 
 OBJS=main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o io_unrefined.o
 
-vamos:  $(OBJS) $(ABPOA_DIR)/lib/libabpoa.a $(SPOA_DIR)/build/lib/libspoa.a parasail-dir/lib/libparasail.so
+vamos:  $(OBJS) $(ABPOA_DIR)/lib/libabpoa.a $(SPOA_DIR)/build/lib/libspoa.a parasail-dir/lib/libparasail.a
 	$(CXX) $(CFLAGS) -o $@ $(OBJS) -L$(SPOA_DIR)/build/lib -lspoa -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -Lparasail-dir/lib -lparasail
 
 main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h $(LIBPS)
