@@ -58,28 +58,75 @@ void MSA::runConsensus()
   int medianLength=seqLengths[seqLengths.size()/2];
   int minLength=seqLengths[0];
   int maxLength=seqLengths[seqLengths.size()-1];
-  int l=seqLengths.size()/2;
-  int h=l;
+  
   int m=seqLengths.size()/2;
-  /*
+  int l=m, h=m;
   while (l> 0 and seqLengths[m] == seqLengths[l-1]) { l--;}
-  while (h+1 < seqLengths.size() and seqLengths[m] == seqLengths[h+1]) { h++;}
-  if (h - l < 6) {
+  while (h < seqLengths.size() and seqLengths[m] == seqLengths[h]) { h++;}
+  //
+  // Picking 5 reads as a minimum for getting a good consensus.
+  //
+
+  if (h - l < 5) {
     bool expanded=true;
-    while(expanded) {
-      if (
+    while ( l >0 and h < seqLengths.size() and expanded == true and h - l < 5) {
+      int lDiff=-1, hDiff=-1;
+      if (l > 0) {
+	lDiff = seqLengths[m] - seqLengths[l-1];
+      }
+      if (h + 1 < seqLengths.size()) {
+	hDiff = seqLengths[h+1] - seqLengths[h];
+      }
+      if (lDiff != -1 and lDiff <= hDiff ) {
+	l--;
+	expanded = true;
+	continue;
+      }
+      else if (hDiff != -1 and hDiff <= lDiff) {
+	h++;
+	expanded=true;
+	continue;
+      }
+      else {
+	expanded = false;
+      }
+    }
   }
+  /*
+  cerr << "Leaving Low ";
+  for (auto i=0;i < l; i++) {
+    cerr << seqLengths[i] << " ";
+  }
+  cerr << "Leaving High ";
+  for (auto i=h;i < seqLengths.size(); i++) {
+    cerr << seqLengths[i] << " ";
+  }
+  cerr << endl;
+  cerr << "Keeping ";
+  for (auto i=l;i < h; i++) { cerr << seqLengths[i] << " ";}
+  cerr << endl;
   */
+  int nAdded=0;
   for (const auto &seq : seqs) {
     // Align seq to the graph
-    if (seq.size() == medianLength or (seq.size() != minLength and seq.size() != maxLength)) {
+    if (h - l < 5 or ( seq.size() >= seqLengths[l] and seq.size() <= seqLengths[h-1])) {
       auto alignment = alignment_engine->Align(seq, graph);
       
       // Add alignment to the graph
       //    cout << "MSA adding " << seq << endl;
       graph.AddAlignment(alignment, seq);
+      nAdded++;
     }
   }
+
+  if (nAdded == 0 and seqLengths.size() > 0) {
+    cerr << seqLengths[m] << "\t" << seqLengths[l] << "\t" << seqLengths[h-1] << "\t";
+    for (auto &s: seqs) {
+      cerr << s.size() << " ";
+    }
+    cerr << endl;
+  }
+
   //  auto msa = graph.generate_msa();
   int minCoverage=min(4,(int)seqs.size());
   vector<uint32_t> summary;

@@ -62,14 +62,27 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
     het = false;
     assert(h1_reads.size() == 0);
     assert(h2_reads.size() == 0);
-      
+    //    cout << "CONS:\t" << region << "\t";
     for (int i = 0; i < reads.size(); ++i) 
     {
       if (reads[i]->haplotype != 0) het = true;
       if (reads[i]->haplotype == 1) h1_reads.push_back(i);
       else if (reads[i]->haplotype == 2) h2_reads.push_back(i);
     }
-
+    /*
+    if (het) {
+      cout << "het";
+    }
+    else {
+      cout << "hom";
+    }
+    cout << "\t";
+    cout << "h1\t";
+    for (auto hit : h1_reads) { cout << reads[hit]->seq.size() << ",";}   
+    cout << "\th2\t";
+    for (auto hit : h2_reads) { cout << reads[hit]->seq.size() << ",";}
+    cout << endl;
+    */
     // if all reads to one hap, take as homozygous
     if ( (h1_reads.size() == 0 and h2_reads.size() > 0) or
         (h1_reads.size() > 0 and h2_reads.size() == 0) ) {het = false;}
