@@ -29,6 +29,11 @@ struct MixtureFit {
 MixtureFit fitMixture(const std::vector<int>& data,
                       int    maxIter = 500,
                       double tol     = 1e-8);
+
+MixtureFit fitMixture(const std::vector<int>& guess1,
+                      const std::vector<int>& guess2,
+                      int    maxIter = 500,
+                      double tol     = 1e-8);
 // ---------- BIC-based model selection ----------
 
 enum class PoissonModel { Single, Mixture };
@@ -42,3 +47,7 @@ struct DetectionResult {
 };
 
 DetectionResult detectPoissonModel(const std::vector<int>& data);
+DetectionResult detectPoissonModel(const std::vector<int>& guess1,
+                                    const std::vector<int>& guess2,
+                                    int    maxIter = 500,
+				   double tol     = 1e-8);

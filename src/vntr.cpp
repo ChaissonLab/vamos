@@ -115,6 +115,48 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
     else
     {
 
+      vector<int> h1rl, h2rl;
+      for (auto &s: h1_reads) {
+	h1rl.push_back(reads[s]->seq.size());
+      }
+      for (auto &s: h2_reads) {
+	h2rl.push_back(reads[s]->seq.size());
+      }
+      auto mmResult=detectPoissonModel(h1rl, h2rl);
+      /*
+        std::cout << "  Chosen model : "
+                  << (mmResult.model == PoissonModel::Single ? "Single" : "Mixture") << "\n";
+        std::cout << "  BIC single   : " << mmResult.bicSingle  << "\n";
+        std::cout << "  BIC mixture  : " << mmResult.bicMixture << "\n";
+        std::cout << "  Single  -> lambda = " << mmResult.single.lambda << "\n";
+        std::cout << "  Mixture -> lambda1 = " << mmResult.mixture.lambda1
+                  <<            ", lambda2 = " << mmResult.mixture.lambda2
+                  <<            ", pi1 = "     << mmResult.mixture.pi1 << "\n\n";
+      */
+	if (mmResult.model == PoissonModel::Mixture) {
+	  vector<int> h1Remove, h2Remove;
+	  for (int i=h1_reads.size(); i > 0; i--) {
+	    int seqLen=reads[h1_reads[i-1]]->seq.size();
+	    double dist1 = fabs(mmResult.mixture.lambda1-seqLen);
+	    double dist2 = fabs(mmResult.mixture.lambda2-seqLen);	    
+	    if (dist2 < dist1) {
+	      h2_reads.push_back(h1_reads[i]);	      
+	      h1_reads.erase(h1_reads.begin()+i-1);
+	      //	      cout << "Removing " << seqLen << " from h1 " << dist1 << " " << dist2 << endl;
+	    }
+	  }
+	  for (int i=h2_reads.size(); i > 0; i--) {
+	    int seqLen=reads[h2_reads[i-1]]->seq.size();
+	    double dist1 = fabs(mmResult.mixture.lambda1-seqLen);
+	    double dist2 = fabs(mmResult.mixture.lambda2-seqLen);	    
+	    if (dist1 < dist2) {
+	      h1_reads.push_back(h2_reads[i-1]);
+	      h2_reads.erase(h2_reads.begin()+i-1);
+	      //	      cout << "Removing " << seqLen << " from h2 " << dist1 << " " << dist2 << endl;
+	    }
+	  }
+	}	  
+	
         int motifs_size = motifs.size();
         if (h1_reads.size() > 0)
         {

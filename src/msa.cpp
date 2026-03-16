@@ -202,10 +202,6 @@ void MSA::MSA_anno_group(int motifs_size, const vector<vector<uint8_t> > &annos,
         return;
     }
     
-    // encodeSeqsFromAnno(gp, annos, n_seqs, motifs_size);
-    for (auto &seq : seqs) {
-      cerr << "Running consensus on seq of length " << seq.size() << endl;
-    }
     runConsensus ();
     extractConsensusAnno (consensus, motifs_size);
     return;
@@ -223,10 +219,6 @@ void MSA::MSA_seq_group(const vector<int> &gp, const vector<READ *> &reads, READ
         Hap_seq->len = reads[gp[0]]->len;	
         return;
     }
-    for (auto &seq : seqs) {
-      cerr << "Running consensus on seq of length " << seq.size() << endl;
-    }
-    cerr << "Done with hap" << endl;
     // encodeSeqsFromRaw(gp, reads);
     if (seqs.size() > 0) {
       runConsensus ();
