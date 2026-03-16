@@ -1,0 +1,1 @@
+/usr/bin/cc -rdynamic CMakeFiles/traceback.dir/tests/traceback.c.o -o traceback  libparasail.a -lz -lm 

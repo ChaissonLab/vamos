@@ -1,0 +1,1 @@
+/usr/bin/cc -rdynamic CMakeFiles/test_align.dir/tests/test_align.c.o -o test_align  libparasail.a -lz -lm 

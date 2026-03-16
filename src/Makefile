@@ -66,13 +66,16 @@ $(SPOA_DIR)/build/lib/libspoa.a:
 testmsa: TestMSA.cpp
 	$(CXX) $(CFLAGS) -o $@ $^ -L $(CONDA_PREFIX)/lib $(LIBS) -I $(ABPOA_DIR)/include -L $(ABPOA_DIR)/lib -labpoa -lrt -L$(mchaisso)/software/lib
 
-OBJS=main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o io_unrefined.o
+OBJS=main.o io.o vcf.o vntr.o acc_lookup_table.o phase.o msa.o io_unrefined.o FitLengthMixtures.o
 
 vamos:  $(OBJS) $(ABPOA_DIR)/lib/libabpoa.a $(SPOA_DIR)/build/lib/libspoa.a parasail-dir/lib/libparasail.a
 	$(CXX) $(CFLAGS) -o $@ $(OBJS) -L$(SPOA_DIR)/build/lib -lspoa -L $(CONDA_PREFIX)/lib $(LIBS) -L $(ABPOA_DIR)/lib -labpoa -Lparasail-dir/lib -lparasail
 
-main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h $(LIBPS)
+main.o: main.cpp io.h vcf.h vntr.h read.h option.h threads.h FitLengthMixtures.h  $(LIBPS)
 	$(CXX) $(CFLAGS) -c $< -I $(SPOA_DIR)/include -L $(CONDA_PREFIX)/lib -I $(CONDA_PREFIX)/include -I parasail-dir/include 
+
+FitLengthMixtures.o: FitLengthMixtures.cpp FitLengthMixtures.h 
+	$(CXX) $(CFLAGS) -c $<
 
 io_unrefined.o: io_unrefined.cpp io.h vcf.h vntr.h read.h phase.h $(LIBPS)
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include  -I parasail-dir/include -I $(ABPOA_DIR)/include -I $(CONDA_PREFIX)/include
@@ -86,7 +89,7 @@ phase.o: phase.cpp phase.h read.h
 vcf.o: vcf.cpp vcf.h 
 	$(CXX) $(CFLAGS) -c $< -I $(CONDA_PREFIX)/include
 
-vntr.o: vntr.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h msa.h
+vntr.o: vntr.cpp bounded_anno_local.cpp io.h vntr.h read.h option.h msa.h FitLengthMixtures.h
 	$(CXX) $(CFLAGS) -c $< -I $(SPOA_DIR)/include -I $(ABPOA_DIR)/include -I ../alglib/src -I ../edlib/include -I $(CONDA_PREFIX)/include 
 
 msa.o: msa.cpp msa.h read.h option.h

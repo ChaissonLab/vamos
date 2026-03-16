@@ -1,0 +1,1 @@
+/usr/bin/cc -rdynamic CMakeFiles/test_matrix.dir/tests/test_matrix.c.o -o test_matrix  libparasail.a -lz -lm 

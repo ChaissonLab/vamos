@@ -10,6 +10,7 @@
 #include "abpoa.h"
 #include "option.h"
 #include "msa.h"
+#include "FitLengthMixtures.h"
 // #include <seqan/align.h>
 // #include <seqan/graph_msa.h>
 
@@ -77,6 +78,21 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
     // homozygous, get the one consensus
     if (!het)
     {
+      vector<int> readLengths;
+      for (auto &s: reads) {
+	readLengths.push_back(s->seq.size());
+      }
+      auto mmResult=detectPoissonModel(readLengths);
+        std::cout << "  Chosen model : "
+                  << (mmResult.model == PoissonModel::Single ? "Single" : "Mixture") << "\n";
+        std::cout << "  BIC single   : " << mmResult.bicSingle  << "\n";
+        std::cout << "  BIC mixture  : " << mmResult.bicMixture << "\n";
+        std::cout << "  Single  -> lambda = " << mmResult.single.lambda << "\n";
+        std::cout << "  Mixture -> lambda1 = " << mmResult.mixture.lambda1
+                  <<            ", lambda2 = " << mmResult.mixture.lambda2
+                  <<            ", pi1 = "     << mmResult.mixture.pi1 << "\n\n";
+	
+      
         int motifs_size = motifs.size();
         h1_reads.resize(reads.size());
         iota (begin(h1_reads), end(h1_reads), 0); // 0 to n_seqs - 1

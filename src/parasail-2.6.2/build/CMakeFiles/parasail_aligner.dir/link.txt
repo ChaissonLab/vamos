@@ -1,0 +1,1 @@
+/usr/bin/c++ -rdynamic -fopenmp CMakeFiles/parasail_aligner.dir/apps/parasail_aligner.cpp.o CMakeFiles/parasail_aligner.dir/contrib/getMemorySize.c.o "CMakeFiles/sais.dir/contrib/sais-lite-lcp/sais.c.o" -o parasail_aligner  libparasail.a -lz -lm 

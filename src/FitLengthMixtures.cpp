@@ -1,0 +1,124 @@
+#include <cmath>
+#include <vector>
+#include <numeric>
+#include <stdexcept>
+#include <limits>
+#include <algorithm>
+
+// ---------- helpers ----------
+
+// Log-likelihood of a Poisson(lambda) for one observation x
+double poissonLogPMF(int x, double lambda) {
+    if (lambda <= 0.0) return -std::numeric_limits<double>::infinity();
+    // log P(X=x) = x*log(lambda) - lambda - log(x!)
+    double logFactX = 0.0;
+    for (int i = 2; i <= x; ++i) logFactX += std::log(static_cast<double>(i));
+    return x * std::log(lambda) - lambda - logFactX;
+}
+
+// ---------- single-Poisson fit ----------
+
+struct SingleFit {
+    double lambda;
+    double logLikelihood;
+};
+
+SingleFit fitSingle(const std::vector<int>& data) {
+    double mean = std::accumulate(data.begin(), data.end(), 0.0) / data.size();
+    double ll = 0.0;
+    for (int x : data) ll += poissonLogPMF(x, mean);
+    return {mean, ll};
+}
+
+// ---------- two-component Poisson mixture fit (EM) ----------
+
+struct MixtureFit {
+    double lambda1, lambda2;
+    double pi1;           // mixing weight of component 1
+    double logLikelihood;
+};
+
+MixtureFit fitMixture(const std::vector<int>& data,
+                      int    maxIter = 500,
+                      double tol     = 1e-8) {
+    const int n = static_cast<int>(data.size());
+
+    // --- initialise: sort and split at midpoint ---
+    std::vector<int> sorted(data);
+    std::sort(sorted.begin(), sorted.end());
+
+    int mid = n / 2;
+    double lam1 = std::accumulate(sorted.begin(), sorted.begin() + mid, 0.0) / mid;
+    double lam2 = std::accumulate(sorted.begin() + mid, sorted.end(), 0.0) / (n - mid);
+    double pi1  = 0.5;
+
+    std::vector<double> r(n);
+    double prevLL = -std::numeric_limits<double>::infinity();
+
+    for (int iter = 0; iter < maxIter; ++iter) {
+        // --- E-step: compute responsibilities ---
+        double curLL = 0.0;
+        for (int i = 0; i < n; ++i) {
+            double p1    = pi1         * std::exp(poissonLogPMF(data[i], lam1));
+            double p2    = (1.0 - pi1) * std::exp(poissonLogPMF(data[i], lam2));
+            double total = p1 + p2;
+            r[i]   = (total > 0.0) ? p1 / total : 0.5;
+            curLL += std::log(total > 0.0 ? total : 1e-300);
+        }
+
+        // --- M-step: update parameters ---
+        double R1 = 0.0, R2 = 0.0, S1 = 0.0, S2 = 0.0;
+        for (int i = 0; i < n; ++i) {
+            R1 += r[i];
+            R2 += (1.0 - r[i]);
+            S1 += r[i]          * data[i];
+            S2 += (1.0 - r[i])  * data[i];
+        }
+        pi1  = R1 / n;
+        lam1 = (R1 > 1e-12) ? S1 / R1 : 1e-6;
+        lam2 = (R2 > 1e-12) ? S2 / R2 : 1e-6;
+
+        if (lam1 > lam2) {
+            std::swap(lam1, lam2);
+            pi1 = 1.0 - pi1;
+            for (auto& ri : r) ri = 1.0 - ri;
+        }
+
+        if (std::abs(curLL - prevLL) < tol) break;
+        prevLL = curLL;
+    }
+
+    return {lam1, lam2, pi1, prevLL};
+}
+
+enum class PoissonModel { Single, Mixture };
+
+struct DetectionResult {
+    PoissonModel model;
+    SingleFit    single;
+    MixtureFit   mixture;
+    double       bicSingle;
+    double       bicMixture;
+};
+
+DetectionResult detectPoissonModel(const std::vector<int>& data) {
+    if (data.size() < 3)
+        throw std::invalid_argument("Need at least 3 data points.");
+
+    double n = static_cast<double>(data.size());
+
+    auto sf = fitSingle(data);
+    auto mf = fitMixture(data);
+
+    // BIC = -2 * logL + k * ln(n)
+    // single Poisson: 1 free parameter (lambda)
+    // mixture of two Poissons: 3 free parameters (lambda1, lambda2, pi)
+    double bicSingle  = -2.0 * sf.logLikelihood + 1.0 * std::log(n);
+    double bicMixture = -2.0 * mf.logLikelihood + 3.0 * std::log(n);
+
+    PoissonModel chosen = (bicMixture < bicSingle)
+                          ? PoissonModel::Mixture
+                          : PoissonModel::Single;
+
+    return {chosen, sf, mf, bicSingle, bicMixture};
+}
