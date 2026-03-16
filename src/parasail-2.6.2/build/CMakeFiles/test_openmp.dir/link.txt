@@ -1,1 +1,0 @@
-/usr/bin/cc -rdynamic -fopenmp CMakeFiles/test_openmp.dir/tests/test_openmp.c.o CMakeFiles/ssw.dir/contrib/ssw/ssw.c.o -o test_openmp  libparasail.a -lz -lm 

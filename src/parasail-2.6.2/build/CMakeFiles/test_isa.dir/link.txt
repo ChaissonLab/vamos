@@ -1,1 +1,0 @@
-/usr/bin/cc -rdynamic CMakeFiles/test_isa.dir/tests/test_isa.c.o -o test_isa  libparasail.a -lz -lm 
