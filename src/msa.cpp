@@ -48,83 +48,70 @@ void MSA::runConsensus()
   if (seqs.size()  == 0) {
     return;
   }
-  vector<int> seqLengths;
-
-  for (const auto &seq : seqs) {
-    int s=seq.size();
-    seqLengths.push_back(s);
-  }
-  sort(seqLengths.begin(), seqLengths.end());
-  int medianLength=seqLengths[seqLengths.size()/2];
-  int minLength=seqLengths[0];
-  int maxLength=seqLengths[seqLengths.size()-1];
+  int nAdded=0;
   
-  int m=seqLengths.size()/2;
-  int l=m, h=m;
-  while (l> 0 and seqLengths[m] == seqLengths[l-1]) { l--;}
-  while (h < seqLengths.size() and seqLengths[m] == seqLengths[h]) { h++;}
-  //
-  // Picking 5 reads as a minimum for getting a good consensus.
-  //
-
-  if (h - l < 5) {
-    bool expanded=true;
-    while ( l >0 and h < seqLengths.size() and expanded == true and h - l < 5) {
-      int lDiff=-1, hDiff=-1;
-      if (l > 0) {
-	lDiff = seqLengths[m] - seqLengths[l-1];
+  if (pruneExtremities) {
+    vector<int> seqLengths;
+    
+    for (const auto &seq : seqs) {
+      int s=seq.size();
+      seqLengths.push_back(s);
+    }
+    sort(seqLengths.begin(), seqLengths.end());
+    int medianLength=seqLengths[seqLengths.size()/2];
+    int minLength=seqLengths[0];
+    int maxLength=seqLengths[seqLengths.size()-1];
+    int m=seqLengths.size()/2;
+    int l=m, h=m;
+    while (l> 0 and seqLengths[m] == seqLengths[l-1]) { l--;}
+    while (h < seqLengths.size() and seqLengths[m] == seqLengths[h]) { h++;}
+    //
+    // Picking 5 reads as a minimum for getting a good consensus.
+    //
+    
+    if (h - l < 5) {
+      bool expanded=true;
+      while ( l >0 and h < seqLengths.size() and expanded == true and h - l < 5) {
+	int lDiff=-1, hDiff=-1;
+	if (l > 0) {
+	  lDiff = seqLengths[m] - seqLengths[l-1];
+	}
+	if (h + 1 < seqLengths.size()) {
+	  hDiff = seqLengths[h+1] - seqLengths[h];
+	}
+	if (lDiff != -1 and lDiff <= hDiff ) {
+	  l--;
+	  expanded = true;
+	  continue;
+	}
+	else if (hDiff != -1 and hDiff <= lDiff) {
+	  h++;
+	  expanded=true;
+	  continue;
+	}
+	else {
+	  expanded = false;
+	}
       }
-      if (h + 1 < seqLengths.size()) {
-	hDiff = seqLengths[h+1] - seqLengths[h];
-      }
-      if (lDiff != -1 and lDiff <= hDiff ) {
-	l--;
-	expanded = true;
-	continue;
-      }
-      else if (hDiff != -1 and hDiff <= lDiff) {
-	h++;
-	expanded=true;
-	continue;
-      }
-      else {
-	expanded = false;
+    }
+    for (const auto &seq : seqs) {
+      // Align seq to the graph
+      if (h - l < 5 or ( seq.size() >= seqLengths[l] and seq.size() <= seqLengths[h-1])) {
+	auto alignment = alignment_engine->Align(seq, graph);
+	
+	// Add alignment to the graph
+	//    cout << "MSA adding " << seq << endl;
+	graph.AddAlignment(alignment, seq);
+	nAdded++;
       }
     }
   }
-  /*
-  cerr << "Leaving Low ";
-  for (auto i=0;i < l; i++) {
-    cerr << seqLengths[i] << " ";
-  }
-  cerr << "Leaving High ";
-  for (auto i=h;i < seqLengths.size(); i++) {
-    cerr << seqLengths[i] << " ";
-  }
-  cerr << endl;
-  cerr << "Keeping ";
-  for (auto i=l;i < h; i++) { cerr << seqLengths[i] << " ";}
-  cerr << endl;
-  */
-  int nAdded=0;
-  for (const auto &seq : seqs) {
-    // Align seq to the graph
-    if (h - l < 5 or ( seq.size() >= seqLengths[l] and seq.size() <= seqLengths[h-1])) {
-      auto alignment = alignment_engine->Align(seq, graph);
-      
-      // Add alignment to the graph
-      //    cout << "MSA adding " << seq << endl;
+  else {
+    for (const auto &seq: seqs) {
+      auto alignment = alignment_engine->Align(seq, graph);      
       graph.AddAlignment(alignment, seq);
       nAdded++;
     }
-  }
-
-  if (nAdded == 0 and seqLengths.size() > 0) {
-    cerr << seqLengths[m] << "\t" << seqLengths[l] << "\t" << seqLengths[h-1] << "\t";
-    for (auto &s: seqs) {
-      cerr << s.size() << " ";
-    }
-    cerr << endl;
   }
 
   //  auto msa = graph.generate_msa();
@@ -216,14 +203,18 @@ void MSA::MSA_anno_group(int motifs_size, const vector<vector<uint8_t> > &annos,
     }
     
     // encodeSeqsFromAnno(gp, annos, n_seqs, motifs_size);
+    for (auto &seq : seqs) {
+      cerr << "Running consensus on seq of length " << seq.size() << endl;
+    }
     runConsensus ();
     extractConsensusAnno (consensus, motifs_size);
     return;
 }
 
 
-void MSA::MSA_seq_group(const vector<int> &gp, const vector<READ *> &reads, READ * Hap_seq)
+void MSA::MSA_seq_group(const vector<int> &gp, const vector<READ *> &reads, READ * Hap_seq, bool pruneExtremities)
 {
+  this->pruneExtremities=pruneExtremities;
     if (gp.empty()) return;
 
     if (seqs.size() == 1)
@@ -232,7 +223,10 @@ void MSA::MSA_seq_group(const vector<int> &gp, const vector<READ *> &reads, READ
         Hap_seq->len = reads[gp[0]]->len;	
         return;
     }
-
+    for (auto &seq : seqs) {
+      cerr << "Running consensus on seq of length " << seq.size() << endl;
+    }
+    cerr << "Done with hap" << endl;
     // encodeSeqsFromRaw(gp, reads);
     if (seqs.size() > 0) {
       runConsensus ();

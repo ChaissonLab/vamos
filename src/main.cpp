@@ -34,6 +34,7 @@ int output_read_seq_flag=false;
 int output_reconstructed_seq_flag=false;
 int zero_based_flag=false;
 int force_phase_flag=false;
+int prune_extremeties_flag=false;
 // int seqan_flag = false;
 // int output_read_flag = false;
 
@@ -321,9 +322,8 @@ void printUsage(IO &io, OPTION &opt)
     printf("   Dynamic Programming: \n");
     printf("       -d   DOUBLE       Penalty of indel in dynamic programming (double) DEFAULT: 1.0. \n");
     printf("       -c   DOUBLE       Penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. \n");
-    printf("       --naive           Specify the naive version of code to do the annotation, DEFAULT: faster implementation. \n");
     printf("   Phase reads: \n");
-    printf("       -P                Force phasing of reads even if a HP tag is present.\n");
+    printf("       -P                  Force phasing of reads even if a HP tag is present.\n");
     printf("       -p   INT            Range of flanking sequences which is used in the phasing step. DEFAULT: 15000 bps. \n");
     printf("       -M   INT            Minimum total coverage to allow a SNV to be called (6). \n");
     printf("       -a   INT            Minimum alt coverage to allow a SNV to be called (3). \n");        
@@ -332,6 +332,7 @@ void printUsage(IO &io, OPTION &opt)
     printf("   Others: \n");
     printf("       -L   INT          Maximum length locus to compute annotation for (%d)\n", opt.maxLocusLength);
     printf("       -p   INT          Phase flank- how many bases on each side of a VNTR to collect SNVs to phase (default=15000)\n");
+    printf("       -U                Do not prune extreme repeat lengths. Useful for rare/somatic repeat expansions.");    
     printf("       -t   INT          Number of threads, DEFAULT: 1. \n");
     printf("       --debug           Print out debug information. \n");
     printf("       -h                Print out help message. \n");
@@ -366,6 +367,7 @@ int main (int argc, char **argv)
         {"output_recon",          no_argument,      &output_reconstructed_seq_flag,          1},
         {"zero_based",          no_argument,      &zero_based_flag,          1},
 	{"force_phase",         no_argument,      &force_phase_flag, 1},
+	{"prune",               no_argument,      &prune_extremeties_flag, 1},	
         // {"clust",               no_argument,        &hclust_flag,                   1},
         // {"seqan",               no_argument,        &seqan_flag,                    1},
         // {"output_read",         no_argument,        &output_read_flag,              1},
@@ -397,7 +399,7 @@ int main (int argc, char **argv)
     };
     /* getopt_long stores the option index here. */
     int option_index = 0;
-    while ((c = getopt_long (argc, argv, "PZlESb:r:a:o:C:s:t:f:d:c:x:v:m:R:y:p:hL:", long_options, &option_index)) != -1)
+    while ((c = getopt_long (argc, argv, "UPZlESb:r:a:o:C:s:t:f:d:c:x:v:m:R:y:p:hL:", long_options, &option_index)) != -1)
     {
         switch (c)
         {
@@ -409,36 +411,40 @@ int main (int argc, char **argv)
                 if (optarg) fprintf (stderr, " with arg %s", optarg);
                 break;
             case 'L':
-	      fprintf(stderr, "option --max_length '\n", optarg);
+	      fprintf(stderr, "option --max_length '\n");
 	      io.maxLength=atoi(optarg);
 	      opt.maxLocusLength = io.maxLength;
 	      break;
             case 'C':
-	      fprintf(stderr, "option --max_coverage '\n", optarg);
+	      fprintf(stderr, "option --max_coverage '\n");
 	      opt.maxCoverage=atoi(optarg);
 	      break;	      
             case 'S':
-	        fprintf (stderr, "option --output_seq '\n", optarg);
+	        fprintf (stderr, "option --output_seq '\n");
 	        output_read_seq_flag = true;
 		break;
             case 'l':
-	        fprintf (stderr, "option --local '\n", optarg);
+	        fprintf (stderr, "option --local '\n");
 	        opt.local = true;
 		break;
             case 'Z':
-	        fprintf (stderr, "option --zero_based '\n", optarg);
+	        fprintf (stderr, "option --zero_based '\n");
 	        opt.oneOffset=0;
 		break;
             case 'P':
-	        fprintf (stderr, "option --force_phase '\n", optarg);
+	        fprintf (stderr, "option --force_phase '\n");
 	        opt.forcePhase=true;
 		break;
+            case 'U':
+	        fprintf (stderr, "option --noPrune '\n");
+	        opt.pruneExtremities=false;
+		break;
             case 'E':
-	        fprintf (stderr, "option --output_reconstructed_seq '\n", optarg);
+	        fprintf (stderr, "option --output_reconstructed_seq '\n");
 	        output_reconstructed_seq_flag = true;
 		break;
             case 'b':
-                fprintf (stderr, "option --bam with `%s'\n", optarg);
+	        fprintf (stderr, "option --bam with `%s'\n", optarg);
 		io.input_bam = optarg;
                 break;
 	    case 'R':
@@ -492,11 +498,11 @@ int main (int argc, char **argv)
 		
             case 'd':
                 opt.penalty_indel = stoi(optarg);
-                fprintf (stderr, "option --penlaty_indel with `%f'\n", opt.penalty_indel);
+                fprintf (stderr, "option --penlaty_indel with %d\n", opt.penalty_indel);
                 break;
             case 'c':
                 opt.penalty_mismatch = stoi(optarg);
-                fprintf (stderr, "option --penlaty_mismatch with `%f'\n", opt.penalty_mismatch);
+                fprintf (stderr, "option --penlaty_mismatch with %d\n", opt.penalty_mismatch);
                 break;
 
             case 'f':

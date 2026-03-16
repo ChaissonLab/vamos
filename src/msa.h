@@ -11,9 +11,11 @@ class MSA
 public:
     vector<string> seqs;
     string consensus;
-
+    bool pruneExtremities;
+    
     MSA() 
     {
+      pruneExtremities=true;
     };
 
   ~MSA() {
@@ -76,7 +78,7 @@ public:
      * @param reads all input reads
      * @param Hap_seq converted final MSA consensus (by nt AaCcGgTtNn)
      */
-    void MSA_seq_group(const vector<int> &gp, const vector<READ *> &reads, READ * Hap_seq);
+  void MSA_seq_group(const vector<int> &gp, const vector<READ *> &reads, READ * Hap_seq, bool pruneExtremities);
 
 
     /**

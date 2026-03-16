@@ -30,8 +30,10 @@ public:
   string reference;
   int oneOffset;
   int forcePhase;
+  bool pruneExtremities;
   OPTION ()
   {
+    pruneExtremities=true;
     nproc = 1;
     filterNoisy = false;
     filterStrength = 0.0;

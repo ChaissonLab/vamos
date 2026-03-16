@@ -69,20 +69,7 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
       if (reads[i]->haplotype == 1) h1_reads.push_back(i);
       else if (reads[i]->haplotype == 2) h2_reads.push_back(i);
     }
-    /*
-    if (het) {
-      cout << "het";
-    }
-    else {
-      cout << "hom";
-    }
-    cout << "\t";
-    cout << "h1\t";
-    for (auto hit : h1_reads) { cout << reads[hit]->seq.size() << ",";}   
-    cout << "\th2\t";
-    for (auto hit : h2_reads) { cout << reads[hit]->seq.size() << ",";}
-    cout << endl;
-    */
+
     // if all reads to one hap, take as homozygous
     if ( (h1_reads.size() == 0 and h2_reads.size() > 0) or
         (h1_reads.size() > 0 and h2_reads.size() == 0) ) {het = false;}
@@ -106,11 +93,12 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 	}
 
 	MSA msa(h1_reads, reads);
-	msa.MSA_seq_group(h1_reads, reads, Hap_seqs[0]);
+	msa.MSA_seq_group(h1_reads, reads, Hap_seqs[0], opt.pruneExtremities);
     }
     // heterozygous, get the two consensuses
     else
     {
+
         int motifs_size = motifs.size();
         if (h1_reads.size() > 0)
         {
@@ -123,7 +111,7 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 	    Hap_seqs.push_back(read_h1);
 	    // msa to get the consensus
 	    MSA msa_1(h1_reads, reads);
-	    msa_1.MSA_seq_group(h1_reads, reads, Hap_seqs[0]);
+	    msa_1.MSA_seq_group(h1_reads, reads, Hap_seqs[0], opt.pruneExtremities);
 
 	    int totalReadSize=0;
 	    for (int rit =0; rit <h1_reads.size(); rit++) {
@@ -152,11 +140,11 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 	    for (int rit =0; rit <h2_reads.size(); rit++) {
 	      totalReadSize+=reads[h2_reads[rit]]->seq.size();
 	    }
-
+	    
             // msa to get the consensus
             MSA msa_2(h2_reads, reads);
 	    //            assert(1 < Hap_seqs.size());
-            msa_2.MSA_seq_group(h2_reads, reads, Hap_seqs[Hap_seqs.size()-1]);
+            msa_2.MSA_seq_group(h2_reads, reads, Hap_seqs[Hap_seqs.size()-1], opt.pruneExtremities);
         }
 	else {
 	  if (het) {
