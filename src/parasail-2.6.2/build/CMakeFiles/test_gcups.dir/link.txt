@@ -1,1 +1,0 @@
-/usr/bin/cc -rdynamic -fopenmp CMakeFiles/test_gcups.dir/tests/test_gcups.c.o -o test_gcups  libparasail.a -lz -lm 

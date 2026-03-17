@@ -1,1 +1,0 @@
-/usr/bin/cc -rdynamic -fopenmp CMakeFiles/test_verify.dir/tests/test_verify.c.o -o test_verify  libparasail.a -lz -lm 
