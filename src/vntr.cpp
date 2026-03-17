@@ -11,13 +11,10 @@
 #include "option.h"
 #include "msa.h"
 #include "FitLengthMixtures.h"
-// #include <seqan/align.h>
-// #include <seqan/graph_msa.h>
 
 extern int naive_flag;
 extern int debug_flag;
 extern int hclust_flag;
-// extern int seqan_flag;
 extern int anno_flag;
 extern int subseq_flag;
 extern int locuswise_flag;
@@ -82,17 +79,46 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
       for (auto &s: reads) {
 	readLengths.push_back(s->seq.size());
       }
-      auto mmResult=detectPoissonModel(readLengths);
-        std::cout << "  Chosen model : "
-                  << (mmResult.model == PoissonModel::Single ? "Single" : "Mixture") << "\n";
-        std::cout << "  BIC single   : " << mmResult.bicSingle  << "\n";
-        std::cout << "  BIC mixture  : " << mmResult.bicMixture << "\n";
-        std::cout << "  Single  -> lambda = " << mmResult.single.lambda << "\n";
-        std::cout << "  Mixture -> lambda1 = " << mmResult.mixture.lambda1
-                  <<            ", lambda2 = " << mmResult.mixture.lambda2
-                  <<            ", pi1 = "     << mmResult.mixture.pi1 << "\n\n";
-	
-      
+      DetectionResult mmResult;
+      mmResult.model = PoissonModel::Single;
+      if (readLengths.size() > 2) {
+	mmResult=detectPoissonModel(readLengths);
+      }
+      if (mmResult.model == PoissonModel::Mixture) {
+	int nl1=0, nl2=0;
+	for (auto rl: readLengths) {
+	  if (WithinRange(rl, mmResult.mixture.lambda1, 0.9) and
+	      !WithinRange(rl, mmResult.mixture.lambda2, 0.9)) {
+	    nl1++;
+	  }
+	  else if (WithinRange(rl, mmResult.mixture.lambda2, 0.9) and
+		   !WithinRange(rl, mmResult.mixture.lambda1, 0.9)) {
+	    nl2++;
+	  }
+	}
+	if (nl1 > 0.3 * readLengths.size() and nl2 > 0.3*readLengths.size()) {
+	  //
+	  // This is a heterozygous locus that is autozygous according to snps
+	  //
+	  het = true;	  
+	  for (int i=0; i < reads.size(); i++) {
+	    int readLen = reads[i]->seq.size();
+	    
+	    if (WithinRange(readLen, mmResult.mixture.lambda1, 0.9) and
+		!WithinRange(readLen, mmResult.mixture.lambda2, 0.9)) {
+	      h1_reads.push_back(i);
+	    }
+	    else if (WithinRange(readLen, mmResult.mixture.lambda2, 0.9) and
+		     !WithinRange(readLen, mmResult.mixture.lambda1, 0.9)) {
+	      h2_reads.push_back(i);
+	    }
+	  }
+	}
+      }
+      //
+      // Check again to see if this is heterozygous after checking mixture model partitions.
+      // 
+      if (het == false) {
         int motifs_size = motifs.size();
         h1_reads.resize(reads.size());
         iota (begin(h1_reads), end(h1_reads), 0); // 0 to n_seqs - 1
@@ -107,14 +133,12 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 	for (int rit =0; rit <reads.size(); rit++) {
 	  totalReadSize+=reads[rit]->seq.size();
 	}
-
 	MSA msa(h1_reads, reads);
 	msa.MSA_seq_group(h1_reads, reads, Hap_seqs[0], opt.pruneExtremities);
+      }
     }
     // heterozygous, get the two consensuses
-    else
-    {
-
+    if (het) {
       vector<int> h1rl, h2rl;
       for (auto &s: h1_reads) {
 	h1rl.push_back(reads[s]->seq.size());
@@ -122,37 +146,85 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
       for (auto &s: h2_reads) {
 	h2rl.push_back(reads[s]->seq.size());
       }
-      auto mmResult=detectPoissonModel(h1rl, h2rl);
-      /*
-        std::cout << "  Chosen model : "
-                  << (mmResult.model == PoissonModel::Single ? "Single" : "Mixture") << "\n";
-        std::cout << "  BIC single   : " << mmResult.bicSingle  << "\n";
-        std::cout << "  BIC mixture  : " << mmResult.bicMixture << "\n";
-        std::cout << "  Single  -> lambda = " << mmResult.single.lambda << "\n";
-        std::cout << "  Mixture -> lambda1 = " << mmResult.mixture.lambda1
-                  <<            ", lambda2 = " << mmResult.mixture.lambda2
-                  <<            ", pi1 = "     << mmResult.mixture.pi1 << "\n\n";
-      */
-	if (mmResult.model == PoissonModel::Mixture) {
-	  vector<int> h1Remove, h2Remove;
+
+      DetectionResult mmResult;
+      mmResult.model = PoissonModel::Single;
+      bool usedMM =false;
+      if (h1rl.size() > 2 and h2rl.size() > 2) {
+	mmResult=detectPoissonModel(h1rl, h2rl);
+	usedMM=true;
+      }
+	if (usedMM == true and mmResult.model == PoissonModel::Mixture) {
+	  vector<int> h1RemoveI, h2RemoveI;	  
+	  vector<int> h1RemoveLen, h2RemoveLen;
+	  vector<int> h1RemoveIdx, h2RemoveIdx;	  
+	  vector<int> h1l, h2l;
+	  int nReassigned=0;
+	  double h1Mean=0, h2Mean=0;
+	  for (int i=0; i < h1_reads.size(); i++) {
+	    int seqLen=reads[h1_reads[i]]->seq.size();
+	    h1Mean+=seqLen;
+	    h1l.push_back(seqLen);
+	  }
+	  if (h1_reads.size() > 0) { h1Mean = h1Mean/h1_reads.size();}
+	  for (int i=0; i < h2_reads.size(); i++) {
+	    int seqLen=reads[h2_reads[i]]->seq.size();
+	    h2Mean+=seqLen;
+	    h2l.push_back(seqLen);	    
+	  }
+	  if (h2_reads.size() > 0) { h2Mean = h2Mean/h2_reads.size();}
+
+	  if (fabs(mmResult.mixture.lambda2 - h1Mean)  < fabs(mmResult.mixture.lambda1 - h1Mean)) {
+	    auto temp=mmResult.mixture.lambda2;
+	    mmResult.mixture.lambda2 = mmResult.mixture.lambda1;
+	    mmResult.mixture.lambda1=temp;
+	  }
+	  int h1Size=0;
+	  int h2Size=0;
 	  for (int i=h1_reads.size(); i > 0; i--) {
 	    int seqLen=reads[h1_reads[i-1]]->seq.size();
 	    double dist1 = fabs(mmResult.mixture.lambda1-seqLen);
-	    double dist2 = fabs(mmResult.mixture.lambda2-seqLen);	    
-	    if (dist2 < dist1) {
-	      h2_reads.push_back(h1_reads[i]);	      
-	      h1_reads.erase(h1_reads.begin()+i-1);
-	      //	      cout << "Removing " << seqLen << " from h1 " << dist1 << " " << dist2 << endl;
+	    double dist2 = fabs(mmResult.mixture.lambda2-seqLen);
+	    if (WithinRange((float)seqLen, mmResult.mixture.lambda2, 0.9) and
+		! WithinRange((float)seqLen, mmResult.mixture.lambda1, 0.7)) {
+	      h1RemoveLen.push_back(seqLen);
+	      h1RemoveI.push_back(i-1);
+	      h1RemoveIdx.push_back(h1_reads[i-1]);
+	      ++nReassigned;
+	    }
+	    else {
+	      h1Size++;
 	    }
 	  }
 	  for (int i=h2_reads.size(); i > 0; i--) {
 	    int seqLen=reads[h2_reads[i-1]]->seq.size();
 	    double dist1 = fabs(mmResult.mixture.lambda1-seqLen);
 	    double dist2 = fabs(mmResult.mixture.lambda2-seqLen);	    
-	    if (dist1 < dist2) {
-	      h1_reads.push_back(h2_reads[i-1]);
-	      h2_reads.erase(h2_reads.begin()+i-1);
-	      //	      cout << "Removing " << seqLen << " from h2 " << dist1 << " " << dist2 << endl;
+	    if (WithinRange((float)seqLen, mmResult.mixture.lambda1, 0.9) and
+		! WithinRange((float)seqLen, mmResult.mixture.lambda2, 0.7)) {
+	      h2RemoveLen.push_back(seqLen);
+	      h2RemoveI.push_back(i-1);
+	      h2RemoveIdx.push_back(h2_reads[i-1]);
+	      ++nReassigned;	      
+	    }
+	    else {
+	      h2Size++;
+	    }
+	  }
+	  if (nReassigned > 0 and h1Size > 0.5*h1_reads.size() and h2Size > 0.5*h2_reads.size()) {
+	    // The clusters are of sufficient size to reassign repeats.
+	    for (auto i: h1RemoveI) {
+	      h1_reads.erase(h1_reads.begin() + i);
+	    }
+	    for (auto i: h2RemoveI) {
+	      h2_reads.erase(h2_reads.begin() + i);
+	    }
+	    // Add indexes back to cluster.
+	    for (auto idx: h1RemoveIdx) {
+	      h2_reads.push_back(idx);
+	    }
+	    for (auto idx: h2RemoveIdx) {
+	      h1_reads.push_back(idx);
 	    }
 	  }
 	}	  
@@ -168,13 +240,16 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 	    read_h1->qname = "h1"; //(char *) malloc(2 + 1);
 	    Hap_seqs.push_back(read_h1);
 	    // msa to get the consensus
+	    
 	    MSA msa_1(h1_reads, reads);
-	    msa_1.MSA_seq_group(h1_reads, reads, Hap_seqs[0], opt.pruneExtremities);
-
+            msa_1.MSA_seq_group(h1_reads, reads, Hap_seqs[0], opt.pruneExtremities);	    
 	    int totalReadSize=0;
+	    //	    vector<int> rls;
 	    for (int rit =0; rit <h1_reads.size(); rit++) {
 	      totalReadSize+=reads[h1_reads[rit]]->seq.size();
+	      //	      rls.push_back(reads[h1_reads[rit]]->seq.size());	      
 	    }
+	    
         }
 	else {
 	  if (het) {
@@ -195,10 +270,16 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 	    //            read_h2->qname[2] = '\0';
             Hap_seqs.push_back(read_h2);
 	    int totalReadSize=0;
+	    //	    vector<int> rls;
 	    for (int rit =0; rit <h2_reads.size(); rit++) {
 	      totalReadSize+=reads[h2_reads[rit]]->seq.size();
+	      //	      rls.push_back(reads[h2_reads[rit]]->seq.size());
 	    }
-	    
+	    /*
+	    cout << "Hap2 mean: " << totalReadSize / h2_reads.size() << endl;
+	    sort(rls.begin(), rls.end());
+	    for (auto r: rls) { cout << " " << r;} cout << endl;
+	    */
             // msa to get the consensus
             MSA msa_2(h2_reads, reads);
 	    //            assert(1 < Hap_seqs.size());

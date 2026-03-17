@@ -63,8 +63,9 @@ void MSA::runConsensus()
     int maxLength=seqLengths[seqLengths.size()-1];
     int m=seqLengths.size()/2;
     int l=m, h=m;
-    while (l> 0 and seqLengths[m] == seqLengths[l-1]) { l--;}
-    while (h < seqLengths.size() and seqLengths[m] == seqLengths[h]) { h++;}
+    /*
+    while (l> 0 and 0.95*seqLengths[m] <  seqLengths[l-1]) { l--;}
+    while (h < seqLengths.size() and 0.95*seqLengths[m] <= seqLengths[h]) { h++;}
     //
     // Picking 5 reads as a minimum for getting a good consensus.
     //
@@ -94,13 +95,14 @@ void MSA::runConsensus()
 	}
       }
     }
+    */
+    vector<int> rls;
     for (const auto &seq : seqs) {
       // Align seq to the graph
-      if (h - l < 5 or ( seq.size() >= seqLengths[l] and seq.size() <= seqLengths[h-1])) {
+      if (seq.size() == seqLengths[m] or ( seq.size() > seqLengths[0] and seq.size() < seqLengths[seqLengths.size()-1])) {
 	auto alignment = alignment_engine->Align(seq, graph);
 	
 	// Add alignment to the graph
-	//    cout << "MSA adding " << seq << endl;
 	graph.AddAlignment(alignment, seq);
 	nAdded++;
       }

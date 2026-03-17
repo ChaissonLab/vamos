@@ -230,7 +230,13 @@ public:
      */
     void consensusReadForHapByABpoa (const OPTION &opt);
 
-
+  bool WithinRange(float a, float b, float frac) {
+    float maxv, minv;
+    maxv = max(a,b);
+    minv = min(a,b);
+    if (minv / maxv  > frac) { return true;}
+    else { return false;}
+  }
     /**
      * @brief Get the comma seperated motif annotation string for the vcf output
      * @param h1 if this is haplotype 1 consensus
