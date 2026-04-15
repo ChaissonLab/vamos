@@ -31,15 +31,17 @@ public:
   int oneOffset;
   int forcePhase;
   bool pruneExtremities;
+	int wraparoundPenalty;
   OPTION ()
   {
     pruneExtremities=true;
     nproc = 1;
     filterNoisy = false;
     filterStrength = 0.0;
-    match=2;
-    penalty_indel = 1;
-    penalty_mismatch = 1;
+    match=20;
+    penalty_indel = 5;
+    penalty_mismatch = 5;
+		wraparoundPenalty=20;
     phaseFlank=15000;
     download="";
     inputType=by_read;
