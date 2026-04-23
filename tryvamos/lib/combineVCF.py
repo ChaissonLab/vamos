@@ -20,7 +20,7 @@ def parseSingleVcfOneLine(line):
         altH2 = 'ALTANNO_H2=.'
     altH1 = altH1.split('=')[1]
     altH2 = altH2.split('=')[1]
-    gt1,gt2 = gt.split('/')
+    gt1,gt2 = gt.split(':')[0].split('/')
     gt1 = [altH1, altH2][int(gt1)-1]
     gt2 = [altH1, altH2][int(gt2)-1]
 
@@ -214,4 +214,3 @@ def combineVcfs(inVcfs, outVcf, chromOrders):
 
     out.close()
     for fo in vcfFileObjects: fo.close()
-
