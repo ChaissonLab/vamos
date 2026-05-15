@@ -5,6 +5,7 @@ import argparse
 import datetime
 import logging
 
+
 logging.basicConfig(
         format='%(asctime)s - %(levelname)s - %(message)s', \
         datefmt='%Y-%m-%d %H:%M:%S', \
@@ -130,9 +131,10 @@ parserDict['testTwoPanels'] = [testTwoPanelsPosList, testTwoPanelsOptList]
 parser_testTwoPanels = subparsers.add_parser('testTwoPanels', description=
 '''testTwoPanels:
 This command performs statistical tests to compare alleles for each TR locus on two given panel of samples.
-Currently 2 test types are supported:
+Currently three test types are supported:
     tf: t-test and f-test of annotation length
     ks: ks-test of motif count distribution
+    ind: z-score test for individual alleles for a single diploid sample
 ''', formatter_class=argparse.RawTextHelpFormatter)
 # positional arguments
 parser_testTwoPanels.add_argument(testTwoPanelsPosList[0], type=str,
@@ -146,7 +148,7 @@ parser_testTwoPanels.add_argument('-s', '--'+testTwoPanelsOptList[0],
     type=str, metavar='string', default=None,
     help='list of loci to skip (in bed format),  default None')
 parser_testTwoPanels.add_argument('-t', '--'+testTwoPanelsOptList[1],
-    type=str, metavar='{tf,ks}', default='tf', choices=['tf','ks'],
+    type=str, metavar='{tf,ks,ind}', default='tf', choices=['tf','ks', 'ind'],
     help='type of statistical test,  default tf')
 parser_testTwoPanels.add_argument('-c', '--'+testTwoPanelsOptList[2],
     type=float, metavar='float', default=1,

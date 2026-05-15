@@ -135,8 +135,8 @@ public:
     int nreads;                             // number of reads
     int cur_len;                            // the sample sequence length (averaged over all reads)
     vector<uint8_t> haps;
-    vector<vector<uint8_t> > annos;         // the motif annotations for each read
-    vector<vector<uint8_t> > consensus;     // the final consensus annotation
+    vector<vector<int> > annos;         // the motif annotations for each read
+    vector<vector<int> > consensus;     // the final consensus annotation
     vector<string> reconstructedTRSeqs;
     vector<int> h1_reads;                   // index of all haplotype1 reads (manipulated in consensusReadForHapByABpoa)
     vector<int> h2_reads;                   // index of all haplotype2 reads (manipulated in consensusReadForHapByABpoa)
@@ -223,7 +223,7 @@ public:
      */
     void motifAnnoForOneVNTR(const OPTION &opt, SDTables &sdTables, vector<int> &mismatchCI);
 
-    void ReconstructTRSequence(vector<uint8_t> &optMotifs, vector<int> &optMotifStarts, vector<int> &optMotifEnds, string &reconstructedSeq);
+    void ReconstructTRSequence(vector<int> &optMotifs, vector<int> &optMotifStarts, vector<int> &optMotifEnds, string &reconstructedSeq);
     /**
      * @brief Get the reads consensus (nt sequence) of one/two haplotypes by abpoa msa
      * @param opt general options
@@ -246,7 +246,7 @@ public:
  * @brief debug function to print the consensus
  * @param consensus 
  */
-void outputConsensus (vector<uint8_t> &consensus);
+void outputConsensus (vector<int> &consensus);
 void SetPloidy(vector<VNTR*> &vntrs, int minChrY, int nChrY);
 
 class CompareVNTRPos {

@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
+import scipy.stats
 import datetime
 import logging
 
@@ -103,6 +103,8 @@ def test(inVCF1, inVCF2, testType, skipLoci, varCut, outFile, outPlotDir):
         tr2.parseDiploidVCFOneLine(samples2, line2)
 
         # different chr
+        advanceRefPanel=False
+        matchingCoordinates=False
         if tr1.chr != tr2.chr:
             # line1 go past line2, increase line2
             if chrList.index(tr1.chr) > chrList.index(tr2.chr):
@@ -110,6 +112,7 @@ def test(inVCF1, inVCF2, testType, skipLoci, varCut, outFile, outPlotDir):
             # line2 go past line1, increase line2
             else:
                 line1 = file1.readline()
+                advanceRefPanel=True
 
         # same chr but unmatched coordinate
         elif tr1.start != tr2.start:
@@ -119,15 +122,42 @@ def test(inVCF1, inVCF2, testType, skipLoci, varCut, outFile, outPlotDir):
             # line2 goes beyond, skip this line1
             else:
                 line1 = file1.readline()
+                advanceRefPanel=True
+        else:
+            matchingCoordinates=True
 
         # same chr and same coordinate (proceed to test)
-        else:
-
+        if matchingCoordinates:
             if tr1.chr in skipDict:
                 if (tr1.start, tr1.end) in skipDict[tr1.chr]:
                     line1 = file1.readline()
                     line2 = file2.readline()
                     continue
+
+            if testType == 'ind':
+            # test by annotation length
+                anno1 = [ a for s,a in tr1.annosByUsed.items() if a != ['.'] ]
+                anno2 = [ a for s,a in tr2.annosByUsed.items() if a != ['.'] ]
+
+                data1 = [ len(a) for a in anno1 ]
+                data2 = [ len(a) for a in anno2 ]
+                meanLength=np.mean(data1)
+                stdDev=np.std(data1)                
+
+                dipData2= data2
+                allData = data1 + data2
+                d1Var = np.var(data1)
+                if d1Var > varCut:
+                    data2Zscore = [ (v - meanLength)/stdDev for v in data2 ]
+                    if len(data2) == 1:
+                        data2Zscore  = data2Zscore  + [data2Zscore[0]]
+                        dipData2 = dipData2 + [dipData2[0]]
+                    zScoreStr = [f"{v:2.3f}" for v in data2Zscore]
+                else:
+                    zScoreStr = ["0", "0"]
+
+                temp = [tr1.chr,tr1.start,tr1.end,f"{meanLength:2.2f}", f"{stdDev:2.2f}", zScoreStr[0], zScoreStr[1], dipData2[0], dipData2[1]]
+                out.write("\t".join(map(str,temp)) + "\n")
 
             if testType == 'tf':
             # test by annotation length
@@ -182,6 +212,14 @@ def test(inVCF1, inVCF2, testType, skipLoci, varCut, outFile, outPlotDir):
 
             line1 = file1.readline()
             line2 = file2.readline()
+        else:
+            # 
+            # Was not on matching coordinates. If line1 advanced, and printing ind, print 
+            # equivalent of a no-op
+            if testType == 'ind' and advanceRefPanel:
+                tr1.parseDiploidVCFOneLine(samples1, line1)
+                temp = [tr1.chr,tr1.start,tr1.end,0,0,0,0, 0, 0]
+                out.write("\t".join(map(str,temp)) + "\n")
 
         counter += 1
     out.close()

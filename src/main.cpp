@@ -320,8 +320,9 @@ void printUsage(IO &io, OPTION &opt)
     printf("       -S                Output assembly/read consensus sequence in each call.\n");
     printf("       -E                Output reconstructed TR sequence from decomposition in each call.\n");
     printf("   Dynamic Programming: \n");
-    printf("       -d   DOUBLE       Penalty of indel in dynamic programming (double) DEFAULT: 1.0. \n");
-    printf("       -c   DOUBLE       Penalty of mismatch in dynamic programming (double) DEFAULT: 1.0. \n");
+    printf("       -d   INT       Penalty of indel in dynamic programming DEFAULT: 1. \n");
+    printf("       -c   INT       Penalty of mismatch in dynamic programming DEFAULT: 1. \n");
+    printf("       -l             Use local alignment to interval and motifs. This can help exclude non-tandem repeat insertions. \n");
     printf("   Phase reads: \n");
     printf("       -P                  Force phasing of reads even if a HP tag is present.\n");
     printf("       -p   INT            Range of flanking sequences which is used in the phasing step. DEFAULT: 15000 bps. \n");

@@ -71,14 +71,23 @@ class TR:
         fields = line.strip().split('\t')
         self.chr,self.start,_,_,_,_,_,info,_ = fields[:9]
         vals=info.split(';')
-        end,ru,_,annos = vals[0:4]
+        end,ru,_ = vals[0:3]
+        annos = ""
+        for av in vals[3:]:
+            if "ALTANNO=" in av:
+                annos=av.split("=")[1]
+            elif "ALTANNO_H1" in av:
+                annos=av.split("=")[1]
+            elif "ALTANNO_H2" in av:
+                annos+="," + av.split("=")[1]
+
         self.end = end.split('=')[1]
         ru = ru.split('=')[1].split(',')
         # encode the list of motifs used for annotation with numbering
         for i,m in enumerate(ru): self.motifsUsed[m] = i
 
         gts = [ gt.split('/') for gt in fields[9:] ]
-        alleles = annos.split('=')[1].split(',')
+        alleles = annos.split(',')
 
         # check if the locus is constant over all samples
         if alleles.count(alleles[0]) == len(alleles): self.constant = True
@@ -104,7 +113,13 @@ class TR:
             elif gts[i][1] == 'DEL':
                 temp = []
             else:
-                temp = alleles[int(gts[i][1])-1].split('-')
+                try:
+                    temp = alleles[int(gts[i][1])-1].split('-')
+                except:
+                    print("Failed parsing")
+                    print(line + "\n")
+                    sys.exit(0)
+
 
             self.annosByUsed[sample+'_h2'] = temp
             if self.annosByFull:
