@@ -41,6 +41,8 @@ class TR:
         self.motifsUsed = {}
         self.annosByUsed = {}
         self.annosByFull = {}
+        self.hasRS = False
+        self.rawSeqs = {}
         self.constant = False
         self.maxLen = 0
         # parsed in method "readMotifsFull"
@@ -60,7 +62,7 @@ class TR:
         for i,m in enumerate(motifsFull): self.motifsFull[m] = i
 
 
-    def parseDiploidVCFOneLine(self, samples:list[str], line:str):
+    def parseCombinedVCFOneLine(self, samples:list[str], line:str):
         """parse one entry line from a diploid vamos vcf
 
         Args:
@@ -69,63 +71,74 @@ class TR:
         """
 
         fields = line.strip().split('\t')
-        self.chr,self.start,_,_,_,_,_,info,_ = fields[:9]
-        vals=info.split(';')
-        end,ru,_ = vals[0:3]
-        annos = ""
-        for av in vals[3:]:
-            if "ALTANNO=" in av:
-                annos=av.split("=")[1]
-            elif "ALTANNO_H1" in av:
-                annos=av.split("=")[1]
-            elif "ALTANNO_H2" in av:
-                annos+="," + av.split("=")[1]
-
+        self.chr,self.start,_,_,_,_,_,info,form = fields[:9]
+        form = form.split(':')
+        if 'RS' in form:
+            self.hasRS = True
+            end,ru,_,altNT,altAnno = info.split(';')[0:5]
+        else:
+            end,ru,_,altAnno = info.split(';')[0:4]
         self.end = end.split('=')[1]
         ru = ru.split('=')[1].split(',')
         # encode the list of motifs used for annotation with numbering
         for i,m in enumerate(ru): self.motifsUsed[m] = i
 
-        gts = [ gt.split('/') for gt in fields[9:] ]
-        alleles = annos.split(',')
+        values = [ gt.split(':') for gt in fields[9:] ]
+        if self.hasRS:
+            altNT = altNT.split('=')[1].split(',')
+            rss = [ v[form.index('RS')].split('/') for v in values ]
+        altAnno = altAnno.split('=')[1].split(',')
+        gts = [ v[form.index('GT')].split('/') for v in values ]
 
         # check if the locus is constant over all samples
-        if alleles.count(alleles[0]) == len(alleles): self.constant = True
+        if len(altAnno) == 1: self.constant = True
 
         # parse the h1/h2 allele
         for i,sample in enumerate(samples):
 
+            # parse the h1 allele
             if gts[i][0] == '.':
-                temp = ['.']
+                thisAnno = ['.']
             elif gts[i][0] == 'DEL':
-                temp = []
+                thisAnno = []
             else:
-                temp = alleles[int(gts[i][0])-1].split('-')
+                thisAnno = altAnno[int(gts[i][0])-1].split('-')
+            if self.hasRS: # for the raw nucleotide sequence
+                if rss[i][0] == '.':
+                    thisRS = '.'
+                elif gts[i][0] == 'DEL':
+                    thisRS = ''
+                else:
+                    thisRS = altNT[int(rss[i][0])-1]
+                self.rawSeqs[sample+'_h1'] = thisRS
+            self.annosByUsed[sample+'_h1'] = thisAnno
 
-            self.annosByUsed[sample+'_h1'] = temp
             if self.annosByFull:
-                if temp != ['.']:
-                    temp = [ self.motifsFull[ru[int(t)]] for t in temp ]
-                self.annosByFull[sample+'_h1'] = temp
+                if thisAnno != ['.']:
+                    thisAnno = [ self.motifsFull[ru[int(t)]] for t in thisAnno ]
+                self.annosByFull[sample+'_h1'] = thisAnno
 
+            # parse the h2 allele
             if gts[i][1] == '.':
-                temp = ['.']
+                thisAnno = ['.']
             elif gts[i][1] == 'DEL':
-                temp = []
+                thisAnno = []
             else:
-                try:
-                    temp = alleles[int(gts[i][1])-1].split('-')
-                except:
-                    print("Failed parsing")
-                    print(line + "\n")
-                    sys.exit(0)
+                thisAnno = altAnno[int(gts[i][1])-1].split('-')
+            if self.hasRS: # for the raw nucleotide sequence
+                if rss[i][0] == '.':
+                    thisRS = '.'
+                elif gts[i][0] == 'DEL':
+                    thisRS = ''
+                else:
+                    thisRS = altNT[int(rss[i][0])-1]
+                self.rawSeqs[sample+'_h2'] = thisRS
+            self.annosByUsed[sample+'_h2'] = thisAnno
 
-
-            self.annosByUsed[sample+'_h2'] = temp
             if self.annosByFull:
-                if temp != ['.']:
-                    temp = [ self.motifsFull[ru[int(t)]] for t in temp ]
-                self.annosByFull[sample+'_h2'] = temp
+                if thisAnno != ['.']:
+                    thisAnno = [ self.motifsFull[ru[int(t)]] for t in thisAnno ]
+                self.annosByFull[sample+'_h2'] = thisAnno
 
         # calculate the max annotation length among all alleles
         if [ len(a) for s,a in self.annosByUsed.items() ]:
