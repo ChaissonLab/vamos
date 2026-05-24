@@ -29,12 +29,12 @@ def plot(inVCF, outDir, useLoci, width, height, ylabel, sort):
 
             # skip chromosome(s) without candidate plotting loci
             chr = line.strip().split()[0]
-            if chr not in candidateLoci: continue
+            if len(candidateLoci) > 0 and chr not in candidateLoci: continue
             tr = TR()
             tr.parseDiploidVCFOneLine(samples, line)
 
             # skip loci not in candidate plotting loci list
-            if candidateLoci:
+            if candidateLoci and len(candidateLoci) > 0:
                 if (tr.start,tr.end) not in candidateLoci[tr.chr]:
                     continue
 

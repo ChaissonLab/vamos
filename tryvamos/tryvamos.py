@@ -17,7 +17,7 @@ logging.basicConfig(
 parserDict = {}
 # author and version info
 usage = ' <mode> <options> \n'
-version = 'Version: 1.2.0.0'
+version = 'Version: 1.3.0.0'
 description = '''\nDescription:
 The tryvamos program provides a tool set for various downstream analysis using TR annotation output from the Vamos 
 software.
@@ -42,7 +42,7 @@ For each locus, allele index is ordered by the order it appears in all samples.
 Samples are ordered as in the input csv file.
 ''', formatter_class=argparse.RawTextHelpFormatter)
 combineVCFPosList = ['inVCFs', 'outVCF']
-combineVCFOptList = ['chromOrders']
+combineVCFOptList = ['chromOrders', 'includeRS']
 parserDict['combineVCF'] = [combineVCFPosList, combineVCFOptList]
 # positional arguments
 parser_combineVCF.add_argument(combineVCFPosList[0], type=str, \
@@ -54,6 +54,10 @@ parser_combineVCF.add_argument('-c', '--'+combineVCFOptList[0],
     type=str, metavar='string',
     default='chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22,chrX,chrY',
     help='ordered chromosomes, this order needs to be consistant with the order in the motif catalog used for vamos annotation, \ndefault chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22,chrX,chrY')
+parser_combineVCF.add_argument('-s', '--'+combineVCFOptList[1],
+    action='store_true',
+    help='include raw nucleotide sequence (RS) in genotypes')
+
 
 ######################### quickFeature mode #########################
 parser_quickFeature = subparsers.add_parser('quickFeature', description=
@@ -66,6 +70,8 @@ Currently 4 feature types are supported:
     topCount:   allele by count of the most frequent motif (i.e., motif "0" in
                 the annotation string)
     nt:         allele by annotated nucleotide string
+    ntRaw:      allele by raw nucleotide string
+    ntRawLen:   allele by raw nucleotide string length
 ''', formatter_class=argparse.RawTextHelpFormatter)
 quickFeaturePosList = ['inVCF', 'outFile']
 quickFeatureOptList = ['feature', 'byDip', 'demographics', 'skipLoci']
@@ -77,8 +83,8 @@ parser_quickFeature.add_argument(quickFeaturePosList[1], type=str,
     help='string\toutput tsv file,  e.g. /out/File.tsv')
 # optional arguments
 parser_quickFeature.add_argument('-f', '--'+quickFeatureOptList[0],
-    type=str, metavar='{annoLen,annoLenNT,annoStr,topCount,nt}', default='annoLen',
-    choices=['annoLen','annoLenNT','annoStr','topCount','nt'],
+    type=str, metavar='{annoLen,annoLenNT,annoStr,topCount,nt,ntRaw,ntRawLen}', default='annoLen',
+    choices=['annoLen','annoLenNT','annoStr','topCount','nt','ntRaw','ntRawLen'],
     help='feature type, default annoLen')
 parser_quickFeature.add_argument('-D', '--'+quickFeatureOptList[1],
     action='store_true',
@@ -202,7 +208,7 @@ if __name__ == "__main__":
         import lib.combineVCF as combineVCF
 
         logging.info(f'Combing vcfs...')
-        combineVCF.combineVcfs(inVCFs, outVCF, chromOrders)
+        combineVCF.combineVcfs(inVCFs, outVCF, chromOrders, includeRS)
 
     ######################### quickFeature mode #########################
     if command == 'quickFeature':

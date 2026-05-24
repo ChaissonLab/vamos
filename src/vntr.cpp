@@ -22,7 +22,7 @@ extern int subseq_flag;
 extern int locuswise_flag;
 
 
-void outputConsensus(vector<uint8_t> &consensus, const OPTION &opt)
+void outputConsensus(vector<int> &consensus, const OPTION &opt)
 {
     size_t i = 0;
     for (auto &it : consensus)
@@ -170,7 +170,7 @@ void VNTR::consensusReadForHapByABpoa(const OPTION &opt)
 
 
 
-void VNTR::ReconstructTRSequence(vector<uint8_t> &optMotifs, vector<int> &optMotifStarts, vector<int> &optMotifEnds, string &reconstructedSeq) {
+void VNTR::ReconstructTRSequence(vector<int> &optMotifs, vector<int> &optMotifStarts, vector<int> &optMotifEnds, string &reconstructedSeq) {
   int v=0;
   reconstructedSeq="";
   for (v=0; v < optMotifs.size(); v++) {

@@ -1,13 +1,13 @@
 PROG = vamos
 # linking static libraries
-LIBS       = -lhts -lz -lpthread
+LIBS       = -lhts -lz -lbz2 -ldeflate -lpthread
 #ABPOA_LIBS = -lm -lz -lpthread
 
 ifeq ($(CC),cc)
     CC = gcc
 endif
 CC ?= gcc
-CXX ?= g++ -std=c++11
+CXX ?= g++ -std=c++11 -fPIE
 
 
 CCFLAGS = -Wall -g2 -Wno-unused-function -Wno-misleading-indentation
@@ -54,7 +54,7 @@ $(LIBPS): CXXFLAGS += -Wno-error=incompatible-pointer-types
 
 $(LIBPS):
 	tar zxvf v2.6.2.tar.gz 
-	cd parasail-2.6.2; mkdir -p build ; cd build ; cmake .. -DPARASAIL_ENABLE_TESTS=OFF -DBUILD_SHARED_LIBS=OFF  -DPARASAIL_SHARED=OFF  -DPARASAIL_STATIC=ON -DCMAKE_INSTALL_PREFIX=../../parasail-dir/ && make -j4 && make install
+	cd parasail-2.6.2; mkdir -p build ; cd build ; cmake .. -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DPARASAIL_ENABLE_TESTS=OFF -DBUILD_SHARED_LIBS=OFF  -DPARASAIL_SHARED=OFF  -DPARASAIL_STATIC=ON -DCMAKE_INSTALL_PREFIX=../../parasail-dir/ && make -j4 && make install
 
 $(ABPOA_DIR)/lib/libabpoa.a:
 	cd $(ABPOA_DIR) && make sse2=true PREFIX=. CC="$(CC)" $(ZLPATH) lib/libabpoa.a

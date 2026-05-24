@@ -63,7 +63,7 @@ def writeFeature(vcf, feature, byDip, outFile, skipLoci, demographics):
             if i % 100000 == 0: logging.info(f'Processing line: {i}')
 
             tr = TR()
-            tr.parseDiploidVCFOneLine(samples, line)
+            tr.parseCombinedVCFOneLine(samples, line)
 
             # skip unwanted loci
             if tr.chr in skipDict:
@@ -83,9 +83,15 @@ def writeFeature(vcf, feature, byDip, outFile, skipLoci, demographics):
                         alleles[s] = '-'.join(a)
                     elif feature == 'topCount':
                         alleles[s] = str(a.count('0'))
-                    else:
+                    elif feature == 'ntRaw':
+                        alleles[s] = tr.rawSeqs[s]
+                    elif feature == 'ntRawLen':
+                        alleles[s] = str(len(tr.rawSeqs[s]))
+                    elif feature == 'nt':
                         motifsDict = {v:k for k,v in tr.motifsUsed.items()}
                         alleles[s] = '-'.join( [motifsDict[int(i)] for i in a] )
+                    else:
+                        pass
 
             if byDip:
                 allelesOut = []
