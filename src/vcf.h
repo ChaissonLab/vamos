@@ -18,6 +18,7 @@ class OutWriter
 public:
 	string sampleName;
 	string version;
+        string commandLine;
 	vector<string> target_names; // reference names
 	vector<uint32_t> contigLengths;
 	int32_t ncontigs;

@@ -898,6 +898,7 @@ void IO::readSeqFromFasta(vector<VNTR *> &vntrs)
 
 int IO::writeVCFHeader_locuswise(ofstream &out)
 {
+    outWriter.commandLine=commandLine;
     outWriter.init(input_bam, version, sampleName);
     outWriter.writeHeader_locuswise(out);
     return 0;

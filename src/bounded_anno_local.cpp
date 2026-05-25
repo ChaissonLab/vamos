@@ -26,6 +26,14 @@ void string_decomposer(vector<int> &optMotifs, vector<int> &optMotifStarts, vect
   int endPath=4;
   int nInf=-99999999;
   int wraparoundPenalty=opt.wraparoundPenalty;
+  //
+  // Do not use wraparound dynamic penalty for homopolymers
+  //
+  for (int i=0; i < motifs.size(); i++ ) {
+    if (motifs[i].len == 1) {
+      wraparoundPenalty=0;
+    }
+  }
   // First column is a gap. First row is handled by a separate vector
   for (auto m=0; m < motifs.size(); m++)
     {

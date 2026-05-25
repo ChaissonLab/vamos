@@ -99,4 +99,5 @@ acc_lookup_table.o: acc_lookup_table.cpp acc_lookup_table.h vntr.cpp vntr.h
 # 	$(CXX) -c edlib/src/edlib.cpp -o edlib.o -I edlib/include
 
 clean:
-	rm -f $(PROG) *.o $(ABPOA_SRC)/*.o $(ABPOA_DIR)/lib/libabpoa.a
+	rm -f $(PROG) *.o $(ABPOA_SRC)/*.o $(ABPOA_DIR)/lib/libabpoa.a 
+	rm -rf $(SPOA_DIR)/build/

@@ -333,7 +333,7 @@ void printUsage(IO &io, OPTION &opt)
     printf("   Others: \n");
     printf("       -L   INT          Maximum length locus to compute annotation for (%d)\n", opt.maxLocusLength);
     printf("       -p   INT          Phase flank- how many bases on each side of a VNTR to collect SNVs to phase (default=15000)\n");
-    printf("       -U                Do not prune extreme repeat lengths. Useful for rare/somatic repeat expansions.");    
+    printf("       -U                Do not prune extreme repeat lengths. Useful for rare/somatic repeat expansions.\n");    
     printf("       -t   INT          Number of threads, DEFAULT: 1. \n");
     printf("       --debug           Print out debug information. \n");
     printf("       -h                Print out help message. \n");
@@ -640,7 +640,7 @@ int main (int argc, char **argv)
     std::map<string, vector<int> > vntrMap;
     io.vntrMap = &vntrMap;
     io.oneBasedInput=opt.oneOffset;
-				     
+    io.SetCommandLine(argc, argv);
     if (io.region_and_motifs != "")
     {
         io.readRegionAndMotifs(vntrs);

@@ -370,6 +370,8 @@ public:
     faidx_t *fai;
     int maxLength;
     int oneBasedInput;
+    string commandLine;
+  
     std::map<string, vector<int> > *vntrMap;
 
     // Not the best place to put this, but since the IO is batched and we
@@ -475,6 +477,16 @@ public:
     stringstream sstrm;
     sstrm << chrom << ":" << start << "-" << end;
     return sstrm.str();
+  }
+  void SetCommandLine(int argc, char* argv[]) {
+    stringstream clStrm;
+    for (int i=1; i < argc; i++) {
+      clStrm << argv[i];
+      if (i+1<  argc) {
+	clStrm << " ";
+      }
+    }
+    commandLine = clStrm.str();
   }
 };
 
