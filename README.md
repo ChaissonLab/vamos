@@ -31,6 +31,7 @@ Or download the latest code from github
 git clone https://github.com/ChaissonLab/vamos.git 
 cd vamos*/src/ && make
 ```
+Building will take several minutes.
 
 Next you should download a locus list. These are in BED format, with the coordinates of the tandem repeat as the BED coordinates, and the list of observed motifs from the Human Pangenome Reference Consortium given as the extra field.
 
