@@ -34,7 +34,7 @@ class TR:
         """the __init__ method
         """
 
-        # parsed in method "parseDiploidVCFOneLine"
+        # parsed in method "parseCombinedVCFOneLine"
         self.chr = ''
         self.start = ''
         self.end = ''
@@ -193,15 +193,17 @@ class TR:
                 self.space = True
 
 
-    def heat(self, outPlot:str, width, height, ylabel):
+    def heat(self, outPlot:str, width, height, ylabel, outFormat, useHap1):
         """generate the allele plot
 
         Args:
             outPlot (str): path for the output plot
         """
 
-        samples = list(self.annosByUsed.keys())
-        #samples = list(self.annosByUsed.keys())[1::2] # for plotting combined haploid vcf
+        if useHap1: # for plotting combined haploid vcf
+            samples = list(self.annosByUsed.keys())[1::2]
+        else:
+            samples = list(self.annosByUsed.keys())
         # remove uncovered samples
         samples = [ s for s in samples if '.' not in self.annosByUsed[s] ]
         annos = np.array([ [int(m) for m in self.annosByUsed[s]] for s in samples ])
@@ -212,8 +214,12 @@ class TR:
 
         # set up and output color code
         cmap = sns.color_palette(cc.glasbey_hv, nMotifs)
+        #customColors = ['#7AACAD','#E52D35','#e377c2','#EFE5CF',\
+        #        '#8b8b8b','#652F4E','#9467bd','#d62728','#1f77b4',\
+        #        '#17becf','#8c564b','#bcbd22','#3a0183']
+        #cmap = sns.color_palette(customColors)
         cmap.append((1,1,1))
-        out = open(outPlot.replace('.png','.tsv'), 'w')
+        out = open(outPlot.replace(f'.{outFormat}','.tsv'), 'w')
         for i,m in enumerate(self.motifsUsed):
             out.write('\t'.join([cmap.as_hex()[i],m])+'\n')
         out.close()
@@ -237,6 +243,7 @@ class TR:
         xlabels = np.linspace(0, maxLen, 10, dtype=int)
         plt.xticks(xticks, xlabels, rotation=0, fontsize=width)
         # set up y axis
+        #plt.ylabel('PC1 order (showing genome index)')
         if ylabel == 'id':
             yticks = np.linspace(0, len(samples) - 1, len(samples), dtype=int)
             ylabels = samples
@@ -246,9 +253,9 @@ class TR:
             #yticks = np.arrange(1, len(samples), )
             yticks = np.linspace(1, len(samples), 10, dtype=int)
             ylabels = np.linspace(1, len(samples), 10, dtype=int)
-            ylabels = [ f'genome {y}' for y in ylabels ]
+            #ylabels = [ f'genome {y}' for y in ylabels ]
             plt.yticks(yticks+0.5, ylabels, rotation=0, fontsize=width)
 
-        plt.savefig(outPlot, bbox_inches='tight', dpi=300, format='png')
+        plt.savefig(outPlot, bbox_inches='tight', dpi=300, format=outFormat)
         plt.close()
 

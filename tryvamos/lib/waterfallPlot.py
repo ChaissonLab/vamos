@@ -11,7 +11,7 @@ logging.basicConfig(
         level=logging.INFO)
 
 
-def plot(inVCF, outDir, useLoci, width, height, ylabel, sort):
+def plot(inVCF, outDir, useLoci, width, height, ylabel, outFormat, sort, useHap1):
 
     if useLoci:
         candidateLoci = general.parseBed(useLoci)
@@ -31,7 +31,7 @@ def plot(inVCF, outDir, useLoci, width, height, ylabel, sort):
             chr = line.strip().split()[0]
             if len(candidateLoci) > 0 and chr not in candidateLoci: continue
             tr = TR()
-            tr.parseDiploidVCFOneLine(samples, line)
+            tr.parseCombinedVCFOneLine(samples, line)
 
             # skip loci not in candidate plotting loci list
             if candidateLoci and len(candidateLoci) > 0:
@@ -41,5 +41,6 @@ def plot(inVCF, outDir, useLoci, width, height, ylabel, sort):
             logging.info(f'plotting locus: {tr.chr}:{tr.start}-{tr.end}')
 
             tr.appendLength(sort)
-            tr.heat(f'{outDir}/{tr.chr}_{tr.start}-{tr.end}.png', width, height, ylabel)
+            outPlot = f'{outDir}/{tr.chr}_{tr.start}-{tr.end}.{outFormat}'
+            tr.heat(outPlot, width, height, ylabel, outFormat, useHap1)
 

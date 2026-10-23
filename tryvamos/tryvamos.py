@@ -42,7 +42,7 @@ For each locus, allele index is ordered by the order it appears in all samples.
 Samples are ordered as in the input csv file.
 ''', formatter_class=argparse.RawTextHelpFormatter)
 combineVCFPosList = ['inVCFs', 'outVCF']
-combineVCFOptList = ['chromOrders', 'includeRS']
+combineVCFOptList = ['chromOrders', 'attributes']
 parserDict['combineVCF'] = [combineVCFPosList, combineVCFOptList]
 # positional arguments
 parser_combineVCF.add_argument(combineVCFPosList[0], type=str, \
@@ -55,8 +55,8 @@ parser_combineVCF.add_argument('-c', '--'+combineVCFOptList[0],
     default='chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22,chrX,chrY',
     help='ordered chromosomes, this order needs to be consistant with the order in the motif catalog used for vamos annotation, \ndefault chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22,chrX,chrY')
 parser_combineVCF.add_argument('-s', '--'+combineVCFOptList[1],
-    action='store_true',
-    help='include raw nucleotide sequence (RS) in genotypes')
+    type=str, metavar='string', default=None,
+    help='extra genotype(s) to be included (choose from "CN,RS,VL"), default None')
 
 
 ######################### quickFeature mode #########################
@@ -99,7 +99,7 @@ parser_quickFeature.add_argument('-s', '--'+quickFeatureOptList[3],
 
 ######################### waterfallPlot mode #########################
 waterfallPlotPosList = ['inVCF', 'outDir']
-waterfallPlotOptList = ['useLoci', 'width', 'height', 'ylabel', 'sort']
+waterfallPlotOptList = ['useLoci', 'width', 'height', 'ylabel', 'outFormat', 'sort', 'useHap1']
 parserDict['waterfallPlot'] = [waterfallPlotPosList, waterfallPlotOptList]
 parser_waterfallPlot = subparsers.add_parser('waterfallPlot', description=
 '''waterfallPlot:
@@ -124,9 +124,16 @@ parser_waterfallPlot.add_argument('-y', '--'+waterfallPlotOptList[3],
     type=str, metavar='{empty,id,index}', default='empty',
     choices=['empty','id','index'],
     help='how should y-axis be labeled, default empty')
-parser_waterfallPlot.add_argument('-s', '--'+waterfallPlotOptList[4],
+parser_waterfallPlot.add_argument('-f', '--'+waterfallPlotOptList[4],
+    type=str, metavar='{png,pdf}', default='png',
+    choices=['png','pdf'],
+    help='output format, default png')
+parser_waterfallPlot.add_argument('-s', '--'+waterfallPlotOptList[5],
     action='store_true',
     help='should the plot alleles be sorted by length')
+parser_waterfallPlot.add_argument('-u', '--'+waterfallPlotOptList[6],
+    action='store_true',
+    help='should hap1 be plotted only (useful for combined vcf of haploid genomes)')
 
 
 ######################### testTwoPanels mode #########################
@@ -208,7 +215,11 @@ if __name__ == "__main__":
         import lib.combineVCF as combineVCF
 
         logging.info(f'Combing vcfs...')
-        combineVCF.combineVcfs(inVCFs, outVCF, chromOrders, includeRS)
+        if attributes:
+            attributes = ['GT'] + attributes.split(',')
+        else:
+            attributes = ['GT']
+        combineVCF.combineVcfs(inVCFs, outVCF, chromOrders, attributes)
 
     ######################### quickFeature mode #########################
     if command == 'quickFeature':
@@ -224,7 +235,8 @@ if __name__ == "__main__":
         import lib.waterfallPlot as waterfallPlot
 
         logging.info(f'Generating waterfall plot...')
-        waterfallPlot.plot(inVCF, outDir, useLoci, width, height, ylabel, sort)
+        waterfallPlot.plot(inVCF, outDir, useLoci, width, height, \
+                ylabel, outFormat, sort, useHap1)
 
 
     ######################### testTwoPanels mode #########################
